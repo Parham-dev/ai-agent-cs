@@ -1,144 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { agentsService } from '@/lib/database/services/agents.service'
-import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
+import { Api, withErrorHandling, validateMethod } from '@/lib/api'
 
-export async function GET(
+export const GET = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
+): Promise<NextResponse> => {
+  // Validate HTTP method
+  const methodError = validateMethod(request, ['GET']);
+  if (methodError) return methodError;
 
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Validation Error', message: 'Agent ID is required' },
-        { status: 400 }
-      )
-    }
+  const { id } = await params
 
-    const agent = await agentsService.getAgentById(id)
-
-    if (!agent) {
-      return NextResponse.json(
-        { error: 'Not Found', message: 'Agent not found' },
-        { status: 404 }
-      )
-    }
-
-    return NextResponse.json({ agent })
-  } catch (error) {
-    const { id } = await params
-    console.error(`GET /api/agents/${id} error:`, error)
-    
-    if (error instanceof NotFoundError) {
-      return NextResponse.json(
-        { error: 'Not Found', message: error.message },
-        { status: 404 }
-      )
-    }
-    
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: 'Database Error', message: error.message },
-        { status: 500 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Internal Server Error', message: 'Failed to fetch agent' },
-      { status: 500 }
-    )
+  if (!id) {
+    return Api.validationError({ id: 'Agent ID is required' });
   }
-}
 
-export async function PATCH(
+  const agent = await agentsService.getAgentById(id)
+
+  if (!agent) {
+    return Api.notFound('Agent', id);
+  }
+
+  return Api.success({ agent })
+});
+
+export const PATCH = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-    const data = await request.json()
+): Promise<NextResponse> => {
+  // Validate HTTP method
+  const methodError = validateMethod(request, ['PATCH']);
+  if (methodError) return methodError;
 
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Validation Error', message: 'Agent ID is required' },
-        { status: 400 }
-      )
-    }
+  const { id } = await params
+  const data = await request.json()
 
-    const agent = await agentsService.updateAgent(id, data)
-    
-    return NextResponse.json({ agent })
-  } catch (error) {
-    const { id } = await params
-    console.error(`PATCH /api/agents/${id} error:`, error)
-    
-    if (error instanceof NotFoundError) {
-      return NextResponse.json(
-        { error: 'Not Found', message: error.message },
-        { status: 404 }
-      )
-    }
-    
-    if (error instanceof ValidationError) {
-      return NextResponse.json(
-        { error: 'Validation Error', message: error.message, field: error.field },
-        { status: 400 }
-      )
-    }
-    
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: 'Database Error', message: error.message },
-        { status: 500 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Internal Server Error', message: 'Failed to update agent' },
-      { status: 500 }
-    )
+  if (!id) {
+    return Api.validationError({ id: 'Agent ID is required' });
   }
-}
 
-export async function DELETE(
+  const agent = await agentsService.updateAgent(id, data)
+  
+  return Api.success({ agent })
+});
+
+export const DELETE = withErrorHandling(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
+): Promise<NextResponse> => {
+  // Validate HTTP method
+  const methodError = validateMethod(request, ['DELETE']);
+  if (methodError) return methodError;
 
-    if (!id) {
-      return NextResponse.json(
-        { error: 'Validation Error', message: 'Agent ID is required' },
-        { status: 400 }
-      )
-    }
+  const { id } = await params
 
-    await agentsService.deleteAgent(id)
-    
-    return NextResponse.json({ message: 'Agent deleted successfully' })
-  } catch (error) {
-    const { id } = await params
-    console.error(`DELETE /api/agents/${id} error:`, error)
-    
-    if (error instanceof NotFoundError) {
-      return NextResponse.json(
-        { error: 'Not Found', message: error.message },
-        { status: 404 }
-      )
-    }
-    
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: 'Database Error', message: error.message },
-        { status: 500 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Internal Server Error', message: 'Failed to delete agent' },
-      { status: 500 }
-    )
+  if (!id) {
+    return Api.validationError({ id: 'Agent ID is required' });
   }
-}
+
+  await agentsService.deleteAgent(id)
+  
+  return Api.success({ message: 'Agent deleted successfully' })
+});

@@ -1,35 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { agentsService } from '@/lib/database/services/agents.service'
-import { DatabaseError } from '@/lib/utils/errors'
+import { Api, withErrorHandling, validateMethod } from '@/lib/api'
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url)
-    
-    const filters = {
-      organizationId: searchParams.get('organizationId') || undefined,
-      isActive: searchParams.get('isActive') ? searchParams.get('isActive') === 'true' : undefined,
-      search: searchParams.get('search') || undefined,
-      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined,
-      offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined,
-    }
+export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
+  // Validate HTTP method
+  const methodError = validateMethod(request, ['GET']);
+  if (methodError) return methodError;
 
-    const agents = await agentsService.getAgents(filters)
-    
-    return NextResponse.json({ agents })
-  } catch (error) {
-    console.error('GET /api/agents error:', error)
-    
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: 'Database Error', message: error.message },
-        { status: 500 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Internal Server Error', message: 'Failed to fetch agents' },
-      { status: 500 }
-    )
+  const { searchParams } = new URL(request.url)
+  
+  const filters = {
+    organizationId: searchParams.get('organizationId') || undefined,
+    isActive: searchParams.get('isActive') ? searchParams.get('isActive') === 'true' : undefined,
+    search: searchParams.get('search') || undefined,
+    limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined,
+    offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined,
   }
-}
+
+  const agents = await agentsService.getAgents(filters)
+  
+  return Api.success({ agents })
+});
