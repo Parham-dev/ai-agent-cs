@@ -1,103 +1,182 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState } from 'react';
+import Link from 'next/link';
+
+interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  status: 'available' | 'coming-soon';
+  category: string;
+}
+
+const integrations: Integration[] = [
+  {
+    id: 'shopify',
+    name: 'Shopify',
+    description: 'Connect to your Shopify store for product catalog browsing, inventory management, and product inquiries',
+    icon: '🛍️',
+    status: 'available',
+    category: 'E-commerce'
+  },
+  {
+    id: 'woocommerce',
+    name: 'WooCommerce',
+    description: 'WordPress e-commerce integration for order tracking and customer service',
+    icon: '🛒',
+    status: 'coming-soon',
+    category: 'E-commerce'
+  },
+  {
+    id: 'stripe',
+    name: 'Stripe',
+    description: 'Payment processing and subscription management for customer billing support',
+    icon: '💳',
+    status: 'coming-soon',
+    category: 'Payments'
+  },
+  {
+    id: 'zendesk',
+    name: 'Zendesk',
+    description: 'Ticket management and customer support workflow integration',
+    icon: '🎧',
+    status: 'coming-soon',
+    category: 'Support'
+  }
+];
+
+export default function HomePage() {
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  const categories = ['all', ...Array.from(new Set(integrations.map(i => i.category)))];
+  const filteredIntegrations = selectedCategory === 'all' 
+    ? integrations 
+    : integrations.filter(i => i.category === selectedCategory);
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
+      <div className="container mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-6">
+            AI Customer Service Platform
+          </h1>
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
+            Connect your business platforms and let AI handle customer inquiries with intelligent routing, 
+            real-time data access, and automated support workflows.
+          </p>
+          <div className="flex items-center justify-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>Real-time Integration</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span>Multi-Agent System</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span>Open Source</span>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Category Filter */}
+        <div className="flex justify-center mb-8">
+          <div className="flex space-x-2 bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  selectedCategory === category
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Integration Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {filteredIntegrations.map((integration) => (
+            <div
+              key={integration.id}
+              className={`bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-2 transition-all duration-300 ${
+                integration.status === 'available'
+                  ? 'border-transparent hover:border-blue-500 hover:shadow-xl cursor-pointer'
+                  : 'border-gray-200 dark:border-gray-600 opacity-75'
+              }`}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="text-4xl">{integration.icon}</div>
+                <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  integration.status === 'available'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
+                  {integration.status === 'available' ? 'Available' : 'Coming Soon'}
+                </div>
+              </div>
+              
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                {integration.name}
+              </h3>
+              
+              <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 leading-relaxed">
+                {integration.description}
+              </p>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                  {integration.category}
+                </span>
+                
+                {integration.status === 'available' ? (
+                  <Link
+                    href={`/setup/${integration.id}`}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Setup →
+                  </Link>
+                ) : (
+                  <button
+                    disabled
+                    className="bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed"
+                  >
+                    Soon
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Call to Action */}
+        <div className="text-center mt-16">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-2xl mx-auto shadow-lg">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Start with Shopify Integration
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Connect your Shopify store and let our AI agents handle customer inquiries about orders, 
+              products, shipping, and more using your real store data.
+            </p>
+            <Link
+              href="/setup/shopify"
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-8 py-3 rounded-lg font-medium transition-all"
+            >
+              <span>Get Started with Shopify</span>
+              <span>→</span>
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
