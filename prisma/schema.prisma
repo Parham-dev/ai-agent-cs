@@ -5,6 +5,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator json {
+  provider = "prisma-json-types-generator"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -18,6 +22,7 @@ model Organization {
   id          String   @id @default(cuid())
   name        String
   slug        String   @unique                // URL-friendly identifier
+  /// [OrganizationSettings]
   settings    Json     @default("{}")        // Flexible settings storage
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -36,7 +41,9 @@ model Integration {
   organizationId String
   type           String                       // 'shopify', 'stripe', etc.
   name           String                       // "Main Shopify Store", "Stripe Payments"
+  /// [IntegrationCredentials]
   credentials    Json    @default("{}")       // Encrypted credentials
+  /// [IntegrationSettings]
   settings       Json    @default("{}")       // Non-sensitive settings
   isActive       Boolean @default(true)
   createdAt      DateTime @default(now())
@@ -74,6 +81,7 @@ model Conversation {
   customerId     String?                      // External customer ID
   customerEmail  String?
   customerName   String?
+  /// [ConversationMessages]
   messages       Json     @default("[]")      // Store messages as JSON for now
   status         String   @default("open")    // open, resolved, closed
   channel        String   @default("web")     // web, sms, email, etc.
