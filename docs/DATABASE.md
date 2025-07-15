@@ -5,13 +5,13 @@ This document outlines the complete database schema for the AI Customer Service 
 ## 📊 Schema Overview
 
 The database is designed to support:
-- Multi-tenant organizations
-- AI agent orchestration
-- MCP platform integrations
-- Omnichannel communications
-- Knowledge management
-- Analytics and billing
-- Real-time conversations
+- Multi-tenant organizations with custom domains
+- Modular integration system (Shopify, Stripe, MCP servers, etc.)
+- Universal AI agent configuration with dynamic tool loading
+- Omnichannel customer service communications
+- Knowledge management and AI embeddings
+- Analytics, billing, and usage tracking
+- Real-time conversation management
 
 ## 🔧 Prisma Schema
 
@@ -85,24 +85,32 @@ enum AgentType {
   custom          // Custom specialized agent
 }
 
-// Platform types for MCP integration
-enum PlatformType {
+// Integration types for our modular system
+enum IntegrationType {
   shopify         // Shopify e-commerce
+  stripe          // Stripe payments
   woocommerce     // WooCommerce
   magento         // Magento
   bigcommerce     // BigCommerce
   squarespace     // Squarespace
   wordpress       // WordPress
-  custom          // Custom platform
-  api             // Generic API
+  salesforce      // Salesforce CRM
+  hubspot         // HubSpot CRM
+  zendesk         // Zendesk support
+  intercom        // Intercom messaging
+  slack           // Slack integration
+  discord         // Discord bot
+  mcp_server      // MCP server integration
+  custom_api      // Custom API integration
 }
 
-// MCP transport methods
-enum MCPTransport {
-  sse             // Server-Sent Events
-  stdio           // Standard I/O
-  websocket       // WebSocket connection
-  http            // HTTP REST
+// Integration status
+enum IntegrationStatus {
+  inactive        // Not configured
+  validating      // Credentials being validated
+  active          // Working correctly
+  error           // Has configuration errors
+  disconnected    // Temporarily disconnected
 }
 
 // Knowledge base content types
@@ -122,7 +130,7 @@ enum SystemCostType {
   sms_delivery      // SMS delivery costs
   email_delivery    // Email delivery costs
   voice_minutes     // Voice call minutes
-  mcp_api_calls     // MCP API calls
+  api_calls         // API calls to integrations
   storage_usage     // File storage usage
   bandwidth_usage   // Bandwidth usage
 }
@@ -158,11 +166,6 @@ model Organization {
   subscriptionEndsAt   DateTime?
   billingEmail         String?
   
-  // Platform integration
-  platformType         PlatformType?
-  platformUrl          String?
-  platformDetectedAt   DateTime?
-  
   // Settings
   settings        Json      @default("{}")        // Flexible settings storage
   isActive        Boolean   @default(true)
@@ -173,12 +176,11 @@ model Organization {
   users           OrganizationUser[]
   conversations   Conversation[]
   agents          Agent[]
-  mcpIntegrations MCPIntegration[]
+  integrations    Integration[]
   knowledgeBase   KnowledgeBaseItem[]
   channels        Channel[]
   analytics       Analytics[]
   billing         BillingUsage[]
-  configurations  Configuration[]
   
   @@map("organizations")
 }
@@ -220,52 +222,45 @@ model OrganizationUser {
 }
 
 // =====================================
-// CONFIGURATION MANAGEMENT
+// INTEGRATION MANAGEMENT
 // =====================================
 
-model ConfigurationCategory {
-  id           String    @id                     // 'general', 'apiKeys', etc.
-  name         String                            // 'General Settings'
-  description  String?                           // Category description
-  displayOrder Int       @default(0)             // UI display order
-  isEnabled    Boolean   @default(true)          // Whether category is active
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+model Integration {
+  id              String            @id @default(cuid())
+  organizationId  String
+  type            IntegrationType
+  name            String                          // "Main Shopify Store", "Stripe Payments"
+  description     String?                         // Optional description
+  
+  // Status and health
+  status          IntegrationStatus @default(inactive)
+  lastValidatedAt DateTime?
+  lastErrorAt     DateTime?
+  lastError       String?
+  
+  // Configuration (encrypted sensitive data)
+  credentials     Json              @default("{}")  // Encrypted credentials
+  settings        Json              @default("{}")  // Non-sensitive settings
+  
+  // Metadata
+  version         String?                          // Integration version
+  capabilities    String[]          @default([])   // Available capabilities
+  isActive        Boolean           @default(true)
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   
   // Relations
-  configurations Configuration[]
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agentTools      AgentTool[]       // Tools generated from this integration
   
-  @@map("configuration_categories")
-}
-
-model Configuration {
-  id                    String    @id @default(cuid())
-  organizationId        String
-  categoryId            String
-  key                   String                  // 'openai_api_key', 'default_language'
-  value                 String?                 // Encrypted if sensitive
-  defaultValue          String?                 // Default fallback value
-  dataType              String    @default("string") // string, number, boolean, json
-  isEncrypted          Boolean   @default(false) // Whether value is encrypted
-  isSensitive          Boolean   @default(false) // Whether to hide in UI
-  isRequired           Boolean   @default(false) // Whether required for operation
-  description          String?                 // Human-readable description
-  validationRules      Json?                   // Validation constraints
-  displayOrder         Int       @default(0)   // UI display order
-  isEnabled            Boolean   @default(true) // Whether config is active
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  
-  // Relations
-  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  category            ConfigurationCategory @relation(fields: [categoryId], references: [id])
-  
-  @@unique([organizationId, categoryId, key])
-  @@map("configurations")
+  @@unique([organizationId, type, name])
+  @@index([organizationId, status])
+  @@map("integrations")
 }
 
 // =====================================
-// AI AGENTS & MCP INTEGRATION
+// AI AGENTS & CONFIGURATION
 // =====================================
 
 model Agent {
@@ -274,16 +269,21 @@ model Agent {
   name            String                        // "Support Agent", "Sales Agent"
   type            AgentType
   description     String?
-  instructions    String                        // AI instructions/prompt
-  model           String     @default("gpt-4")  // AI model to use
-  temperature     Float      @default(0.7)     // AI temperature setting
-  maxTokens       Int        @default(2000)    // Max response tokens
   
-  // Agent configuration
+  // AI Configuration
+  instructions    String                        // AI instructions/prompt
+  model           String     @default("gpt-4o") // AI model to use
+  temperature     Float      @default(0.7)     // AI temperature setting
+  maxTokens       Int        @default(4000)    // Max response tokens
+  
+  // Agent behavior
   isActive        Boolean    @default(true)
   priority        Int        @default(0)       // Agent priority for routing
   triggerKeywords String[]   @default([])      // Keywords that trigger this agent
-  settings        Json       @default("{}")    // Additional settings
+  fallbackMessage String?                      // Message when agent can't help
+  
+  // Universal agent configuration (matches our API format)
+  agentConfig     Json       @default("{}")    // Full agent configuration
   
   // Performance tracking
   totalConversations  Int    @default(0)
@@ -302,52 +302,29 @@ model Agent {
 }
 
 model AgentTool {
-  id          String    @id @default(cuid())
-  agentId     String
-  name        String                          // Tool identifier
-  description String?                         // Tool description
-  schema      Json                           // Tool schema definition
-  isEnabled   Boolean   @default(true)
-  createdAt   DateTime  @default(now())
+  id             String      @id @default(cuid())
+  agentId        String
+  integrationId String?                         // Source integration (null for built-in tools)
+  toolName       String                         // Tool identifier (e.g., "searchProducts")
+  displayName    String                         // Human-readable name
+  description    String?                        // Tool description
+  
+  // Tool configuration
+  schema         Json                           // Tool schema definition
+  settings       Json        @default("{}")    // Tool-specific settings
+  isEnabled      Boolean     @default(true)
+  priority       Int         @default(0)       // Tool priority order
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
   
   // Relations
-  agent       Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent          Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  integration    Integration? @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   
-  @@unique([agentId, name])
+  @@unique([agentId, toolName])
+  @@index([agentId, isEnabled])
   @@map("agent_tools")
-}
-
-model MCPIntegration {
-  id              String      @id @default(cuid())
-  organizationId  String
-  name            String                        // "Shopify Store", "Custom API"
-  platformType    PlatformType
-  transport       MCPTransport
-  
-  // Connection details
-  endpoint        String?                       // MCP server endpoint
-  serverCommand   String?                       // Command to start MCP server
-  authConfig      Json?                         // Authentication configuration
-  connectionConfig Json       @default("{}")   // Additional connection settings
-  
-  // Status
-  isActive        Boolean     @default(true)
-  isConnected     Boolean     @default(false)
-  lastConnectedAt DateTime?
-  lastError       String?
-  
-  // Metadata
-  version         String?                       // MCP server version
-  capabilities    String[]    @default([])     // Available capabilities
-  tools           Json        @default("[]")   // Available tools
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  // Relations
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  @@map("mcp_integrations")
 }
 
 // =====================================
@@ -418,6 +395,7 @@ model Message {
   tokensUsed      Int?        // Tokens consumed
   processingTime  Int?        // Processing time in milliseconds
   confidence      Float?      // AI confidence score
+  toolsUsed       String[]    @default([])  // Tools used in response
   
   // Status
   isDelivered     Boolean     @default(false)
@@ -451,14 +429,12 @@ model Channel {
   settings        Json        @default("{}")  // Channel-specific settings
   
   // Integration details
-  integrationId   String?                     // External integration ID
+  integrationId   String?                     // Related integration ID
   webhookUrl      String?                     // Webhook endpoint
   apiCredentials  Json?                       // Encrypted API credentials
   
-  // Appearance (for widget)
-  primaryColor    String?
-  position        String?     @default("bottom-right")
-  welcomeMessage  String?
+  // Widget appearance (for web widget)
+  widgetConfig    Json?                       // Widget styling and behavior
   
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -466,7 +442,7 @@ model Channel {
   // Relations
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  @@unique([organizationId, type])
+  @@unique([organizationId, type, name])
   @@map("channels")
 }
 
@@ -499,7 +475,7 @@ model KnowledgeBaseItem {
   mimeType        String?
   
   // AI processing
-  embedding       Float[]?                    // Vector embedding
+  embedding       Float[]?                    // Vector embedding for semantic search
   isIndexed       Boolean     @default(false)
   lastIndexedAt   DateTime?
   
@@ -515,6 +491,7 @@ model KnowledgeBaseItem {
   
   @@index([organizationId, isPublished])
   @@index([organizationId, contentType])
+  @@index([organizationId, isIndexed])
   @@map("knowledge_base_items")
 }
 
@@ -548,8 +525,12 @@ model Analytics {
   aiAverageConfidence   Float?
   escalationRate        Float?
   
+  // Integration usage
+  integrationApiCalls   Json?               // Per-integration API usage
+  integrationErrors     Json?               // Per-integration error rates
+  
   // Agent performance
-  agentMetrics          Json? // Per-agent statistics
+  agentMetrics          Json?               // Per-agent statistics
   
   createdAt             DateTime @default(now())
   
@@ -572,7 +553,8 @@ model BillingUsage {
   unitCost        Float                           // Cost per unit
   totalCost       Float                           // Total cost for this usage
   
-  // Metadata
+  // Context
+  source          String?                         // Integration or service that generated cost
   metadata        Json?                           // Additional usage details
   billingPeriod   String                         // "2024-01", "2024-02"
   recordedAt      DateTime        @default(now())
@@ -592,8 +574,8 @@ model BillingUsage {
 model SystemEvent {
   id              String      @id @default(cuid())
   organizationId  String?     // Null for system-wide events
-  eventType       String      // 'error', 'warning', 'info'
-  source          String      // 'mcp_integration', 'ai_agent', 'api'
+  eventType       String      // 'error', 'warning', 'info', 'integration_status'
+  source          String      // 'integration', 'ai_agent', 'api', 'widget'
   message         String
   details         Json?
   severity        Int         @default(0)     // 0=info, 1=warning, 2=error, 3=critical
@@ -602,11 +584,18 @@ model SystemEvent {
   userId          String?
   conversationId  String?
   agentId         String?
+  integrationId   String?
+  
+  // Resolution
+  isResolved      Boolean     @default(false)
+  resolvedAt      DateTime?
+  resolvedBy      String?
   
   createdAt       DateTime    @default(now())
   
   @@index([organizationId, eventType])
   @@index([organizationId, createdAt])
+  @@index([organizationId, isResolved])
   @@map("system_events")
 }
 ```
@@ -646,43 +635,79 @@ npx prisma migrate dev --name init
 npx prisma db seed
 ```
 
-## 📋 Key Design Decisions
+## 📋 Key Design Updates
 
-### Multi-Tenancy
-- **Organization-based isolation** - Each organization has its own data
-- **Flexible user roles** - Users can have different roles per organization
-- **Configuration management** - Per-organization settings and API keys
+### Modular Integration System
+- **Generic Integration model** - Supports all integration types (Shopify, Stripe, MCP, etc.)
+- **Encrypted credentials** - Secure storage of API keys and sensitive data
+- **Status tracking** - Real-time monitoring of integration health
+- **Universal configuration** - Flexible JSON-based settings per integration
 
-### Scalability
-- **Indexed fields** - Optimized queries for conversations, analytics
-- **JSON fields** - Flexible metadata storage without schema changes
-- **Separate analytics** - Daily aggregated metrics for performance
+### Universal Agent Configuration
+- **Dynamic tool loading** - Tools are created based on integration configurations
+- **Agent configuration JSON** - Matches our `/api/agents/chat` endpoint format
+- **Integration-aware tools** - Tools are linked to their source integrations
+- **Flexible routing** - Keyword-based agent selection
 
-### AI Integration
-- **Agent orchestration** - Multiple specialized AI agents per organization
-- **Token tracking** - Monitor AI usage and costs
-- **Tool management** - Dynamic tool assignment to agents
+### Enhanced Analytics
+- **Integration-specific metrics** - Track API usage and errors per integration
+- **Tool usage tracking** - Monitor which tools are used in conversations
+- **Performance optimization** - Separate analytics table for efficient queries
 
-### MCP Integration
-- **Platform detection** - Automatic identification of e-commerce platforms
-- **Flexible transport** - Support for SSE, WebSocket, stdio, HTTP
-- **Dynamic configuration** - Runtime MCP server management
+### Security & Scalability
+- **Encrypted sensitive data** - All credentials and API keys are encrypted
+- **Proper indexing** - Optimized for common query patterns
+- **Audit trails** - Complete system event logging with resolution tracking
+- **Multi-tenant isolation** - Organization-based data separation
 
-### Security
-- **Encrypted sensitive data** - API keys and credentials encrypted
-- **Audit trails** - System events and user actions logged
-- **Role-based access** - Granular permissions per user
+## 🔍 Common Query Examples
 
-## 🔍 Common Queries
-
-### Get Organization Conversations
+### Get Organization with Integrations
 ```typescript
-const conversations = await prisma.conversation.findMany({
-  where: { organizationId: orgId },
+const org = await prisma.organization.findUnique({
+  where: { id: orgId },
   include: {
-    messages: { orderBy: { createdAt: 'asc' } },
-    assignedAgent: true,
-    assignedUser: true
+    integrations: {
+      where: { status: 'active' },
+      select: { id: true, type: true, name: true, capabilities: true }
+    },
+    agents: {
+      include: { tools: true }
+    }
+  }
+});
+```
+
+### Create Shopify Integration
+```typescript
+const shopifyIntegration = await prisma.integration.create({
+  data: {
+    organizationId,
+    type: 'shopify',
+    name: 'Main Store',
+    credentials: {
+      storeDomain: encrypt(storeDomain),
+      accessToken: encrypt(accessToken)
+    },
+    settings: {
+      syncProducts: true,
+      syncOrders: true
+    },
+    status: 'active'
+  }
+});
+```
+
+### Get Agent Configuration for Chat API
+```typescript
+const agent = await prisma.agent.findUnique({
+  where: { id: agentId },
+  include: {
+    tools: {
+      where: { isEnabled: true },
+      include: { integration: true },
+      orderBy: { priority: 'asc' }
+    }
   }
 });
 ```
@@ -696,22 +721,10 @@ await prisma.billingUsage.create({
     quantity: tokensUsed,
     unitCost: 0.001,
     totalCost: tokensUsed * 0.001,
-    billingPeriod: '2024-01'
+    source: 'openai_gpt4o',
+    billingPeriod: format(new Date(), 'yyyy-MM')
   }
 });
 ```
 
-### Get Agent Performance
-```typescript
-const agentStats = await prisma.agent.findUnique({
-  where: { id: agentId },
-  include: {
-    conversations: {
-      where: { status: 'resolved' },
-      select: { customerSatisfaction: true }
-    }
-  }
-});
-```
-
-This schema provides a solid foundation for your AI Customer Service Platform with room for growth and customization as your platform evolves! 
+This updated schema aligns perfectly with our modular integration architecture and universal agent configuration system! 

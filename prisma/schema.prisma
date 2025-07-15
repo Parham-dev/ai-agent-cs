@@ -1,0 +1,89 @@
+// AI Customer Service Platform - Phase 0 MVP Schema
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================
+// PHASE 0: MVP SCHEMA (4 CORE TABLES)
+// =====================================
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique                // URL-friendly identifier
+  settings    Json     @default("{}")        // Flexible settings storage
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  integrations Integration[]
+  agents       Agent[]
+  conversations Conversation[]
+  
+  @@map("organizations")
+}
+
+model Integration {
+  id             String  @id @default(cuid())
+  organizationId String
+  type           String                       // 'shopify', 'stripe', etc.
+  name           String                       // "Main Shopify Store", "Stripe Payments"
+  credentials    Json    @default("{}")       // Encrypted credentials
+  settings       Json    @default("{}")       // Non-sensitive settings
+  isActive       Boolean @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@unique([organizationId, type, name])
+  @@map("integrations")
+}
+
+model Agent {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String                       // "Support Agent", "Sales Agent"
+  instructions   String                       // AI instructions/prompt
+  tools          String[] @default([])        // Available tools array
+  model          String   @default("gpt-4o")  // AI model to use
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversations  Conversation[]
+  
+  @@map("agents")
+}
+
+model Conversation {
+  id             String   @id @default(cuid())
+  organizationId String
+  agentId        String?                      // Assigned agent
+  customerId     String?                      // External customer ID
+  customerEmail  String?
+  customerName   String?
+  messages       Json     @default("[]")      // Store messages as JSON for now
+  status         String   @default("open")    // open, resolved, closed
+  channel        String   @default("web")     // web, sms, email, etc.
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent          Agent?       @relation(fields: [agentId], references: [id])
+  
+  @@index([organizationId, status])
+  @@map("conversations")
+}

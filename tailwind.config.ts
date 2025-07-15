@@ -7,7 +7,7 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  // Note: darkMode configuration is now handled in CSS with @custom-variant
+  darkMode: "class",
   theme: {
     extend: {},
   },
