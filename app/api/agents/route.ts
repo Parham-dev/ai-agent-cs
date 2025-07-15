@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { agentsService } from '@/lib/database/services/agents.service'
-import { DatabaseError, ValidationError } from '@/lib/utils/errors'
+import { DatabaseError } from '@/lib/utils/errors'
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,37 +29,6 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json(
       { error: 'Internal Server Error', message: 'Failed to fetch agents' },
-      { status: 500 }
-    )
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const data = await request.json()
-    
-    const agent = await agentsService.createAgent(data)
-    
-    return NextResponse.json({ agent }, { status: 201 })
-  } catch (error) {
-    console.error('POST /api/agents error:', error)
-    
-    if (error instanceof ValidationError) {
-      return NextResponse.json(
-        { error: 'Validation Error', message: error.message, field: error.field },
-        { status: 400 }
-      )
-    }
-    
-    if (error instanceof DatabaseError) {
-      return NextResponse.json(
-        { error: 'Database Error', message: error.message },
-        { status: 500 }
-      )
-    }
-    
-    return NextResponse.json(
-      { error: 'Internal Server Error', message: 'Failed to create agent' },
       { status: 500 }
     )
   }

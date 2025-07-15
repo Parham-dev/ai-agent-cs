@@ -1,60 +1,104 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { 
   Bot, 
   Plus, 
   Search, 
-  MoreVertical, 
   Power,
   Edit,
   Trash2,
   MessageSquare,
-  Settings
+  Eye
 } from 'lucide-react'
+import { agentsClient } from '@/lib/agents/client'
+import { toast } from 'sonner'
+import type { AgentWithStats } from '@/lib/database/services/agents.service'
 
-interface Agent {
-  id: string
-  name: string
-  instructions: string
-  tools: string[]
-  model: string
-  isActive: boolean
+interface Agent extends Omit<AgentWithStats, 'createdAt' | 'updatedAt'> {
   createdAt: string
   updatedAt: string
-  _count?: {
-    conversations: number
-  }
-  organization?: {
-    name: string
-    slug: string
-  }
 }
 
 export default function AgentsPage() {
+  const router = useRouter()
   const [agents, setAgents] = useState<Agent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
   const fetchAgents = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/agents')
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch agents')
-      }
-      
-      const data = await response.json()
-      setAgents(data.agents)
+      setError(null)
+      const agentsData = await agentsClient.getAgents()
+      // Convert dates to strings for consistency
+      const formattedAgents = agentsData.map(agent => ({
+        ...agent,
+        createdAt: new Date(agent.createdAt).toISOString(),
+        updatedAt: new Date(agent.updatedAt).toISOString()
+      })) as Agent[]
+      setAgents(formattedAgents)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      console.error('Failed to fetch agents:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch agents')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleToggleStatus = async (agent: Agent) => {
+    try {
+      setActionLoading(agent.id)
+      const updatedAgent = await agentsClient.updateAgent(agent.id, { 
+        isActive: !agent.isActive 
+      })
+      
+      // Update local state
+      setAgents(prev => prev.map(a => 
+        a.id === agent.id 
+          ? { 
+              ...updatedAgent, 
+              createdAt: new Date(updatedAgent.createdAt).toISOString(),
+              updatedAt: new Date(updatedAgent.updatedAt).toISOString()
+            } as Agent
+          : a
+      ))
+      
+      toast.success(`Agent ${updatedAgent.isActive ? 'activated' : 'deactivated'} successfully`)
+    } catch (err) {
+      console.error('Failed to toggle agent status:', err)
+      toast.error('Failed to update agent status')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleDelete = async (agent: Agent) => {
+    if (!confirm(`Are you sure you want to delete "${agent.name}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setActionLoading(agent.id)
+      await agentsClient.deleteAgent(agent.id)
+      
+      // Remove from local state
+      setAgents(prev => prev.filter(a => a.id !== agent.id))
+      
+      toast.success('Agent deleted successfully')
+    } catch (err) {
+      console.error('Failed to delete agent:', err)
+      toast.error('Failed to delete agent')
+    } finally {
+      setActionLoading(null)
     }
   }
 
@@ -67,30 +111,13 @@ export default function AgentsPage() {
     agent.instructions.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const toggleAgentStatus = async (agentId: string) => {
-    try {
-      const response = await fetch(`/api/agents/${agentId}/toggle`, {
-        method: 'PATCH'
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to toggle agent status')
-      }
-      
-      // Refresh agents list
-      await fetchAgents()
-    } catch (err) {
-      console.error('Error toggling agent status:', err)
-    }
-  }
-
   if (loading) {
     return (
       <DashboardLayout title="Agents" subtitle="Manage your AI customer service agents">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading agents...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading agents...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -104,14 +131,11 @@ export default function AgentsPage() {
           <div className="text-red-500 mb-4">
             <Bot className="h-12 w-12 mx-auto mb-2" />
             <h3 className="text-lg font-semibold">Error Loading Agents</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{error}</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
           </div>
-          <button
-            onClick={fetchAgents}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
-          >
+          <Button onClick={fetchAgents}>
             Try Again
-          </button>
+          </Button>
         </Card>
       </DashboardLayout>
     )
@@ -123,20 +147,22 @@ export default function AgentsPage() {
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <input
               type="text"
               placeholder="Search agents..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
           
-          <button className="inline-flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">
-            <Plus className="h-4 w-4" />
-            <span>Create Agent</span>
-          </button>
+          <Button asChild>
+            <Link href="/dashboard/agents/new" className="inline-flex items-center space-x-2">
+              <Plus className="h-4 w-4" />
+              <span>Create Agent</span>
+            </Link>
+          </Button>
         </div>
 
         {/* Agents Stats */}
@@ -144,20 +170,20 @@ export default function AgentsPage() {
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Agents</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-sm text-muted-foreground">Total Agents</p>
+                <p className="text-2xl font-bold">
                   {agents.length}
                 </p>
               </div>
-              <Bot className="h-8 w-8 text-blue-500" />
+              <Bot className="h-8 w-8 text-primary" />
             </div>
           </Card>
           
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Active Agents</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-sm text-muted-foreground">Active Agents</p>
+                <p className="text-2xl font-bold">
                   {agents.filter(a => a.isActive).length}
                 </p>
               </div>
@@ -168,8 +194,8 @@ export default function AgentsPage() {
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Conversations</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-sm text-muted-foreground">Total Conversations</p>
+                <p className="text-2xl font-bold">
                   {agents.reduce((sum, agent) => sum + (agent._count?.conversations || 0), 0)}
                 </p>
               </div>
@@ -181,21 +207,23 @@ export default function AgentsPage() {
         {/* Agents List */}
         {filteredAgents.length === 0 ? (
           <Card className="p-12 text-center">
-            <Bot className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            <Bot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
               {searchTerm ? 'No agents found' : 'No agents yet'}
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-muted-foreground mb-6">
               {searchTerm 
                 ? `No agents match "${searchTerm}". Try adjusting your search.`
                 : 'Create your first AI agent to start handling customer inquiries.'
               }
             </p>
             {!searchTerm && (
-              <button className="inline-flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors">
-                <Plus className="h-4 w-4" />
-                <span>Create Your First Agent</span>
-              </button>
+              <Button asChild size="lg">
+                <Link href="/dashboard/agents/new" className="inline-flex items-center space-x-2">
+                  <Plus className="h-4 w-4" />
+                  <span>Create Your First Agent</span>
+                </Link>
+              </Button>
             )}
           </Card>
         ) : (
@@ -207,81 +235,100 @@ export default function AgentsPage() {
                     <div className={`p-2 rounded-lg ${
                       agent.isActive 
                         ? 'bg-green-100 dark:bg-green-900/20' 
-                        : 'bg-gray-100 dark:bg-gray-800'
+                        : 'bg-muted'
                     }`}>
                       <Bot className={`h-5 w-5 ${
                         agent.isActive 
                           ? 'text-green-600 dark:text-green-400' 
-                          : 'text-gray-500 dark:text-gray-400'
+                          : 'text-muted-foreground'
                       }`} />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
+                      <Link 
+                        href={`/dashboard/agents/${agent.id}`}
+                        className="font-semibold hover:text-primary transition-colors"
+                      >
                         {agent.name}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                      </Link>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                         {agent.instructions}
                       </p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
-                    <Badge variant={agent.isActive ? 'success' : 'secondary'}>
-                      {agent.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                    <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-                      <MoreVertical className="h-4 w-4 text-gray-500" />
-                    </button>
-                  </div>
+                  <Badge variant={agent.isActive ? 'default' : 'secondary'}>
+                    {agent.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Model:</span>
+                    <span className="text-muted-foreground">Model:</span>
                     <Badge variant="outline">{agent.model}</Badge>
                   </div>
                   
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Tools:</span>
-                    <span className="text-gray-900 dark:text-white">
-                      {agent.tools.length} configured
-                    </span>
+                    <span className="text-muted-foreground">Tools:</span>
+                    <span>{agent.tools.length} configured</span>
                   </div>
                   
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">Conversations:</span>
-                    <span className="text-gray-900 dark:text-white">
-                      {agent._count?.conversations || 0}
-                    </span>
+                    <span className="text-muted-foreground">Conversations:</span>
+                    <span>{agent._count?.conversations || 0}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => toggleAgentStatus(agent.id)}
-                      className={`p-2 rounded-lg transition-colors ${
-                        agent.isActive
-                          ? 'hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400'
-                          : 'hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-400'
-                      }`}
+                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                  <div className="flex items-center space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/agents/${agent.id}`)}
+                      title="View details"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggleStatus(agent)}
+                      disabled={actionLoading === agent.id}
+                      className={agent.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}
                       title={agent.isActive ? 'Deactivate agent' : 'Activate agent'}
                     >
                       <Power className="h-4 w-4" />
-                    </button>
+                    </Button>
                     
-                    <button className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/dashboard/agents/${agent.id}/edit`)}
+                      title="Edit agent"
+                    >
                       <Edit className="h-4 w-4" />
-                    </button>
+                    </Button>
                     
-                    <button className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400">
-                      <Settings className="h-4 w-4" />
-                    </button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/chat/${agent.id}`)}
+                      title="Test chat"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
                   </div>
                   
-                  <button className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-red-600 dark:text-red-400">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(agent)}
+                    disabled={actionLoading === agent.id}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    title="Delete agent"
+                  >
                     <Trash2 className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </Card>
             ))}
