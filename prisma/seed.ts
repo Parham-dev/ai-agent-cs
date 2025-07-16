@@ -10,11 +10,8 @@ async function main() {
     data: {
       name: 'Demo Store',
       slug: 'demo-store',
-      settings: {
-        theme: 'light',
-        timezone: 'UTC',
-        industry: 'ecommerce'
-      }
+      description: 'Demo organization for testing V2 schema'
+      // settings removed in V2
     }
   })
 
@@ -26,15 +23,13 @@ async function main() {
       organizationId: org.id,
       type: 'shopify',
       name: 'Main Store',
+      description: 'Main Shopify integration for Demo Store',
       credentials: {
         // These would be encrypted in production
         storeDomain: 'demo-store.myshopify.com',
         accessToken: 'your-shopify-access-token'
-      },
-      settings: {
-        syncProducts: true,
-        syncInventory: true
       }
+      // settings removed in V2 - sync preferences now per-agent
     }
   })
 

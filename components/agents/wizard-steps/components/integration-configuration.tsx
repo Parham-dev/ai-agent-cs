@@ -8,6 +8,12 @@ import { AVAILABLE_INTEGRATIONS } from './integration-select-modal'
 import type { ConfiguredIntegration } from './integrations-grid'
 import type { IntegrationCredentials } from '@/lib/types/integrations'
 
+interface IntegrationTool {
+  id: string
+  name: string
+  description: string
+}
+
 interface IntegrationConfigurationProps {
   selectedIntegration: string
   existingConfiguration?: {
@@ -19,6 +25,55 @@ interface IntegrationConfigurationProps {
   } | null
   onCancel: () => void
   onSave: (integration: Omit<ConfiguredIntegration, 'id' | 'name' | 'icon' | 'color'>) => void
+}
+
+// Custom hook to fetch available tools for an integration
+function useIntegrationTools(integrationType: string) {
+  const [tools, setTools] = useState<IntegrationTool[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let mounted = true
+
+    const fetchTools = async () => {
+      if (!integrationType) return
+
+      setLoading(true)
+      setError(null)
+
+      try {
+        const response = await fetch(`/api/integrations/tools?type=${integrationType}`)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch tools: ${response.statusText}`)
+        }
+        
+        const data = await response.json()
+        if (mounted) {
+          setTools(data.data?.tools || [])
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch tools')
+          // Fallback to hardcoded tools if API fails
+          const fallbackIntegration = AVAILABLE_INTEGRATIONS.find(i => i.id === integrationType)
+          setTools(fallbackIntegration?.tools || [])
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    fetchTools()
+
+    return () => {
+      mounted = false
+    }
+  }, [integrationType])
+
+  return { tools, loading, error }
 }
 
 export function IntegrationConfiguration({ 
@@ -34,6 +89,9 @@ export function IntegrationConfiguration({
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>(
     existingConfiguration?.isConnected ? 'success' : 'idle'
   )
+
+  // Fetch available tools for this integration
+  const { tools: availableTools, loading: toolsLoading, error: toolsError } = useIntegrationTools(selectedIntegration)
 
   // Update state when existingConfiguration changes
   useEffect(() => {
@@ -198,37 +256,43 @@ export function IntegrationConfiguration({
 
             <div>
               <h5 className="text-lg font-semibold mb-4">Choose which tools to enable for your agent</h5>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {currentIntegration.tools.map((tool) => (
-                  <Card 
-                    key={tool.id} 
-                    className={`border cursor-pointer transition-colors ${
-                      selectedTools.includes(tool.id) 
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                        : 'border-gray-200 dark:border-gray-700'
-                    }`} 
-                    onClick={() => toggleTool(tool.id)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start space-x-3">
-                        <div className={`w-5 h-5 border-2 rounded flex items-center justify-center mt-0.5 ${
-                          selectedTools.includes(tool.id) 
-                            ? 'border-blue-500 bg-blue-500' 
-                            : 'border-gray-300'
-                        }`}>
-                          {selectedTools.includes(tool.id) && <Check className="w-3 h-3 text-white" />}
+              {toolsLoading ? (
+                <p className="text-sm text-gray-600 dark:text-gray-400">Loading available tools...</p>
+              ) : toolsError ? (
+                <p className="text-sm text-red-600 dark:text-red-400">Error loading tools: {toolsError}</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {availableTools.map((tool) => (
+                    <Card 
+                      key={tool.id} 
+                      className={`border cursor-pointer transition-colors ${
+                        selectedTools.includes(tool.id) 
+                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                          : 'border-gray-200 dark:border-gray-700'
+                      }`} 
+                      onClick={() => toggleTool(tool.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className={`w-5 h-5 border-2 rounded flex items-center justify-center mt-0.5 ${
+                            selectedTools.includes(tool.id) 
+                              ? 'border-blue-500 bg-blue-500' 
+                              : 'border-gray-300'
+                          }`}>
+                            {selectedTools.includes(tool.id) && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                          <div className="flex-1">
+                            <h6 className="font-medium mb-1">{tool.name}</h6>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {tool.description}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <h6 className="font-medium mb-1">{tool.name}</h6>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {tool.description}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end space-x-4 pt-6">

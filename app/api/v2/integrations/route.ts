@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { integrationsService } from '@/lib/database/services/integrations.service'
-import { Api, withErrorHandling, validateMethod } from '@/lib/api'
+import { integrationsServiceV2 } from '@/lib/database/services/v2/integrations.service'
+import { Api, withErrorHandling, validateMethod, ErrorCodes } from '@/lib/api'
 
 export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
   // Validate HTTP method
@@ -11,12 +11,13 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
   
   const filters = {
     organizationId: searchParams.get('organizationId') || undefined,
-    agentId: searchParams.get('agentId') || undefined,
     type: searchParams.get('type') || undefined,
-    isActive: searchParams.get('isActive') ? searchParams.get('isActive') === 'true' : undefined,
+    search: searchParams.get('search') || undefined,
+    limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined,
+    offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined,
   }
 
-  const integrations = await integrationsService.getIntegrations(filters)
+  const integrations = await integrationsServiceV2.getIntegrations(filters)
   
   return Api.success({ integrations })
 });
@@ -48,16 +49,15 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
   }
   
   if (Object.keys(validationErrors).length > 0) {
-    return Api.validationError(validationErrors);
+    return Api.error(ErrorCodes.VALIDATION_ERROR, 'Validation failed', { errors: validationErrors });
   }
 
-  const integration = await integrationsService.createIntegration({
+  const integration = await integrationsServiceV2.createIntegration({
     organizationId: data.organizationId,
     type: data.type.trim(),
     name: data.name.trim(),
+    description: data.description?.trim() || null,
     credentials: data.credentials,
-    // settings removed in V2 - replaced with AgentIntegration.selectedTools
-    isActive: data.isActive ?? true
   })
   
   return Api.success({ integration }, undefined, 201)

@@ -108,7 +108,8 @@ export default function AgentsPage() {
 
   const filteredAgents = agents.filter(agent =>
     agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    agent.instructions.toLowerCase().includes(searchTerm.toLowerCase())
+    (agent.instructions && agent.instructions.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (agent.systemPrompt && agent.systemPrompt.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   if (loading) {

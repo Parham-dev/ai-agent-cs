@@ -1,12 +1,8 @@
-// V2 Schema - Normalized version based on FOCUSED_SCHEMA.prisma
-// This will replace the current schema.prisma after migration
+// FOCUSED SCHEMA - Organization, Agent, Integration Models Only
+// Aggressive refactor for local development - Clean separation of concerns
 
 generator client {
   provider = "prisma-client-js"
-}
-
-generator json {
-  provider = "prisma-json-types-generator"
 }
 
 datasource db {
@@ -15,7 +11,7 @@ datasource db {
 }
 
 // ============================================================================
-// CORE MODELS - Organizations, Agents, Integrations (V2)
+// CORE MODELS - Organizations, Agents, Integrations
 // ============================================================================
 
 model Organization {
@@ -29,13 +25,12 @@ model Organization {
   // Core entities
   agents       Agent[]
   integrations Integration[]
-  conversations Conversation[]  // Keep conversations for compatibility
   
   @@map("organizations")
 }
 
 // ============================================================================
-// INTEGRATION SYSTEM (V2)
+// INTEGRATION SYSTEM
 // ============================================================================
 
 model Integration {
@@ -47,8 +42,7 @@ model Integration {
   isActive       Boolean  @default(true)
   
   // Keep credentials as JSON since each integration has different fields
-  /// [IntegrationCredentials]
-  credentials    Json     @default("{}")  // Encrypted credentials specific to integration type
+  credentials    Json     // Encrypted credentials specific to integration type
   
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -63,7 +57,7 @@ model Integration {
 }
 
 // ============================================================================
-// AGENT SYSTEM (V2)
+// AGENT SYSTEM
 // ============================================================================
 
 model Agent {
@@ -75,30 +69,20 @@ model Agent {
   
   // Agent behavior configuration
   systemPrompt   String?
-  model          String   @default("gpt-4o")
+  model          String   @default("gpt-4")
   temperature    Float    @default(0.7)
   maxTokens      Int      @default(4000)
   
-  // Agent rules and behavior (simplified from agentConfig)
-  /// [AgentRules]
-  rules          Json?    @default("{}")  // Custom rules and behavior settings
-  
-  // Keep for compatibility during migration
-  instructions   String?  // Will be moved to systemPrompt
-  tools          String[] @default([])  // Will be handled separately
-  /// [AgentConfigData]
-  agentConfig    Json?    @default("{}")  // Will be migrated to rules + AgentIntegration
+  // Agent rules and behavior
+  rules          Json?    // Custom rules and behavior settings
   
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
-  // Integration relationships (NEW)
+  // Integration relationships
   agentIntegrations AgentIntegration[]
-  
-  // Keep conversations for compatibility
-  conversations  Conversation[]
   
   @@map("agents")
 }
@@ -109,12 +93,11 @@ model AgentIntegration {
   integrationId String
   isEnabled     Boolean  @default(true)
   
-  // Which tools from this integration the agent can use (NEW)
-  selectedTools String[] @default([])  // ['searchProducts', 'getProductDetails', etc.]
+  // Which tools from this integration the agent can use
+  selectedTools String[] // ['searchProducts', 'getProductDetails', etc.]
   
-  // Integration-specific configuration for this agent (NEW)
-  /// [AgentIntegrationConfig]
-  config        Json?    @default("{}")  // Agent-specific integration settings
+  // Integration-specific configuration for this agent
+  config        Json?    // Agent-specific integration settings
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -127,27 +110,24 @@ model AgentIntegration {
 }
 
 // ============================================================================
-// CONVERSATION SYSTEM (Keep for compatibility)
+// MIGRATION NOTES
 // ============================================================================
 
-model Conversation {
-  id             String   @id @default(cuid())
-  organizationId String
-  agentId        String?                      // Assigned agent
-  customerId     String?                      // External customer ID
-  customerEmail  String?
-  customerName   String?
-  /// [ConversationMessages]
-  messages       Json     @default("[]")      // Store messages as JSON for now
-  status         String   @default("open")    // open, resolved, closed
-  channel        String   @default("web")     // web, sms, email, etc.
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  
-  // Relations
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agent          Agent?       @relation(fields: [agentId], references: [id])
-  
-  @@index([organizationId, status])
-  @@map("conversations")
-}
+// MIGRATION STRATEGY:
+// 1. Current Agent.agentConfig will be split into:
+//    - Agent.rules (behavior rules)
+//    - AgentIntegration records (which integrations are enabled + selectedTools array)
+
+// 2. Current Integration.settings will be removed:
+//    - Integration tools will be discovered dynamically from MCP servers
+//    - No need to store tools in database - they come from MCP server API calls
+
+// 3. Clean separation:
+//    - Integration.credentials = JSON (different per integration type)
+//    - AgentIntegration.selectedTools = String[] (which integration tools agent uses)
+//    - General tools (OpenAI/custom/third-party) handled separately in code - not in DB
+
+// 4. Dynamic Tool Discovery:
+//    - When agent needs Shopify tools: Call MCP server to get available tools
+//    - Filter by AgentIntegration.selectedTools to see which ones agent can use
+//    - No database storage needed for integration tools - always fresh from MCP

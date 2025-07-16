@@ -2,15 +2,18 @@ import { prisma } from '../database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
 import '../../types/prisma-json'
 
-// Define Organization type based on our schema
+// Define Organization type based on our V2 schema (updated)
 export interface Organization {
   id: string
   name: string
   slug: string
-  settings: PrismaJson.OrganizationSettings
-  isActive: boolean
+  description?: string | null  // New field in V2
   createdAt: Date
   updatedAt: Date
+  
+  // Removed in V2 for simplicity
+  // settings: PrismaJson.OrganizationSettings
+  // isActive: boolean
 }
 
 // Extended types for better API responses
@@ -39,22 +42,22 @@ export interface OrganizationWithRelations extends Organization {
 export interface CreateOrganizationData {
   name: string
   slug: string
-  settings?: PrismaJson.OrganizationSettings
-  isActive?: boolean
+  description?: string  // New in V2
+  // settings and isActive removed in V2
 }
 
 export interface UpdateOrganizationData {
   name?: string
   slug?: string
-  settings?: PrismaJson.OrganizationSettings
-  isActive?: boolean
+  description?: string  // New in V2
+  // settings and isActive removed in V2
 }
 
 export interface OrganizationFilters {
-  isActive?: boolean
   search?: string
   limit?: number
   offset?: number
+  // isActive removed in V2
 }
 
 class OrganizationsService {
@@ -64,14 +67,13 @@ class OrganizationsService {
   async getOrganizations(filters: OrganizationFilters = {}): Promise<OrganizationWithStats[]> {
     try {
       const {
-        isActive,
         search,
         limit = 20,
         offset = 0
       } = filters
 
       const where = {
-        ...(typeof isActive === 'boolean' && { isActive }),
+        // isActive removed in V2 schema
         ...(search && {
           OR: [
             { name: { contains: search, mode: 'insensitive' as const } },
@@ -225,8 +227,8 @@ class OrganizationsService {
         data: {
           name: data.name.trim(),
           slug: data.slug.trim(),
-          settings: data.settings || {},
-          isActive: data.isActive ?? true
+          description: data.description?.trim() || null
+          // settings and isActive removed in V2
         }
       })
 
@@ -267,8 +269,8 @@ class OrganizationsService {
         data: {
           ...(data.name && { name: data.name.trim() }),
           ...(data.slug && { slug: data.slug.trim() }),
-          ...(data.settings && { settings: data.settings }),
-          ...(typeof data.isActive === 'boolean' && { isActive: data.isActive })
+          ...(data.description !== undefined && { description: data.description?.trim() || null })
+          // settings and isActive removed in V2
         }
       })
 
@@ -300,52 +302,16 @@ class OrganizationsService {
     }
   }
 
-  /**
-   * Toggle organization active status
-   */
-  async toggleOrganizationStatus(id: string): Promise<Organization> {
-    try {
-      const organization = await this.getOrganizationByIdOrThrow(id)
-      
-      return await this.updateOrganization(id, { isActive: !organization.isActive })
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        throw error
-      }
-      throw new DatabaseError(`Failed to toggle organization status ${id}`, error as Error)
-    }
-  }
+  // toggleOrganizationStatus removed in V2 (no isActive field)
+
+  // updateOrganizationSettings removed in V2 (no settings field)
 
   /**
-   * Update organization settings
+   * Get organizations count (V2: no isActive filter)
    */
-  async updateOrganizationSettings(id: string, settings: PrismaJson.OrganizationSettings): Promise<Organization> {
+  async getOrganizationsCount(): Promise<number> {
     try {
-      const organization = await this.getOrganizationByIdOrThrow(id)
-      
-      // Merge with existing settings
-      const updatedSettings = {
-        ...organization.settings,
-        ...settings
-      }
-
-      return await this.updateOrganization(id, { settings: updatedSettings })
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        throw error
-      }
-      throw new DatabaseError(`Failed to update organization settings ${id}`, error as Error)
-    }
-  }
-
-  /**
-   * Get organizations count
-   */
-  async getOrganizationsCount(isActive?: boolean): Promise<number> {
-    try {
-      return await prisma.organization.count({
-        where: typeof isActive === 'boolean' ? { isActive } : undefined
-      })
+      return await prisma.organization.count()
     } catch (error) {
       throw new DatabaseError('Failed to count organizations', error as Error)
     }

@@ -33,14 +33,12 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       organizationId,
       type: 'shopify',
       name: 'Test Shopify Store',
+      description: 'Test integration for development',
       credentials: {
         storeName: 'demo-store',
         accessToken: 'test-token-123' // This would be a real token in production
       },
-      settings: {
-        syncProducts: true,
-        syncInventory: true
-      },
+      // settings removed in V2 - sync preferences now handled per-agent
       isActive: true
     })
     

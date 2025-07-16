@@ -106,12 +106,12 @@ export default function EditAgentPage() {
   const initialFormData: Partial<AgentFormData> = {
     name: agent.name,
     organizationId: agent.organizationId,
-    instructions: agent.instructions,
+    instructions: agent.systemPrompt || agent.instructions || '',
     model: agent.model,
     selectedTools: agent.tools,
     isActive: agent.isActive,
     // Set defaults for other fields
-    temperature: 1,
+    temperature: agent.temperature || 1,
     topP: 1,
     toolChoice: 'auto',
     outputType: 'text',

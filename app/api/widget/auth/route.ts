@@ -110,7 +110,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       agent: {
         id: agent.id,
         name: agent.name,
-        greeting: extractGreeting(agent.instructions),
+        greeting: extractGreeting(agent.systemPrompt || agent.instructions || `Hello! I'm ${agent.name}.`),
         isActive: agent.isActive
       },
       config: {

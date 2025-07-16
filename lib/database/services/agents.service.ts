@@ -1,18 +1,25 @@
 import { prisma } from '../database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
 
-// Define Agent type based on our schema
+// Define Agent type based on our schema (updated for V2 compatibility)
 export interface Agent {
   id: string
   organizationId: string
   name: string
-  instructions: string
+  instructions: string | null  // Updated: now nullable in V2 schema
   tools: string[]
   model: string
-  agentConfig: PrismaJson.AgentConfigData // JSON field for agent configuration
+  agentConfig: PrismaJson.AgentConfigData | null  // Updated: now nullable in V2 schema
   isActive: boolean
   createdAt: Date
   updatedAt: Date
+  
+  // New V2 fields (optional for compatibility)
+  description?: string | null
+  systemPrompt?: string | null
+  temperature?: number
+  maxTokens?: number
+  rules?: PrismaJson.AgentConfigData | null
 }
 
 // Extended types for better API responses
@@ -29,20 +36,34 @@ export interface AgentWithStats extends Agent {
 export interface CreateAgentData {
   organizationId: string
   name: string
-  instructions: string
+  instructions?: string  // Updated: now optional
   tools?: string[]
   model?: string
   agentConfig?: PrismaJson.AgentConfigData
   isActive?: boolean
+  
+  // New V2 fields (optional)
+  description?: string
+  systemPrompt?: string
+  temperature?: number
+  maxTokens?: number
+  rules?: PrismaJson.AgentConfigData
 }
 
 export interface UpdateAgentData {
   name?: string
-  instructions?: string
+  instructions?: string  // Updated: can be null
   tools?: string[]
   model?: string
   agentConfig?: PrismaJson.AgentConfigData
   isActive?: boolean
+  
+  // New V2 fields (optional)
+  description?: string
+  systemPrompt?: string
+  temperature?: number
+  maxTokens?: number
+  rules?: PrismaJson.AgentConfigData
 }
 
 export interface AgentFilters {
@@ -142,19 +163,24 @@ class AgentsService {
       if (!data.name?.trim()) {
         throw new ValidationError('Agent name is required', 'name')
       }
-      if (!data.instructions?.trim()) {
-        throw new ValidationError('Agent instructions are required', 'instructions')
-      }
-
+      // instructions is now optional since we have systemPrompt
+      
       const agent = await prisma.agent.create({
         data: {
           organizationId: data.organizationId,
           name: data.name.trim(),
-          instructions: data.instructions.trim(),
+          instructions: data.instructions?.trim() || null,
           tools: data.tools || [],
           model: data.model || 'gpt-4o',
           agentConfig: data.agentConfig || {},
-          isActive: data.isActive ?? true
+          isActive: data.isActive ?? true,
+          
+          // New V2 fields
+          description: data.description?.trim() || null,
+          systemPrompt: data.systemPrompt?.trim() || null,
+          temperature: data.temperature ?? 0.7,
+          maxTokens: data.maxTokens ?? 4000,
+          rules: data.rules || {}
         }
       })
 

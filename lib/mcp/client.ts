@@ -152,7 +152,7 @@ export class MCPClient {
       serverCredentials.push({
         type: integration.type,
         credentials: integration.credentials,
-        settings: integration.settings
+        // settings removed in V2 - using dynamic tool discovery instead
       });
     }
     

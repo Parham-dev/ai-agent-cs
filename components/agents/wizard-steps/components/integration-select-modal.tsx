@@ -13,12 +13,7 @@ const AVAILABLE_INTEGRATIONS = [
     category: 'E-commerce',
     status: 'available',
     color: 'from-green-500 to-emerald-600',
-    tools: [
-      { id: 'product_search', name: 'Product Search', description: 'Search through product catalog' },
-      { id: 'inventory_check', name: 'Inventory Check', description: 'Check product availability' },
-      { id: 'order_lookup', name: 'Order Lookup', description: 'Find and track orders' },
-      { id: 'customer_info', name: 'Customer Info', description: 'Access customer details' }
-    ]
+    tools: [] // Will be loaded dynamically
   },
   {
     id: 'woocommerce',

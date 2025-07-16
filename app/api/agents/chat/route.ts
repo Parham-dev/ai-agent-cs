@@ -137,7 +137,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
             mcpIntegrations.push({
               type: fullIntegration.type,
               credentials: fullIntegration.credentials,
-              settings: fullIntegration.settings
+              // settings removed in V2 - tools are now dynamic from MCP servers
             });
           }
         }
@@ -222,7 +222,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     
     const openaiAgent = new Agent({
       name: agentData.name,
-      instructions: agentData.instructions,
+      instructions: agentData.systemPrompt || agentData.instructions || `You are ${agentData.name}, an AI assistant.`,
       model: agentData.model,
       tools: tools.length > 0 ? tools : undefined, // Legacy context-passing tools
       mcpServers: mcpServers.length > 0 ? mcpServers : undefined, // MCP servers

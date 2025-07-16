@@ -3,17 +3,19 @@ import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/error
 import type { IntegrationCredentials } from '@/lib/types/integrations'
 import '../../types/prisma-json'
 
-// Define Integration type based on our schema
+// Define Integration type based on our V2 schema (updated)
 export interface Integration {
   id: string
   organizationId: string
   type: string
   name: string
   credentials: IntegrationCredentials
-  settings: PrismaJson.IntegrationSettings
   isActive: boolean
   createdAt: Date
   updatedAt: Date
+  
+  // New V2 fields
+  description?: string | null
 }
 
 // Extended types for better API responses
@@ -30,15 +32,19 @@ export interface CreateIntegrationData {
   type: string
   name: string
   credentials?: IntegrationCredentials
-  settings?: PrismaJson.IntegrationSettings
   isActive?: boolean
+  
+  // New V2 fields
+  description?: string
 }
 
 export interface UpdateIntegrationData {
   name?: string
   credentials?: IntegrationCredentials
-  settings?: PrismaJson.IntegrationSettings
   isActive?: boolean
+  
+  // New V2 fields  
+  description?: string
 }
 
 export interface IntegrationFilters {
@@ -180,25 +186,23 @@ class IntegrationsService {
   }
 
   /**
-   * Get integration by organization, type, and name (unique constraint)
+   * Get integration by organization and type (V2 schema - one integration per type per org)
    */
   async getIntegrationByUniqueKey(
     organizationId: string, 
-    type: string, 
-    name: string
+    type: string
   ): Promise<Integration | null> {
     try {
       return await prisma.integration.findUnique({
         where: {
-          organizationId_type_name: {
+          organizationId_type: {
             organizationId,
-            type,
-            name
+            type
           }
         }
       })
     } catch (error) {
-      throw new DatabaseError(`Failed to fetch integration ${organizationId}/${type}/${name}`, error as Error)
+      throw new DatabaseError(`Failed to fetch integration ${organizationId}/${type}`, error as Error)
     }
   }
 
@@ -224,14 +228,13 @@ class IntegrationsService {
         throw new ValidationError(`Invalid integration type. Must be one of: ${validTypes.join(', ')}`, 'type')
       }
 
-      // Check if integration with same org/type/name already exists
+      // Check if integration with same org/type already exists (V2: one per type per org)
       const existingIntegration = await this.getIntegrationByUniqueKey(
         data.organizationId,
-        data.type,
-        data.name
+        data.type
       )
       if (existingIntegration) {
-        throw new ValidationError('Integration with this name already exists for this type', 'name')
+        throw new ValidationError('Integration of this type already exists for this organization', 'type')
       }
 
       const integration = await prisma.integration.create({
@@ -239,8 +242,8 @@ class IntegrationsService {
           organizationId: data.organizationId,
           type: data.type.toLowerCase(),
           name: data.name.trim(),
+          description: data.description?.trim() || null,
           credentials: data.credentials || {},
-          settings: data.settings || {},
           isActive: data.isActive ?? true
         }
       })
@@ -259,27 +262,14 @@ class IntegrationsService {
    */
   async updateIntegration(id: string, data: UpdateIntegrationData): Promise<Integration> {
     try {
-      // Check if integration exists
-      const existingIntegration = await this.getIntegrationByIdOrThrow(id)
-
-      // If updating name, check uniqueness
-      if (data.name && data.name !== existingIntegration.name) {
-        const conflictingIntegration = await this.getIntegrationByUniqueKey(
-          existingIntegration.organizationId,
-          existingIntegration.type,
-          data.name
-        )
-        if (conflictingIntegration && conflictingIntegration.id !== id) {
-          throw new ValidationError('Integration with this name already exists for this type', 'name')
-        }
-      }
+      // In V2 schema: only one integration per type per org, so no name conflicts to check
 
       const integration = await prisma.integration.update({
         where: { id },
         data: {
           ...(data.name && { name: data.name.trim() }),
+          ...(data.description !== undefined && { description: data.description?.trim() || null }),
           ...(data.credentials && { credentials: data.credentials }),
-          ...(data.settings && { settings: data.settings }),
           ...(typeof data.isActive === 'boolean' && { isActive: data.isActive })
         }
       })
@@ -348,28 +338,6 @@ class IntegrationsService {
         throw error
       }
       throw new DatabaseError(`Failed to update integration credentials ${id}`, error as Error)
-    }
-  }
-
-  /**
-   * Update integration settings
-   */
-  async updateIntegrationSettings(id: string, settings: PrismaJson.IntegrationSettings): Promise<Integration> {
-    try {
-      const integration = await this.getIntegrationByIdOrThrow(id)
-      
-      // Merge with existing settings
-      const updatedSettings = {
-        ...integration.settings,
-        ...settings
-      }
-
-      return await this.updateIntegration(id, { settings: updatedSettings })
-    } catch (error) {
-      if (error instanceof NotFoundError) {
-        throw error
-      }
-      throw new DatabaseError(`Failed to update integration settings ${id}`, error as Error)
     }
   }
 

@@ -5,16 +5,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
   Home, 
-  Settings, 
-  MessageSquare, 
-  BarChart3, 
-  Users, 
-  Zap, 
   Menu, 
   X,
   Bot,
-  Database,
-  Plug
+  Zap
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -27,13 +21,7 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { name: 'Overview', href: '/dashboard', icon: Home },
-  { name: 'Conversations', href: '/dashboard/conversations', icon: MessageSquare, badge: '3' },
   { name: 'Agents', href: '/dashboard/agents', icon: Bot },
-  { name: 'Integrations', href: '/dashboard', icon: Plug },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'Customers', href: '/dashboard/customers', icon: Users },
-  { name: 'Knowledge Base', href: '/dashboard/knowledge', icon: Database },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ]
 
 interface SidebarProps {

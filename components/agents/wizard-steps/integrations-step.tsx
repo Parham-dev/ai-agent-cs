@@ -132,10 +132,10 @@ export function IntegrationsStep({ form }: StepProps) {
           name: orgIntegration.name,
           type: orgIntegration.type, // Use the actual type from org integration
           credentials: orgIntegration.credentials,
-          selectedTools: orgIntegration.settings?.selectedTools || availableIntegration.tools.map(tool => tool.id), // Use existing tools or default to all
+          selectedTools: orgIntegration.settings?.selectedTools || [], // Start with empty tools, user can select them
           isConnected: orgIntegration.isActive, // Use organization-level connection status
           settings: {
-            selectedTools: orgIntegration.settings?.selectedTools || availableIntegration.tools.map(tool => tool.id),
+            selectedTools: orgIntegration.settings?.selectedTools || [],
             isConnected: orgIntegration.isActive
           }
         }
