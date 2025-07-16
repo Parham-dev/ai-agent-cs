@@ -13,8 +13,9 @@ interface CorsConfig {
  * Get CORS configuration for an organization
  * In production, this would query the database
  */
-export async function getCorsConfigForOrganization(organizationId: string): Promise<CorsConfig> {
-  // TODO: Replace with database query
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function getCorsConfigForOrganization(_organizationId: string): Promise<CorsConfig> {
+  // TODO: Replace with database query based on organizationId
   // const org = await prisma.organization.findUnique({
   //   where: { id: organizationId },
   //   include: { allowedDomains: true }

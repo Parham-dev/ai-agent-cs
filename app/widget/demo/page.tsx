@@ -40,7 +40,7 @@ export default function WidgetDemoPage() {
       // Get first available agent
       const agentId = await getFirstAgent();
       if (agentId) {
-        (window as any).CustomerAgent = {
+        (window as { CustomerAgent?: Record<string, unknown> }).CustomerAgent = {
           agentId: agentId,
           position: 'bottom-right',
           theme: 'auto',
@@ -74,8 +74,8 @@ export default function WidgetDemoPage() {
   }, []);
 
   const openWidget = () => {
-    if (typeof window !== 'undefined' && (window as any).CustomerAgent) {
-      (window as any).CustomerAgent.open();
+    if (typeof window !== 'undefined' && (window as { CustomerAgent?: { open?: () => void } }).CustomerAgent) {
+      (window as { CustomerAgent?: { open?: () => void } }).CustomerAgent?.open?.();
     }
   };
 
@@ -139,12 +139,12 @@ export default function WidgetDemoPage() {
           }}>
             <h3 style={{ marginBottom: '1rem' }}>🎯 Demo Instructions</h3>
             <p style={{ marginBottom: '1rem', opacity: 0.9 }}>
-              This demo shows the widget in action. Here's what you can try:
+              This demo shows the widget in action. Here&apos;s what you can try:
             </p>
             <ol style={{ paddingLeft: '1.5rem', opacity: 0.9 }}>
               <li style={{ marginBottom: '0.5rem' }}>Wait for the chat bubble to appear (bottom-right corner)</li>
               <li style={{ marginBottom: '0.5rem' }}>Click the bubble or the button above to open the chat</li>
-              <li style={{ marginBottom: '0.5rem' }}>Ask questions like "What products do you have?" or "Tell me about your store"</li>
+              <li style={{ marginBottom: '0.5rem' }}>Ask questions like &quot;What products do you have?&quot; or &quot;Tell me about your store&quot;</li>
               <li style={{ marginBottom: '0.5rem' }}>The AI agent will respond using real integration data</li>
             </ol>
           </div>
@@ -227,7 +227,7 @@ export default function WidgetDemoPage() {
 <script src="/widget/widget.js"></script>`}
             </div>
             <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-              Replace "your-agent-id-here" with your actual agent ID from the dashboard.
+              Replace &quot;your-agent-id-here&quot; with your actual agent ID from the dashboard.
             </p>
           </div>
         </div>

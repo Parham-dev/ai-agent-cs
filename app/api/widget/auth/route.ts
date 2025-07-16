@@ -89,7 +89,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
     // Domain validation (for now, allow all domains - in production you'd validate against allowed domains)
     // TODO: Implement domain allowlist validation from agent/organization settings
-    const isValidDomain = validateDomain(domain, agent.organizationId);
+    const isValidDomain = validateDomain(domain);
     if (!isValidDomain) {
       logger.warn('Widget auth: domain not allowed', { domain, agentId });
       return Api.error('VALIDATION_ERROR', 'Domain not authorized for this agent');
@@ -158,7 +158,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
  * Validate if domain is allowed for the agent
  * TODO: Implement proper domain validation against agent/organization settings
  */
-function validateDomain(domain: string, _organizationId: string): boolean {
+function validateDomain(domain: string): boolean {
   // For now, allow all domains for development
   // In production, you would check against a whitelist stored in the database
   

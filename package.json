@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
+    "@modelcontextprotocol/sdk": "^1.15.1",
     "@modelcontextprotocol/server-everything": "^2025.7.1",
     "@openai/agents": "^0.0.11",
     "@prisma/client": "^6.12.0",

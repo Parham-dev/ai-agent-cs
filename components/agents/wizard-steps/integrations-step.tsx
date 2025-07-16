@@ -1,49 +1,166 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { StepProps } from './types'
 import { 
-  IntegrationSelectModal, 
+  IntegrationSelectModal,
   IntegrationsGrid, 
   IntegrationConfiguration,
-  type ConfiguredIntegration 
+  type ConfiguredIntegration,
+  type IntegrationDisplayItem
 } from './components'
 import { AVAILABLE_INTEGRATIONS } from './components/integration-select-modal'
 import type { IntegrationCredentials } from '@/lib/types/integrations'
 
+interface OrganizationIntegration {
+  id: string
+  type: string
+  name: string
+  credentials: IntegrationCredentials
+  settings: Record<string, unknown>
+  isActive: boolean
+}
+
 export function IntegrationsStep({ form }: StepProps) {
   const [showModal, setShowModal] = useState(false)
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null)
+  const [organizationIntegrations, setOrganizationIntegrations] = useState<OrganizationIntegration[]>([])
+  const [loading, setLoading] = useState(true)
   
-  // Convert form integrations to display format using useMemo
-  const configuredIntegrations = useMemo(() => {
-    const formIntegrations = form.watch('integrationConfigurations') || []
-    return formIntegrations.map((integration: { 
-      type: string; 
-      name: string; 
-      credentials: IntegrationCredentials; 
-      selectedTools: string[]; 
-      isConnected: boolean;
-      settings?: { selectedTools?: string[]; isConnected?: boolean };
-    }) => {
-      const availableIntegration = AVAILABLE_INTEGRATIONS.find(ai => ai.id === integration.type)
-      return {
-        id: integration.type, // Use type as the ID for consistency
-        name: integration.name,
-        type: integration.type,
-        icon: availableIntegration?.icon || '🔗',
-        color: availableIntegration?.color || 'blue',
-        credentials: integration.credentials,
-        selectedTools: integration.selectedTools || integration.settings?.selectedTools || [],
-        isConnected: integration.isConnected || integration.settings?.isConnected || false
+  // Fetch organization integrations on component mount
+  useEffect(() => {
+    async function fetchOrganizationIntegrations() {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/integrations')
+        if (response.ok) {
+          const data = await response.json()
+          const integrations = data.data?.integrations || []
+          setOrganizationIntegrations(integrations)
+          console.log('Fetched organization integrations:', integrations)
+        } else {
+          console.error('Failed to fetch integrations:', response.status, await response.text())
+        }
+      } catch (error) {
+        console.error('Failed to fetch organization integrations:', error)
+      } finally {
+        setLoading(false)
       }
+    }
+    
+    fetchOrganizationIntegrations()
+  }, [])
+  
+  // Create display items only for integrations that exist in the database
+  const displayIntegrations = useMemo(() => {
+    const integrationConfigurations = form.watch('integrationConfigurations') || []
+    
+    console.log('Integration configurations from form:', integrationConfigurations)
+    console.log('Organization integrations:', organizationIntegrations)
+    
+    return organizationIntegrations.map(orgIntegration => {
+      const availableIntegration = AVAILABLE_INTEGRATIONS.find(
+        ai => ai.id === orgIntegration.type
+      )
+      
+      // Check if this integration is configured for this agent
+      const agentConfig = integrationConfigurations.find(
+        (config: { type: string }) => config.type === orgIntegration.type
+      )
+      
+      // Integration is "enabled for this agent" if it has a configuration
+      const isEnabledForAgent = !!agentConfig
+      
+      // Calculate selected tools count
+      const selectedToolsCount = agentConfig?.selectedTools?.length || 0
+      
+      const displayItem = {
+        id: orgIntegration.type,
+        name: orgIntegration.name,
+        type: orgIntegration.type,
+        icon: availableIntegration?.icon || '🔗',
+        color: availableIntegration?.color || 'from-gray-500 to-gray-600',
+        status: 'configured' as const,
+        isEnabled: isEnabledForAgent, // This agent can use this integration
+        isConnected: orgIntegration.isActive, // Organization-level connection status
+        selectedToolsCount,
+        existsInDatabase: true,
+        credentials: orgIntegration.credentials
+      } as IntegrationDisplayItem
+      
+      console.log('Display item for', orgIntegration.type, ':', displayItem)
+      return displayItem
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.watch('integrationConfigurations')])
+  }, [organizationIntegrations, form])
+  
+  // Get available integrations that are not in the database (for the modal)
+  const availableIntegrationsForModal = useMemo(() => {
+    const filtered = AVAILABLE_INTEGRATIONS.filter(available => 
+      available.status === 'available' && 
+      !organizationIntegrations.some(org => org.type === available.id)
+    )
+    return filtered
+  }, [organizationIntegrations])
 
+  const handleAddIntegration = () => {
+    setShowModal(true)
+  }
+  
   const handleSelectIntegration = (integrationId: string) => {
     setSelectedIntegration(integrationId)
     setShowModal(false)
+  }
+  
+  const handleToggleIntegration = (integrationId: string, enabled: boolean) => {
+    const currentConfigs = form.getValues('integrationConfigurations') || []
+    
+    if (enabled) {
+      // Add this integration to the agent's configuration
+      const orgIntegration = organizationIntegrations.find(org => org.type === integrationId)
+      const availableIntegration = AVAILABLE_INTEGRATIONS.find(ai => ai.id === integrationId)
+      
+      if (orgIntegration && availableIntegration) {
+        const existingConfigIndex = currentConfigs.findIndex((config: { type: string }) => config.type === integrationId)
+        
+        const newIntegrationConfig = {
+          id: integrationId,
+          name: orgIntegration.name,
+          type: integrationId,
+          credentials: orgIntegration.credentials,
+          selectedTools: orgIntegration.settings?.selectedTools || availableIntegration.tools.map(tool => tool.id), // Use existing tools or default to all
+          isConnected: orgIntegration.isActive, // Use organization-level connection status
+          settings: {
+            selectedTools: orgIntegration.settings?.selectedTools || availableIntegration.tools.map(tool => tool.id),
+            isConnected: orgIntegration.isActive
+          }
+        }
+        
+        if (existingConfigIndex !== -1) {
+          // Update existing config
+          currentConfigs[existingConfigIndex] = newIntegrationConfig
+        } else {
+          // Add new config
+          currentConfigs.push(newIntegrationConfig)
+        }
+        
+        form.setValue('integrationConfigurations', currentConfigs)
+        console.log('Added integration to agent config:', integrationId)
+      }
+    } else {
+      // Remove this integration from the agent's configuration
+      const updatedConfigs = currentConfigs.filter((config: { type: string }) => config.type !== integrationId)
+      form.setValue('integrationConfigurations', updatedConfigs)
+      console.log('Removed integration from agent config:', integrationId)
+    }
+  }
+  
+  const handleEditIntegration = (integrationId: string) => {
+    // Toggle the configuration - close if already open for the same integration
+    if (selectedIntegration === integrationId) {
+      setSelectedIntegration(null)
+    } else {
+      setSelectedIntegration(integrationId)
+    }
   }
 
   const handleSaveIntegration = (integrationData: Omit<ConfiguredIntegration, 'id' | 'name' | 'icon' | 'color'>) => {
@@ -57,40 +174,37 @@ export function IntegrationsStep({ form }: StepProps) {
       name: integration.name,
       type: integration.id, // Use id as type
       credentials: integrationData.credentials,
+      selectedTools: integrationData.selectedTools || [],
+      isConnected: integrationData.isConnected || false,
       settings: {
         selectedTools: integrationData.selectedTools || [],
         isConnected: integrationData.isConnected || false
       }
     }
 
-    // Update form data
+    // Update form data - replace existing or add new
     const currentConfigs = form.getValues('integrationConfigurations') || []
-    form.setValue('integrationConfigurations', [...currentConfigs, newIntegrationConfig])
+    const existingIndex = currentConfigs.findIndex((config: { type: string }) => config.type === integration.id)
     
-    // Also update enabled integrations list
-    const currentEnabled = form.getValues('enabledIntegrations') || []
-    if (!currentEnabled.includes(integration.id)) {
-      form.setValue('enabledIntegrations', [...currentEnabled, integration.id])
+    if (existingIndex !== -1) {
+      // Update existing
+      currentConfigs[existingIndex] = newIntegrationConfig
+    } else {
+      // Add new
+      currentConfigs.push(newIntegrationConfig)
     }
+    
+    form.setValue('integrationConfigurations', currentConfigs)
+    console.log('Saved integration config for agent:', integration.id)
 
     setSelectedIntegration(null)
   }
 
-  const handleDeleteIntegration = (integrationId: string) => {
-    // Remove from form data
-    const currentConfigs = form.getValues('integrationConfigurations') || []
-    const updatedConfigs = currentConfigs.filter((config: ConfiguredIntegration) => config.type !== integrationId)
-    form.setValue('integrationConfigurations', updatedConfigs)
-    
-    // Also remove from enabled integrations
-    const currentEnabled = form.getValues('enabledIntegrations') || []
-    const updatedEnabled = currentEnabled.filter((id: string) => id !== integrationId)
-    form.setValue('enabledIntegrations', updatedEnabled)
-  }
 
   const handleCancelConfiguration = () => {
     setSelectedIntegration(null)
   }
+  
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
@@ -106,34 +220,65 @@ export function IntegrationsStep({ form }: StepProps) {
             </p>
           </div>
 
-          {/* Configured Integrations Grid */}
-          <IntegrationsGrid
-            configuredIntegrations={configuredIntegrations}
-            onAddIntegration={() => setShowModal(true)}
-            onDeleteIntegration={handleDeleteIntegration}
-          />
-
-          {/* Integration Selection Modal */}
-          <IntegrationSelectModal
-            open={showModal}
-            onOpenChange={setShowModal}
-            onSelectIntegration={handleSelectIntegration}
-          />
+          {/* Loading state */}
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <>
+              {/* Integrations Grid */}
+              <IntegrationsGrid
+                integrations={displayIntegrations}
+                onAddIntegration={handleAddIntegration}
+                onToggleIntegration={handleToggleIntegration}
+                onEditIntegration={handleEditIntegration}
+              />
+              
+              {/* Integration Selection Modal */}
+              <IntegrationSelectModal
+                open={showModal}
+                onOpenChange={setShowModal}
+                onSelectIntegration={handleSelectIntegration}
+                availableIntegrations={availableIntegrationsForModal}
+              />
+            </>
+          )}
 
           {/* Integration Configuration */}
           {selectedIntegration && (
             <IntegrationConfiguration
               selectedIntegration={selectedIntegration}
+              existingConfiguration={(() => {
+                const integrationConfigs = form.getValues('integrationConfigurations') || []
+                const existingConfig = integrationConfigs.find((config: { type: string }) => config.type === selectedIntegration)
+                const orgIntegration = organizationIntegrations.find(org => org.type === selectedIntegration)
+                
+                if (existingConfig) {
+                  // Use agent's configuration if it exists
+                  return existingConfig
+                } else if (orgIntegration) {
+                  // Return organization integration data as defaults
+                  return {
+                    type: orgIntegration.type,
+                    credentials: orgIntegration.credentials,
+                    selectedTools: orgIntegration.settings?.selectedTools || [],
+                    isConnected: orgIntegration.isActive,
+                    settings: orgIntegration.settings || {}
+                  }
+                }
+                return null
+              })()}
               onCancel={handleCancelConfiguration}
               onSave={handleSaveIntegration}
             />
           )}
 
-          {/* Empty State */}
-          {configuredIntegrations.length === 0 && !selectedIntegration && (
+          {/* Empty State - only show if no integrations are enabled for this agent */}
+          {!loading && displayIntegrations.filter(i => i.isEnabled).length === 0 && !selectedIntegration && (
             <div className="text-center py-8">
               <p className="text-gray-500 dark:text-gray-400">
-                No integrations configured yet. Click the + button above to add your first integration.
+                No integrations enabled for this agent yet. Toggle the switches above to enable integrations for your agent.
               </p>
             </div>
           )}

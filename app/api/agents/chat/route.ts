@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { run, Agent, type Tool } from '@openai/agents';
+import { run, Agent, type Tool, type MCPServerStdio } from '@openai/agents';
 import { createShopifyTools } from '@/lib/integrations/shopify/tools';
+import { createMCPClient } from '@/lib/mcp/client';
 import { agentsService } from '@/lib/database/services/agents.service';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
@@ -112,50 +113,92 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
     // Build tools based on agent's configured integrations
     const tools: Tool[] = [];
+    let mcpClient = null;
+    let mcpServers: MCPServerStdio[] = [];
     
-    // Add integration-specific tools
-    for (const integration of agentWithIntegrations.integrations) {
-      if (!integration.isActive) continue;
+    // Check if we should use MCP (feature flag or environment variable)
+    const useMCP = process.env.ENABLE_MCP === 'true';
+    
+    if (useMCP && agentWithIntegrations.integrations.length > 0) {
+      // Use MCP servers for integrations
+      logger.debug('Using MCP servers for integrations');
       
-      logger.debug('Processing integration', { 
-        integrationId: integration.id,
-        type: integration.type, 
-        name: integration.name,
-        hasCredentials: !!integration.credentials 
-      });
-      
-      switch (integration.type) {
-        case 'shopify':
-          if (!integration.credentials.storeName || !integration.credentials.accessToken) {
-            logger.error('Missing required Shopify credentials', {
-              integrationId: integration.id,
-              hasStoreName: !!integration.credentials.storeName,
-              hasAccessToken: !!integration.credentials.accessToken
-            });
-            continue; // Skip this integration
-          }
-          
-          // Cast to ShopifyCredentials since we've validated the required fields
-          const shopifyCredentials = integration.credentials as { storeName: string; accessToken: string };
-          tools.push(...createShopifyTools(shopifyCredentials));
-          logger.debug('Added Shopify tools', { 
-            integrationId: integration.id,
-            storeName: shopifyCredentials.storeName
-          });
-          break;
-        // Future integrations will be added here
-        default:
-          logger.warn('Unknown integration type', { 
+      try {
+        // Prepare integrations for MCP client
+        const mcpIntegrations = agentWithIntegrations.integrations
+          .filter(integration => integration.isActive)
+          .map(integration => ({
             type: integration.type,
-            integrationId: integration.id
-          });
+            credentials: integration.credentials,
+            settings: integration.settings
+          }));
+        
+        // Initialize MCP client
+        const mcpClientResult = await createMCPClient(mcpIntegrations);
+        mcpClient = mcpClientResult.client;
+        mcpServers = mcpClientResult.servers;
+        
+        logger.info('MCP client initialized', { 
+          serverCount: mcpServers.length,
+          integrationTypes: mcpIntegrations.map(i => i.type)
+        });
+      } catch (error) {
+        logger.error('Failed to initialize MCP client, falling back to legacy tools', {}, error as Error);
+      }
+    }
+    
+    // Fallback to legacy context-passing tools if MCP is not available
+    if (!useMCP || mcpServers.length === 0) {
+      logger.debug('Using legacy context-passing tools');
+      
+      // Add integration-specific tools (legacy approach)
+      for (const integration of agentWithIntegrations.integrations) {
+        if (!integration.isActive) continue;
+        
+        logger.debug('Processing integration', { 
+          integrationId: integration.id,
+          type: integration.type, 
+          name: integration.name,
+          hasCredentials: !!integration.credentials 
+        });
+        
+        switch (integration.type) {
+          case 'shopify':
+            if (!integration.credentials.storeName || !integration.credentials.accessToken) {
+              logger.error('Missing required Shopify credentials', {
+                integrationId: integration.id,
+                hasStoreName: !!integration.credentials.storeName,
+                hasAccessToken: !!integration.credentials.accessToken
+              });
+              continue; // Skip this integration
+            }
+            
+            // Cast to ShopifyCredentials since we've validated the required fields
+            const shopifyCredentials = integration.credentials as { storeName: string; accessToken: string };
+            tools.push(...createShopifyTools(shopifyCredentials));
+            logger.debug('Added Shopify tools', { 
+              integrationId: integration.id,
+              storeName: shopifyCredentials.storeName
+            });
+            break;
+          // Future integrations will be added here
+          default:
+            logger.warn('Unknown integration type', { 
+              type: integration.type,
+              integrationId: integration.id
+            });
+        }
       }
     }
 
     // Add universal tools based on agent configuration
-    // TODO: Add OpenAI hosted tools, MCP tools, custom tools based on agent.tools
+    // TODO: Add OpenAI hosted tools, custom tools based on agent.tools
 
-    logger.info('Tools configured for agent', { toolsCount: tools.length });
+    logger.info('Tools configured for agent', { 
+      toolsCount: tools.length,
+      mcpServersCount: mcpServers.length,
+      useMCP 
+    });
 
     // Create the OpenAI Agent instance with integration tools
     const agentConfig = agent.agentConfig && typeof agent.agentConfig === 'object' ? agent.agentConfig : {};
@@ -167,7 +210,8 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       name: agent.name,
       instructions: agent.instructions,
       model: agent.model,
-      tools: tools.length > 0 ? tools : undefined, // Only integration tools
+      tools: tools.length > 0 ? tools : undefined, // Legacy context-passing tools
+      mcpServers: mcpServers.length > 0 ? mcpServers : undefined, // MCP servers
       ...cleanAgentConfig
     });
 
@@ -180,21 +224,35 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
     // Run the agent
     logger.debug('Running OpenAI agent');
-    const response = await logger.time('agent-execution', async () => {
-      return await run(openaiAgent, fullMessage, {
-        context: {
-          agentId,
-          agentName: agent.name,
-          organizationId: agent.organizationId,
-          integrations: agentWithIntegrations.integrations.map((i) => ({
-            id: i.id,
-            type: i.type,
-            name: i.name
-          })),
-          ...context
-        },
+    let response;
+    
+    try {
+      response = await logger.time('agent-execution', async () => {
+        return await run(openaiAgent, fullMessage, {
+          context: {
+            agentId,
+            agentName: agent.name,
+            organizationId: agent.organizationId,
+            integrations: agentWithIntegrations.integrations.map((i) => ({
+              id: i.id,
+              type: i.type,
+              name: i.name
+            })),
+            ...context
+          },
+        });
       });
-    });
+    } finally {
+      // Clean up MCP client connections
+      if (mcpClient) {
+        try {
+          await mcpClient.closeAll();
+          logger.debug('MCP client connections closed');
+        } catch (cleanupError) {
+          logger.error('Failed to close MCP client connections', {}, cleanupError as Error);
+        }
+      }
+    }
 
     logger.info('Chat request completed successfully', {
       responseLength: response.finalOutput?.length || 0

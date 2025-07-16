@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,20 +10,43 @@ import type { IntegrationCredentials } from '@/lib/types/integrations'
 
 interface IntegrationConfigurationProps {
   selectedIntegration: string
+  existingConfiguration?: {
+    type: string
+    credentials: IntegrationCredentials
+    selectedTools: string[]
+    isConnected: boolean
+    settings?: Record<string, unknown>
+  } | null
   onCancel: () => void
   onSave: (integration: Omit<ConfiguredIntegration, 'id' | 'name' | 'icon' | 'color'>) => void
 }
 
 export function IntegrationConfiguration({ 
   selectedIntegration, 
+  existingConfiguration,
   onCancel, 
   onSave 
 }: IntegrationConfigurationProps) {
   const [configStep, setConfigStep] = useState<'credentials' | 'tools'>('credentials')
-  const [credentials, setCredentials] = useState<IntegrationCredentials>({})
-  const [selectedTools, setSelectedTools] = useState<string[]>([])
+  const [credentials, setCredentials] = useState<IntegrationCredentials>(existingConfiguration?.credentials || {})
+  const [selectedTools, setSelectedTools] = useState<string[]>(existingConfiguration?.selectedTools || [])
   const [isTestingConnection, setIsTestingConnection] = useState(false)
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>(
+    existingConfiguration?.isConnected ? 'success' : 'idle'
+  )
+
+  // Update state when existingConfiguration changes
+  useEffect(() => {
+    if (existingConfiguration) {
+      setCredentials(existingConfiguration.credentials || {})
+      setSelectedTools(existingConfiguration.selectedTools || [])
+      setConnectionStatus(existingConfiguration.isConnected ? 'success' : 'idle')
+    } else {
+      setCredentials({})
+      setSelectedTools([])
+      setConnectionStatus('idle')
+    }
+  }, [existingConfiguration])
 
   const currentIntegration = AVAILABLE_INTEGRATIONS.find(i => i.id === selectedIntegration)
   if (!currentIntegration) return null
@@ -84,12 +107,12 @@ export function IntegrationConfiguration({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="storeName">Store Name</Label>
+                    <Label htmlFor="shopUrl">Shop URL</Label>
                     <Input
-                      id="storeName"
-                      placeholder="your-store (without .myshopify.com)"
-                      value={credentials.storeName || ''}
-                      onChange={(e) => setCredentials({...credentials, storeName: e.target.value})}
+                      id="shopUrl"
+                      placeholder="your-store.myshopify.com"
+                      value={credentials.shopUrl || ''}
+                      onChange={(e) => setCredentials({...credentials, shopUrl: e.target.value})}
                     />
                   </div>
                   <div>
@@ -104,7 +127,7 @@ export function IntegrationConfiguration({
                   </div>
                   <Button
                     onClick={handleTestConnection}
-                    disabled={!credentials.storeName || !credentials.accessToken || isTestingConnection}
+                    disabled={!credentials.shopUrl || !credentials.accessToken || isTestingConnection}
                     className="w-full"
                   >
                     {isTestingConnection ? 'Testing...' : 'Test Connection'}
@@ -143,10 +166,11 @@ export function IntegrationConfiguration({
             )}
 
             <div className="flex justify-end space-x-4 pt-6">
-              <Button variant="outline" onClick={onCancel}>
+              <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
               <Button
+                type="button"
                 onClick={() => setConfigStep('tools')}
                 disabled={connectionStatus !== 'success'}
               >
@@ -208,10 +232,11 @@ export function IntegrationConfiguration({
             </div>
 
             <div className="flex justify-end space-x-4 pt-6">
-              <Button variant="outline" onClick={() => setConfigStep('credentials')}>
+              <Button type="button" variant="outline" onClick={() => setConfigStep('credentials')}>
                 Back
               </Button>
               <Button
+                type="button"
                 onClick={handleSaveIntegration}
                 disabled={selectedTools.length === 0}
               >

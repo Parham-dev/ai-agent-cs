@@ -56,11 +56,23 @@ interface IntegrationSelectModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSelectIntegration: (integrationId: string) => void
+  availableIntegrations?: Array<{
+    id: string
+    name: string
+    description: string
+    icon: React.ReactNode
+    category: string
+    status: string
+    color: string
+    tools: Array<{ id: string; name: string; description: string }>
+  }>
 }
 
-export function IntegrationSelectModal({ open, onOpenChange, onSelectIntegration }: IntegrationSelectModalProps) {
+export function IntegrationSelectModal({ open, onOpenChange, onSelectIntegration, availableIntegrations }: IntegrationSelectModalProps) {
+  const integrationsToShow = availableIntegrations || AVAILABLE_INTEGRATIONS
+  
   const handleSelectIntegration = (integrationId: string) => {
-    const integration = AVAILABLE_INTEGRATIONS.find(i => i.id === integrationId)
+    const integration = integrationsToShow.find(i => i.id === integrationId)
     if (integration?.status !== 'available') return
     onSelectIntegration(integrationId)
   }
@@ -74,7 +86,7 @@ export function IntegrationSelectModal({ open, onOpenChange, onSelectIntegration
         </ModalHeader>
         <ModalBody>
           <div className="space-y-3">
-            {AVAILABLE_INTEGRATIONS.map((integration) => (
+            {integrationsToShow.map((integration) => (
               <Card
                 key={integration.id}
                 className={`cursor-pointer transition-all duration-200 ${
