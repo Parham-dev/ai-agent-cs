@@ -14,14 +14,72 @@ export default function NewAgentPage() {
 
   const handleSave = async (data: AgentFormData) => {
     try {
+      console.log('Creating agent with data:', {
+        name: data.name,
+        integrationsCount: data.integrationConfigurations?.length || 0,
+        integrations: data.integrationConfigurations
+      });
+
+      // 1. Create the agent first
       const agent = await agentsClient.createAgent({
         organizationId: data.organizationId,
         name: data.name,
         instructions: data.instructions,
         tools: data.selectedTools,
         model: data.model,
-        isActive: data.isActive
+        isActive: data.isActive,
+        agentConfig: {
+          behavior: {
+            temperature: data.temperature,
+            topP: data.topP,
+            toolChoice: data.toolChoice,
+            outputType: data.outputType
+          },
+          tools: {
+            selectedTools: data.selectedTools,
+            customTools: data.customTools
+          },
+          guardrails: data.guardrails
+        }
       })
+
+      console.log('Agent created:', agent.id);
+
+      // 2. Create integrations for this agent
+      if (data.integrationConfigurations && data.integrationConfigurations.length > 0) {
+        console.log('Creating', data.integrationConfigurations.length, 'integrations...');
+        
+        for (const integrationConfig of data.integrationConfigurations) {
+          console.log('Creating integration:', integrationConfig.name, 'of type', integrationConfig.type);
+          
+          const response = await fetch('/api/integrations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              organizationId: data.organizationId,
+              agentId: agent.id, // Link to the created agent
+              type: integrationConfig.type || integrationConfig.id, // Use type or fallback to id
+              name: integrationConfig.name,
+              credentials: integrationConfig.credentials,
+              settings: integrationConfig.settings || {},
+              isActive: true
+            })
+          })
+          
+          const result = await response.json();
+          console.log('Integration creation result:', result);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to create integration: ${result.error?.message || 'Unknown error'}`);
+          }
+        }
+        
+        console.log('All integrations created successfully');
+      } else {
+        console.log('No integrations to create');
+      }
 
       toast.success('Agent created successfully!')
       router.push(`/dashboard/agents/${agent.id}`)

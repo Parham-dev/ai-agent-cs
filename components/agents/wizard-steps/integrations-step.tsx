@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { StepProps } from './types'
 import { 
   IntegrationSelectModal, 
@@ -10,11 +10,30 @@ import {
 } from './components'
 import { AVAILABLE_INTEGRATIONS } from './components/integration-select-modal'
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function IntegrationsStep({ form: _form }: StepProps) {
+export function IntegrationsStep({ form }: StepProps) {
   const [showModal, setShowModal] = useState(false)
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null)
+  
+  // Get integrations from form state
+  const formIntegrations = form.watch('integrationConfigurations') || []
   const [configuredIntegrations, setConfiguredIntegrations] = useState<ConfiguredIntegration[]>([])
+
+  // Convert form data to display format
+  useEffect(() => {
+    const displayIntegrations = formIntegrations.map((integration: any) => {
+      const availableIntegration = AVAILABLE_INTEGRATIONS.find(ai => ai.id === integration.type || ai.id === integration.id)
+      return {
+        id: integration.id || integration.type,
+        name: integration.name,
+        icon: availableIntegration?.icon || '🔗',
+        color: availableIntegration?.color || 'blue',
+        credentials: integration.credentials,
+        selectedTools: integration.settings?.selectedTools || [],
+        isConnected: integration.settings?.isConnected || false
+      }
+    })
+    setConfiguredIntegrations(displayIntegrations)
+  }, [formIntegrations])
 
   const handleSelectIntegration = (integrationId: string) => {
     setSelectedIntegration(integrationId)
@@ -27,20 +46,40 @@ export function IntegrationsStep({ form: _form }: StepProps) {
     const integration = AVAILABLE_INTEGRATIONS.find(i => i.id === selectedIntegration)
     if (!integration) return
 
-    const newIntegration: ConfiguredIntegration = {
+    const newIntegrationConfig = {
       id: integration.id,
       name: integration.name,
-      icon: integration.icon,
-      color: integration.color,
-      ...integrationData
+      type: integration.id, // Use id as type
+      credentials: integrationData.credentials,
+      settings: {
+        selectedTools: integrationData.selectedTools || [],
+        isConnected: integrationData.isConnected || false
+      }
     }
 
-    setConfiguredIntegrations([...configuredIntegrations, newIntegration])
+    // Update form data
+    const currentConfigs = form.getValues('integrationConfigurations') || []
+    form.setValue('integrationConfigurations', [...currentConfigs, newIntegrationConfig])
+    
+    // Also update enabled integrations list
+    const currentEnabled = form.getValues('enabledIntegrations') || []
+    if (!currentEnabled.includes(integration.id)) {
+      form.setValue('enabledIntegrations', [...currentEnabled, integration.id])
+    }
+
     setSelectedIntegration(null)
   }
 
   const handleDeleteIntegration = (integrationId: string) => {
-    setConfiguredIntegrations(configuredIntegrations.filter(i => i.id !== integrationId))
+    // Remove from form data
+    const currentConfigs = form.getValues('integrationConfigurations') || []
+    const updatedConfigs = currentConfigs.filter((config: any) => (config.id || config.type) !== integrationId)
+    form.setValue('integrationConfigurations', updatedConfigs)
+    
+    // Also remove from enabled integrations
+    const currentEnabled = form.getValues('enabledIntegrations') || []
+    const updatedEnabled = currentEnabled.filter((id: string) => id !== integrationId)
+    form.setValue('enabledIntegrations', updatedEnabled)
   }
 
   const handleCancelConfiguration = () => {

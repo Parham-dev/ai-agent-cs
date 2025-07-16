@@ -87,6 +87,36 @@ declare global {
         [key: string]: unknown
       }
     }
+
+    // Agent configuration data - complete agent configuration
+    interface AgentConfigData {
+      name?: string
+      instructions?: string
+      model?: string
+      tools?: string[]
+      integrations?: {
+        type: string
+        credentials: IntegrationCredentials
+        settings?: IntegrationSettings
+      }[]
+      behavior?: {
+        responseStyle?: 'formal' | 'casual' | 'friendly'
+        maxResponseLength?: number
+        contextWindow?: number
+        temperature?: number
+      }
+      rules?: {
+        canAccessCustomerData?: boolean
+        canProcessPayments?: boolean
+        canCreateOrders?: boolean
+        escalationRules?: {
+          keywords?: string[]
+          conditions?: string[]
+          action?: 'escalate' | 'flag' | 'transfer'
+        }[]
+      }
+      [key: string]: unknown
+    }
   }
 }
 

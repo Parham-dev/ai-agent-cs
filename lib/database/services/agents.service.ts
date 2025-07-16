@@ -9,6 +9,7 @@ export interface Agent {
   instructions: string
   tools: string[]
   model: string
+  agentConfig: any // JSON field for agent configuration
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -31,6 +32,7 @@ export interface CreateAgentData {
   instructions: string
   tools?: string[]
   model?: string
+  agentConfig?: any
   isActive?: boolean
 }
 
@@ -39,6 +41,7 @@ export interface UpdateAgentData {
   instructions?: string
   tools?: string[]
   model?: string
+  agentConfig?: any
   isActive?: boolean
 }
 
@@ -128,6 +131,38 @@ class AgentsService {
       throw new NotFoundError('Agent', id)
     }
     return agent
+  }
+
+  /**
+   * Get agent with its integrations
+   */
+  async getAgentWithIntegrations(id: string): Promise<(AgentWithStats & { integrations: any[] }) | null> {
+    try {
+      const agent = await prisma.agent.findUnique({
+        where: { id },
+        include: {
+          integrations: {
+            where: { isActive: true }
+          },
+          _count: {
+            select: {
+              conversations: true
+            }
+          },
+          organization: {
+            select: {
+              name: true,
+              slug: true
+            }
+          }
+        }
+      })
+
+      return agent
+    } catch (error) {
+      console.error('Database error in getAgentWithIntegrations:', error)
+      throw new DatabaseError('Failed to fetch agent with integrations')
+    }
   }
 
   /**

@@ -90,7 +90,10 @@ export default function AgentChatPage() {
         body: JSON.stringify({
           agentId: agent.id,
           message: userMessage.content,
-          chatHistory: messages
+          conversationHistory: messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }))
         }),
       })
 
@@ -103,7 +106,7 @@ export default function AgentChatPage() {
       const assistantMessage: Message = {
         id: `msg-${Date.now() + 1}`,
         role: 'assistant',
-        content: data.message,
+        content: data.success ? data.data.message : 'Sorry, there was an error processing your message.',
         timestamp: new Date()
       }
 

@@ -46,6 +46,13 @@ const agentFormSchema = z.object({
   
   // Integrations
   enabledIntegrations: z.array(z.string()).optional().default([]),
+  integrationConfigurations: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    type: z.string(),
+    credentials: z.record(z.unknown()),
+    settings: z.record(z.unknown()).optional().default({})
+  })).optional().default([]),
   
   // Advanced
   handoffs: z.array(z.string()).optional().default([]),
@@ -98,6 +105,7 @@ export function AgentCreationWizard({
     selectedTools: initialData?.selectedTools || [],
     customTools: initialData?.customTools || [],
     enabledIntegrations: initialData?.enabledIntegrations || [],
+    integrationConfigurations: initialData?.integrationConfigurations || [],
     handoffs: initialData?.handoffs || [],
     guardrails: initialData?.guardrails || { input: [], output: [] },
     isActive: initialData?.isActive ?? true,

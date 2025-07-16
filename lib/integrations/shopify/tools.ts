@@ -9,6 +9,11 @@ import { ShopifyCredentials, ProductSummary, ProductListItem, ShopifyVariant, Sh
  * @returns Array of configured Shopify tools
  */
 export function createShopifyTools(credentials: ShopifyCredentials) {
+  console.log('Creating Shopify tools with credentials:', { 
+    storeName: credentials.storeName, 
+    hasAccessToken: !!credentials.accessToken 
+  });
+  
   const client = new ShopifyClient(credentials);
 
   const searchProducts = tool({

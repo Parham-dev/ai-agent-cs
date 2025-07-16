@@ -6,6 +6,7 @@ export interface CreateAgentRequest {
   instructions: string
   tools?: string[]
   model?: string
+  agentConfig?: any
   isActive?: boolean
 }
 
@@ -56,29 +57,29 @@ class AgentsClient {
     const query = searchParams.toString()
     const endpoint = query ? `?${query}` : ''
     
-    const response = await this.request<AgentsResponse>(endpoint)
-    return response.agents
+    const response = await this.request<{ data: AgentsResponse }>(endpoint)
+    return response.data.agents
   }
 
   async getAgent(id: string): Promise<Agent> {
-    const response = await this.request<AgentResponse>(`/${id}`)
-    return response.agent
+    const response = await this.request<{ data: AgentResponse }>(`/${id}`)
+    return response.data.agent
   }
 
   async createAgent(data: CreateAgentRequest): Promise<Agent> {
-    const response = await this.request<AgentResponse>('/create', {
+    const response = await this.request<{ data: AgentResponse }>('/create', {
       method: 'POST',
       body: JSON.stringify(data),
     })
-    return response.agent
+    return response.data.agent
   }
 
   async updateAgent(id: string, data: UpdateAgentData): Promise<Agent> {
-    const response = await this.request<AgentResponse>(`/${id}`, {
+    const response = await this.request<{ data: AgentResponse }>(`/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     })
-    return response.agent
+    return response.data.agent
   }
 
   async deleteAgent(id: string): Promise<void> {
