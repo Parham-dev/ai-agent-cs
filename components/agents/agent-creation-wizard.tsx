@@ -26,42 +26,42 @@ const agentFormSchema = z.object({
   // Instructions
   instructions: z.string().min(10, 'Instructions must be at least 10 characters'),
   instructionTemplate: z.string().optional(),
-  dynamicInstructions: z.boolean().optional().default(false),
+  dynamicInstructions: z.boolean().default(false),
   
   // Model & Settings
-  model: z.string().optional().default('gpt-4o'),
-  temperature: z.number().min(0).max(2).optional().default(1),
-  topP: z.number().min(0).max(1).optional().default(1),
-  toolChoice: z.enum(['auto', 'required', 'none']).optional().default('auto'),
-  outputType: z.enum(['text', 'structured']).optional().default('text'),
+  model: z.string().default('gpt-4o'),
+  temperature: z.number().min(0).max(2).default(1),
+  topP: z.number().min(0).max(1).default(1),
+  toolChoice: z.enum(['auto', 'required', 'none']).default('auto'),
+  outputType: z.enum(['text', 'structured']).default('text'),
   
   // Tools
-  selectedTools: z.array(z.string()).optional().default([]),
+  selectedTools: z.array(z.string()).default([]),
   customTools: z.array(z.object({
     id: z.string(),
     name: z.string(),
     description: z.string(),
     parameters: z.record(z.unknown())
-  })).optional().default([]),
+  })).default([]),
   
   // Integrations
-  enabledIntegrations: z.array(z.string()).optional().default([]),
+  enabledIntegrations: z.array(z.string()).default([]),
   integrationConfigurations: z.array(z.object({
     id: z.string(),
     name: z.string(),
     type: z.string(),
     credentials: z.record(z.unknown()),
-    settings: z.record(z.unknown()).optional().default({})
-  })).optional().default([]),
+    settings: z.record(z.unknown()).default({})
+  })).default([]),
   
   // Advanced
-  handoffs: z.array(z.string()).optional().default([]),
+  handoffs: z.array(z.string()).default([]),
   guardrails: z.object({
     input: z.array(z.string()).default([]),
     output: z.array(z.string()).default([])
-  }).optional().default({ input: [], output: [] }),
+  }).default({ input: [], output: [] }),
   
-  isActive: z.boolean().optional().default(true)
+  isActive: z.boolean().default(true)
 })
 
 export type AgentFormData = z.infer<typeof agentFormSchema>

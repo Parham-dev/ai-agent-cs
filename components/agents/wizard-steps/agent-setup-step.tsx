@@ -65,7 +65,7 @@ export function AgentSetupStep({ form }: StepProps) {
               {errors.name && (
                 <p className="text-sm text-red-500 flex items-center gap-2">
                   <span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">!</span>
-                  {errors.name.message}
+                  {typeof errors.name?.message === 'string' ? errors.name.message : 'Invalid input'}
                 </p>
               )}
             </div>
@@ -172,7 +172,7 @@ export function AgentSetupStep({ form }: StepProps) {
               {errors.instructions && (
                 <p className="text-sm text-red-500 flex items-center gap-2">
                   <span className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs">!</span>
-                  {errors.instructions.message}
+                  {typeof errors.instructions?.message === 'string' ? errors.instructions.message : 'Invalid input'}
                 </p>
               )}
               <p className="text-sm text-gray-500 dark:text-gray-400 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-4 rounded-xl">

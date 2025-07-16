@@ -3,6 +3,7 @@ import { run, Agent, type Tool } from '@openai/agents';
 import { createShopifyTools } from '@/lib/integrations/shopify/tools';
 import { agentsService } from '@/lib/database/services/agents.service';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
+import { createApiLogger } from '@/lib/utils/logger';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -21,13 +22,35 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
   const methodError = validateMethod(request, ['POST']);
   if (methodError) return methodError;
 
+  // Create initial logger
+  let logger = createApiLogger({
+    endpoint: '/api/agents/chat',
+    requestId: crypto.randomUUID(),
+    userAgent: request.headers.get('user-agent') || 'unknown',
+  });
+
   try {
     const { agentId, message, conversationHistory = [], context = {} }: ChatRequest = await request.json();
 
-    console.log('Chat request received:', { agentId, message, conversationHistoryLength: conversationHistory.length });
+    // Update logger with agentId
+    logger = createApiLogger({
+      endpoint: '/api/agents/chat',
+      agentId,
+      requestId: crypto.randomUUID(),
+      userAgent: request.headers.get('user-agent') || 'unknown',
+    });
+
+    logger.info('Chat request received', { 
+      agentId, 
+      messageLength: message.length, 
+      conversationHistoryLength: conversationHistory.length 
+    });
 
     if (!agentId || !message) {
-      console.log('Validation failed:', { agentId: !!agentId, message: !!message });
+      logger.warn('Chat request validation failed', { 
+        hasAgentId: !!agentId, 
+        hasMessage: !!message 
+      });
       return Api.validationError({ 
         agentId: !agentId ? 'Agent ID is required' : undefined,
         message: !message ? 'Message is required' : undefined
@@ -35,32 +58,35 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     }
 
     // Get the agent with its integrations from the database
-    console.log('Fetching agent by ID:', agentId);
+    logger.debug('Fetching agent by ID');
     const agent = await agentsService.getAgentById(agentId);
     
     if (!agent) {
-      console.log('Agent not found:', agentId);
+      logger.warn('Agent not found');
       return Api.notFound('Agent', agentId);
     }
 
-    console.log('Agent found:', { id: agent.id, name: agent.name, isActive: agent.isActive });
+    logger.debug('Agent found', { 
+      id: agent.id, 
+      name: agent.name, 
+      isActive: agent.isActive 
+    });
 
     if (!agent.isActive) {
-      console.log('Agent is not active:', agentId);
+      logger.warn('Attempted to use inactive agent');
       return Api.error('AGENT_NOT_FOUND', 'Agent is not active');
     }
 
     // Get agent's integrations
-    console.log('Fetching agent with integrations:', agentId);
+    logger.debug('Fetching agent with integrations');
     const agentWithIntegrations = await agentsService.getAgentWithIntegrations(agentId);
     
     if (!agentWithIntegrations) {
-      console.log('Agent with integrations not found:', agentId);
+      logger.error('Agent with integrations not found after agent was found');
       return Api.notFound('Agent', agentId);
     }
 
-    console.log('Agent with integrations found:', { 
-      id: agentWithIntegrations.id, 
+    logger.debug('Agent with integrations found', { 
       integrationsCount: agentWithIntegrations.integrations.length 
     });
 
@@ -71,8 +97,8 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     for (const integration of agentWithIntegrations.integrations) {
       if (!integration.isActive) continue;
       
-      console.log('Processing integration:', { 
-        id: integration.id, 
+      logger.debug('Processing integration', { 
+        integrationId: integration.id,
         type: integration.type, 
         name: integration.name,
         hasCredentials: !!integration.credentials 
@@ -80,28 +106,36 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       
       switch (integration.type) {
         case 'shopify':
-          console.log('Shopify integration credentials:', integration.credentials);
-          
           if (!integration.credentials.storeName || !integration.credentials.accessToken) {
-            console.error('Missing required Shopify credentials:', integration.credentials);
+            logger.error('Missing required Shopify credentials', {
+              integrationId: integration.id,
+              hasStoreName: !!integration.credentials.storeName,
+              hasAccessToken: !!integration.credentials.accessToken
+            });
             continue; // Skip this integration
           }
           
           // Cast to ShopifyCredentials since we've validated the required fields
           const shopifyCredentials = integration.credentials as { storeName: string; accessToken: string };
           tools.push(...createShopifyTools(shopifyCredentials));
+          logger.debug('Added Shopify tools', { 
+            integrationId: integration.id,
+            storeName: shopifyCredentials.storeName
+          });
           break;
         // Future integrations will be added here
         default:
-          console.warn(`Unknown integration type: ${integration.type}`);
+          logger.warn('Unknown integration type', { 
+            type: integration.type,
+            integrationId: integration.id
+          });
       }
     }
 
     // Add universal tools based on agent configuration
     // TODO: Add OpenAI hosted tools, MCP tools, custom tools based on agent.tools
 
-    // For now, allow chat even without tools for testing
-    console.log('Tools configured:', tools.length);
+    logger.info('Tools configured for agent', { toolsCount: tools.length });
 
     // Create the OpenAI Agent instance with integration tools
     const agentConfig = agent.agentConfig && typeof agent.agentConfig === 'object' ? agent.agentConfig : {};
@@ -125,18 +159,25 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     const fullMessage = conversationMessages + `Customer: ${message}`;
 
     // Run the agent
-    const response = await run(openaiAgent, fullMessage, {
-      context: {
-        agentId,
-        agentName: agent.name,
-        organizationId: agent.organizationId,
-        integrations: agentWithIntegrations.integrations.map((i) => ({
-          id: i.id,
-          type: i.type,
-          name: i.name
-        })),
-        ...context
-      },
+    logger.debug('Running OpenAI agent');
+    const response = await logger.time('agent-execution', async () => {
+      return await run(openaiAgent, fullMessage, {
+        context: {
+          agentId,
+          agentName: agent.name,
+          organizationId: agent.organizationId,
+          integrations: agentWithIntegrations.integrations.map((i) => ({
+            id: i.id,
+            type: i.type,
+            name: i.name
+          })),
+          ...context
+        },
+      });
+    });
+
+    logger.info('Chat request completed successfully', {
+      responseLength: response.finalOutput?.length || 0
     });
 
     return Api.success({
@@ -146,7 +187,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     });
 
   } catch (error) {
-    console.error('Chat error:', error);
+    logger.error('Chat request failed', {}, error as Error);
     
     return Api.error(
       'CHAT_ERROR',

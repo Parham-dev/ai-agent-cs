@@ -8,16 +8,18 @@ import { agentsClient } from '@/lib/agents/client'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
+import { createClientLogger } from '@/lib/utils/client-logger'
 
 export default function NewAgentPage() {
   const router = useRouter()
+  const logger = createClientLogger('NewAgentPage')
 
   const handleSave = async (data: AgentFormData) => {
     try {
-      console.log('Creating agent with data:', {
+      logger.info('Creating agent', {
         name: data.name,
         integrationsCount: data.integrationConfigurations?.length || 0,
-        integrations: data.integrationConfigurations
+        action: 'agent-creation'
       });
 
       // 1. Create the agent first
@@ -43,14 +45,17 @@ export default function NewAgentPage() {
         }
       })
 
-      console.log('Agent created:', agent.id);
+      logger.info('Agent created successfully', { agentId: agent.id });
 
       // 2. Create integrations for this agent
       if (data.integrationConfigurations && data.integrationConfigurations.length > 0) {
-        console.log('Creating', data.integrationConfigurations.length, 'integrations...');
+        logger.info('Creating integrations', { integrationsCount: data.integrationConfigurations.length });
         
         for (const integrationConfig of data.integrationConfigurations) {
-          console.log('Creating integration:', integrationConfig.name, 'of type', integrationConfig.type);
+          logger.debug('Creating integration', { 
+            name: integrationConfig.name, 
+            type: integrationConfig.type 
+          });
           
           const response = await fetch('/api/integrations', {
             method: 'POST',
@@ -69,22 +74,22 @@ export default function NewAgentPage() {
           })
           
           const result = await response.json();
-          console.log('Integration creation result:', result);
+          logger.debug('Integration creation result', { result });
           
           if (!response.ok) {
             throw new Error(`Failed to create integration: ${result.error?.message || 'Unknown error'}`);
           }
         }
         
-        console.log('All integrations created successfully');
+        logger.info('All integrations created successfully');
       } else {
-        console.log('No integrations to create');
+        logger.debug('No integrations to create');
       }
 
       toast.success('Agent created successfully!')
       router.push(`/dashboard/agents/${agent.id}`)
     } catch (error) {
-      console.error('Failed to create agent:', error)
+      logger.error('Failed to create agent', {}, error as Error)
       toast.error('Failed to create agent. Please try again.')
     }
   }

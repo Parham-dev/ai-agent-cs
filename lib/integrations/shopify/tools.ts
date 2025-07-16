@@ -2,6 +2,7 @@ import { tool } from '@openai/agents';
 import { z } from 'zod';
 import { ShopifyClient } from './client';
 import { ShopifyCredentials, ProductSummary, ProductListItem, ShopifyVariant, ShopifyImage, ShopifyOption } from './types';
+import { createIntegrationLogger } from '@/lib/utils/logger';
 
 /**
  * Creates Shopify tools for an agent with the given credentials
@@ -9,7 +10,11 @@ import { ShopifyCredentials, ProductSummary, ProductListItem, ShopifyVariant, Sh
  * @returns Array of configured Shopify tools
  */
 export function createShopifyTools(credentials: ShopifyCredentials) {
-  console.log('Creating Shopify tools with credentials:', { 
+  const logger = createIntegrationLogger('shopify', {
+    storeName: credentials.storeName
+  });
+  
+  logger.debug('Creating Shopify tools', { 
     storeName: credentials.storeName, 
     hasAccessToken: !!credentials.accessToken 
   });
@@ -43,7 +48,7 @@ export function createShopifyTools(credentials: ShopifyCredentials) {
           ).join('\n\n');
 
       } catch (error) {
-        console.error('Search products error:', error);
+        logger.error('Failed to search products', { query, limit }, error as Error);
         return 'Error: Failed to search products. Please try again.';
       }
     }
@@ -90,7 +95,7 @@ export function createShopifyTools(credentials: ShopifyCredentials) {
           product.options.map((option: ShopifyOption) => `• ${option.name}: ${option.values.join(', ')}`).join('\n');
 
       } catch (error) {
-        console.error('Get product details error:', error);
+        logger.error('Failed to get product details', { productId }, error as Error);
         return 'Error: Failed to get product details. Please try again.';
       }
     }
@@ -122,7 +127,7 @@ export function createShopifyTools(credentials: ShopifyCredentials) {
           ).join('\n\n');
 
       } catch (error) {
-        console.error('List products error:', error);
+        logger.error('Failed to list products', { limit, status }, error as Error);
         return 'Error: Failed to list products. Please try again.';
       }
     }
