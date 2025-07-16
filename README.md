@@ -1,6 +1,8 @@
 # 🤖 AI Customer Service Agent Platform
 
-A powerful platform that enables **business owners** to create intelligent AI customer service agents using OpenAI Agents SDK and Model Context Protocol (MCP). Business owners configure integrations, select capabilities, and deploy AI agents as embeddable widgets for their customers.
+> **⚠️ ACTIVE DEVELOPMENT** - This project is under active development. Features may change, and breaking changes may occur. Use in production at your own risk. Contributions and feedback welcome!
+
+A powerful open-source platform that enables **business owners** to create intelligent AI customer service agents using OpenAI Agents SDK and Model Context Protocol (MCP). Business owners configure integrations, select capabilities, and deploy AI agents as embeddable widgets for their customers.
 
 ## 🌟 Platform Overview
 
@@ -62,38 +64,60 @@ Get instant, intelligent support:
 - **OpenAI Agents SDK Integration** - Full TypeScript implementation
 - **Shopify Integration** - Product catalog, inventory, pricing
 - **Dynamic Tool System** - Configurable capabilities per agent
-- **Embeddable Chat Widget** - Ready-to-deploy customer interface
+- **Embeddable Chat Widget** - Cross-domain widget with JWT authentication
+- **CORS Security** - Domain validation and cross-origin support
 - **Real-time Validation** - Test integrations before deployment
 
 ### 🔄 In Development  
-- Multi-integration support (Shopify + Stripe + more)
-- Additional MCP server integrations
-- Enhanced business owner dashboard
-- Advanced agent configuration options
+- **Widget Security** - Enhanced domain whitelisting and rate limiting
+- **Multi-integration Support** - Shopify + Stripe + more platforms
+- **Additional MCP Servers** - File system, memory, database tools
+- **Enhanced Dashboard** - Improved business owner configuration UI
+- **Analytics & Monitoring** - Conversation metrics and performance insights
+- **Production Deployment** - CDN distribution and scaling infrastructure
 
 ## 🛠️ Quick Start
 
 ### Prerequisites
 - Node.js 18+
 - OpenAI API key
+- PostgreSQL database
 - Business platform credentials (Shopify, Stripe, etc.)
 
 ### Installation
 
 ```bash
-# Clone and setup
+# Clone the repository
 git clone https://github.com/yourusername/ai-customer-service-platform.git
 cd ai-customer-service-platform
 
 # Install dependencies
 npm install
 
-# Configure environment
-cp .env.example .env
-# Add your OpenAI API key and platform credentials
+# Configure environment variables
+cp .env.example .env.local
+# Edit .env.local with your configuration:
+# - DATABASE_URL="postgresql://..."
+# - OPENAI_API_KEY="sk-..."
+# - JWT_SECRET="your-secure-jwt-secret"
+# - SHOPIFY_APP_URL="your-shopify-app-url"
+
+# Set up database
+npx prisma migrate dev
+npx prisma db seed
 
 # Start development server
 npm run dev
+```
+
+### Widget Demo
+
+```bash
+# After setup, visit the widget demo:
+# http://localhost:3000/widget/demo/[AGENT_ID]
+
+# Get agent ID from seeded data or create one via:
+# http://localhost:3000/setup/shopify
 ```
 
 ### Create Your First Agent
@@ -187,17 +211,25 @@ const agentConfig = {
 
 ### Embeddable Widget
 ```html
-<!-- Add to your website -->
-<script src="https://your-domain.com/agent-widget.js"></script>
+<!-- Add to any website -->
 <script>
-  CustomerServiceAgent.init({
-    agentId: 'your-agent-id',
-    apiKey: 'your-public-key',
+  window.CustomerAgent = {
+    agentId: 'your-agent-id-here',
     position: 'bottom-right',
-    theme: 'light'
-  });
+    theme: 'auto',
+    primaryColor: '#007bff',
+    greeting: 'Hello! How can I help you today?'
+  };
 </script>
+<script src="https://your-domain.com/widget/widget.js"></script>
 ```
+
+### Widget Security Features
+- **JWT Authentication** - Secure API access with signed tokens
+- **Domain Validation** - Restrict widget usage to authorized domains
+- **CORS Protection** - Cross-origin request security
+- **Rate Limiting** - Prevent API abuse and spam
+- **CDN Distribution** - Fast global widget delivery
 
 ### API Integration
 ```javascript
