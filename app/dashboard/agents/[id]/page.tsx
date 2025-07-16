@@ -17,18 +17,14 @@ import {
   Settings, 
   Copy,
   Calendar,
-  Activity,
   Brain,
-  Wrench
+  Wrench,
+  Plug
 } from 'lucide-react'
 import { agentsClient } from '@/lib/agents/client'
+import { AgentIntegrationsManager } from '@/components/agent-integrations'
 import { toast } from 'sonner'
-import type { AgentWithStats } from '@/lib/database/services/agents.service'
-
-interface Agent extends Omit<AgentWithStats, 'createdAt' | 'updatedAt'> {
-  createdAt: string
-  updatedAt: string
-}
+import type { Agent } from '@/lib/api/types'
 
 export default function AgentDetailPage() {
   const router = useRouter()
@@ -45,12 +41,7 @@ export default function AgentDetailPage() {
       setLoading(true)
       setError(null)
       const agentData = await agentsClient.getAgent(agentId)
-      // Convert dates to strings since API returns them as strings
-      setAgent({
-        ...agentData,
-        createdAt: new Date(agentData.createdAt).toISOString(),
-        updatedAt: new Date(agentData.updatedAt).toISOString()
-      } as Agent)
+      setAgent(agentData)
     } catch (err) {
       console.error('Failed to fetch agent:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch agent')
@@ -67,12 +58,7 @@ export default function AgentDetailPage() {
       const updatedAgent = await agentsClient.updateAgent(agent.id, { 
         isActive: !agent.isActive 
       })
-      // Convert dates to strings since API returns them as strings
-      setAgent({
-        ...updatedAgent,
-        createdAt: new Date(updatedAgent.createdAt).toISOString(),
-        updatedAt: new Date(updatedAgent.updatedAt).toISOString()
-      } as Agent)
+      setAgent(updatedAgent)
       toast.success(`Agent ${updatedAgent.isActive ? 'activated' : 'deactivated'} successfully`)
     } catch (err) {
       console.error('Failed to toggle agent status:', err)
@@ -210,7 +196,7 @@ export default function AgentDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="bg-muted rounded-lg p-4">
-                  <pre className="whitespace-pre-wrap text-sm">{agent.instructions}</pre>
+                  <pre className="whitespace-pre-wrap text-sm">{agent.systemPrompt || 'No system prompt configured'}</pre>
                 </div>
               </CardContent>
             </Card>
@@ -221,45 +207,24 @@ export default function AgentDetailPage() {
                 <CardTitle className="flex items-center space-x-2">
                   <Wrench className="h-5 w-5" />
                   <span>Tools</span>
-                  <Badge variant="outline">{agent.tools.length}</Badge>
+                  <Badge variant="outline">0</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {agent.tools.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {agent.tools.map((tool) => (
-                      <Badge key={tool} variant="secondary">
-                        {tool}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No tools configured</p>
-                )}
+                <p className="text-muted-foreground">Tools are now managed through integrations</p>
               </CardContent>
             </Card>
 
-            {/* Activity */}
+            {/* Integrations */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
-                  <MessageSquare className="h-5 w-5" />
-                  <span>Recent Activity</span>
+                  <Plug className="h-5 w-5" />
+                  <span>Integrations</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-center py-8">
-                  <div className="text-center">
-                    <Activity className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No recent conversations</p>
-                    <Button variant="outline" size="sm" className="mt-2" asChild>
-                      <Link href={`/chat/${agent.id}`}>
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Start Chat
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
+                {agent && <AgentIntegrationsManager agentId={agent.id} agentName={agent.name} />}
               </CardContent>
             </Card>
           </div>
@@ -302,8 +267,8 @@ export default function AgentDetailPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Conversations</label>
-                  <p className="text-sm mt-1">{agent._count?.conversations || 0}</p>
+                  <label className="text-sm font-medium text-muted-foreground">Integrations</label>
+                  <p className="text-sm mt-1">{agent.integrations?.length || 0}</p>
                 </div>
               </CardContent>
             </Card>

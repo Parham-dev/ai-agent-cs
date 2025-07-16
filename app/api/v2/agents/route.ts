@@ -18,7 +18,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
 
   const agents = await agentsServiceV2.getAgents(filters)
   
-  return Api.success({ agents })
+  return Api.success(agents)
 });
 
 export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
@@ -54,5 +54,5 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     systemPrompt: data.systemPrompt.trim(),
   })
   
-  return Api.success({ agent }, undefined, 201)
+  return Api.success(agent, undefined, 201)
 });

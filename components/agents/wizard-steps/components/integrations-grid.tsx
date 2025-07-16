@@ -134,6 +134,7 @@ export function IntegrationsGrid({
       
       {/* Add Integration Button */}
       <Card 
+        key="add-integration"
         className="border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer"
         onClick={onAddIntegration}
       >

@@ -83,12 +83,6 @@ model Agent {
   /// [AgentRules]
   rules          Json?    @default("{}")  // Custom rules and behavior settings
   
-  // Keep for compatibility during migration
-  instructions   String?  // Will be moved to systemPrompt
-  tools          String[] @default([])  // Will be handled separately
-  /// [AgentConfigData]
-  agentConfig    Json?    @default("{}")  // Will be migrated to rules + AgentIntegration
-  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

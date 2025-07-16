@@ -65,6 +65,124 @@ export const API_ERROR_CODES = {
 
 export type ApiErrorCode = typeof API_ERROR_CODES[keyof typeof API_ERROR_CODES];
 
+// V2 API Types
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Integration {
+  id: string;
+  organizationId: string;
+  name: string;
+  type: string;
+  description?: string;
+  isActive: boolean;
+  credentials: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Agent {
+  id: string;
+  organizationId: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  systemPrompt?: string;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  rules?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  integrations?: AgentIntegration[];
+}
+
+export interface AgentIntegration {
+  id: string;
+  agentId: string;
+  integrationId: string;
+  isEnabled: boolean;
+  selectedTools: string[];
+  config?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  integration?: Integration;
+}
+
+// Request/Response Types
+export interface CreateAgentRequest {
+  organizationId: string;
+  name: string;
+  description?: string;
+  systemPrompt?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  rules?: Record<string, unknown>;
+}
+
+export interface UpdateAgentRequest {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+  systemPrompt?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  rules?: Record<string, unknown>;
+}
+
+export interface CreateIntegrationRequest {
+  organizationId: string;
+  name: string;
+  type: string;
+  description?: string;
+  credentials: Record<string, unknown>;
+}
+
+export interface UpdateIntegrationRequest {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+  credentials?: Record<string, unknown>;
+}
+
+export interface CreateAgentIntegrationRequest {
+  agentId: string;
+  integrationId: string;
+  selectedTools: string[];
+  config?: Record<string, unknown>;
+}
+
+export interface AgentFilters {
+  organizationId?: string;
+  search?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface IntegrationFilters {
+  organizationId?: string;
+  type?: string;
+  search?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface IntegrationTool {
+  name: string;
+  description: string;
+  parameters?: Record<string, unknown>;
+}
+
 // HTTP Status Code mappings
 export const ERROR_STATUS_MAPPING: Record<ApiErrorCode, number> = {
   [API_ERROR_CODES.VALIDATION_ERROR]: 400,

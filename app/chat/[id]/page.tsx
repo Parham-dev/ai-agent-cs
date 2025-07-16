@@ -7,7 +7,7 @@ import { ArrowLeft, Send, Bot, User, Activity, Brain } from 'lucide-react'
 import { agentsClient } from '@/lib/agents/client'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type { AgentWithStats } from '@/lib/database/services/agents.service'
+import type { Agent } from '@/lib/api/types'
 
 interface Message {
   id: string
@@ -23,10 +23,6 @@ interface Message {
   }
 }
 
-interface Agent extends Omit<AgentWithStats, 'createdAt' | 'updatedAt'> {
-  createdAt: string
-  updatedAt: string
-}
 
 export default function AgentChatPage() {
   const params = useParams()
@@ -47,11 +43,7 @@ export default function AgentChatPage() {
       setAgentLoading(true)
       setError(null)
       const agentData = await agentsClient.getAgent(agentId)
-      setAgent({
-        ...agentData,
-        createdAt: new Date(agentData.createdAt).toISOString(),
-        updatedAt: new Date(agentData.updatedAt).toISOString()
-      } as Agent)
+      setAgent(agentData)
     } catch (err) {
       console.error('Failed to fetch agent:', err)
       setError(err instanceof Error ? err.message : 'Failed to load agent')
@@ -82,7 +74,7 @@ export default function AgentChatPage() {
 
     try {
       // Send message to chat API
-      const response = await fetch('/api/agents/chat', {
+      const response = await fetch('/api/v2/agents/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +144,7 @@ export default function AgentChatPage() {
         role: 'assistant',
         content: `👋 Hello! I'm **${agent.name}**.
 
-${agent.instructions}
+${agent.systemPrompt || 'I\'m here to help you!'}
 
 How can I help you today?`,
         timestamp: new Date()
@@ -235,10 +227,10 @@ How can I help you today?`,
                 <div className="flex items-center space-x-2 text-sm opacity-90">
                   <Activity className="w-4 h-4" />
                   <span>Ready to chat</span>
-                  {agent.tools.length > 0 && (
+                  {agent.integrations && agent.integrations.length > 0 && (
                     <>
                       <span>•</span>
-                      <span>{agent.tools.length} tools available</span>
+                      <span>{agent.integrations.length} integrations connected</span>
                     </>
                   )}
                 </div>

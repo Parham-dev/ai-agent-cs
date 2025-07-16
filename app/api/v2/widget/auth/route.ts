@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { agentsService } from '@/lib/database/services/agents.service';
+import { agentsServiceV2 } from '@/lib/database/services/v2/agents.service';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
 import { sign } from 'jsonwebtoken';
@@ -68,7 +68,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     }
 
     // Get agent with its integrations
-    const agent = await agentsService.getAgentById(agentId);
+    const agent = await agentsServiceV2.getAgentById(agentId);
     
     if (!agent) {
       logger.warn('Widget auth: agent not found', { agentId });
@@ -79,7 +79,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       agentId: agent.id,
       name: agent.name,
       isActive: agent.isActive,
-      integrationsCount: (agent.agentConfig as PrismaJson.AgentConfigData)?.integrations?.length || 0
+      integrationsCount: agent.agentIntegrations?.length || 0
     });
 
     // Check if agent is active
@@ -110,7 +110,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       agent: {
         id: agent.id,
         name: agent.name,
-        greeting: extractGreeting(agent.systemPrompt || agent.instructions || `Hello! I'm ${agent.name}.`),
+        greeting: extractGreeting(agent.systemPrompt || `Hello! I'm ${agent.name}.`),
         isActive: agent.isActive
       },
       config: {
@@ -125,14 +125,13 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     };
 
     // Add integration-specific features
-    const agentIntegrations = (agent.agentConfig as PrismaJson.AgentConfigData)?.integrations || [];
+    const agentIntegrations = agent.agentIntegrations || [];
     if (agentIntegrations.length > 0) {
       response.config.features.push('integrations');
       
-      // Add integration types to features - need to get integration type from database
-      // For now, we'll skip adding the integration type feature
-      // since we don't have the integration type directly in the config
-      // TODO: Consider storing integration type in agent config for performance
+      // Add integration types to features
+      const integrationTypes = agentIntegrations.map(ai => ai.integration?.type).filter(Boolean);
+      response.config.features.push(...integrationTypes);
     }
 
     logger.info('Widget authentication successful', {

@@ -87,7 +87,7 @@ export interface AgentIntegrationV2 {
 export interface AgentV2WithRelations extends AgentV2 {
   organization?: Pick<OrganizationV2, 'name' | 'slug'>
   agentIntegrations?: (AgentIntegrationV2 & {
-    integration: Pick<IntegrationV2, 'name' | 'type' | 'isActive'>
+    integration: Pick<IntegrationV2, 'id' | 'name' | 'type' | 'isActive' | 'credentials'>
   })[]
 }
 

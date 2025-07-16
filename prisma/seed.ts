@@ -40,7 +40,7 @@ async function main() {
     data: {
       organizationId: org.id,
       name: 'Customer Support Agent',
-      instructions: `You are a helpful customer service agent for Demo Store. 
+      systemPrompt: `You are a helpful customer service agent for Demo Store. 
       You can help customers with:
       - Product information and recommendations
       - Order status and tracking
@@ -48,12 +48,6 @@ async function main() {
       - General store questions
       
       Always be friendly, professional, and helpful.`,
-      tools: [
-        'searchProducts',
-        'getProductDetails', 
-        'listProducts',
-        'checkInventory'
-      ],
       model: 'gpt-4o'
     }
   })

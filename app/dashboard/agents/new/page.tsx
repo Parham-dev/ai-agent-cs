@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { AgentCreationWizard, type AgentFormData } from '@/components/agents/agent-creation-wizard'
 import { agentsClient } from '@/lib/agents/client'
+import { agentIntegrationsClient } from '@/lib/agent-integrations/client'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
@@ -22,15 +23,15 @@ export default function NewAgentPage() {
         action: 'agent-creation'
       });
 
-      // 1. Create the agent with integration IDs in agentConfig
+      // Create the agent using v2 API format
       const agent = await agentsClient.createAgent({
-        organizationId: data.organizationId,
         name: data.name,
-        instructions: data.instructions,
-        tools: data.selectedTools,
+        description: data.description,
+        systemPrompt: data.instructions,
         model: data.model,
-        isActive: data.isActive,
-        agentConfig: {
+        temperature: data.temperature,
+        maxTokens: 4000,
+        rules: {
           behavior: {
             temperature: data.temperature,
             topP: data.topP,
@@ -42,13 +43,42 @@ export default function NewAgentPage() {
             customTools: data.customTools
           },
           integrations: data.integrationConfigurations?.map(config => ({
-            id: config.id, // Store only the integration ID
+            id: config.id,
             selectedTools: config.selectedTools || [],
             settings: config.settings || {}
           })) || [],
           guardrails: data.guardrails
         }
       })
+
+      // Create agent-integration relationships if there are any configured integrations
+      if (data.integrationConfigurations && data.integrationConfigurations.length > 0) {
+        logger.info('Creating agent-integration relationships', {
+          agentId: agent.id,
+          integrationsCount: data.integrationConfigurations.length
+        });
+
+        for (const config of data.integrationConfigurations) {
+          try {
+            await agentIntegrationsClient.connectAgentToIntegration({
+              agentId: agent.id,
+              integrationId: config.id,
+              selectedTools: config.selectedTools || []
+            });
+            logger.info('Created agent-integration relationship', {
+              agentId: agent.id,
+              integrationId: config.id,
+              toolsCount: config.selectedTools?.length || 0
+            });
+          } catch (integrationError) {
+            logger.error('Failed to create agent-integration relationship', {
+              agentId: agent.id,
+              integrationId: config.id
+            }, integrationError as Error);
+            // Continue with other integrations even if one fails
+          }
+        }
+      }
 
       logger.info('Agent created successfully', { 
         agentId: agent.id,
@@ -63,9 +93,6 @@ export default function NewAgentPage() {
     }
   }
 
-  const handleCancel = () => {
-    router.push('/dashboard/agents')
-  }
 
   return (
     <DashboardLayout 
@@ -85,7 +112,6 @@ export default function NewAgentPage() {
 
         <AgentCreationWizard
           onSave={handleSave}
-          onCancel={handleCancel}
         />
       </div>
     </DashboardLayout>

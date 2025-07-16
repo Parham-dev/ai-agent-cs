@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
   // Handle CORS for widget API endpoints
-  if (request.nextUrl.pathname.startsWith('/api/widget/') || 
-      request.nextUrl.pathname.startsWith('/api/agents/chat')) {
+  if (request.nextUrl.pathname.startsWith('/api/v2/widget/') || 
+      request.nextUrl.pathname.startsWith('/api/v2/agents/chat')) {
     
     const origin = request.headers.get('origin');
     const response = NextResponse.next();
@@ -62,7 +62,7 @@ function isValidProductionOrigin(origin: string): boolean {
 
 export const config = {
   matcher: [
-    '/api/widget/:path*',
-    '/api/agents/chat'
+    '/api/v2/widget/:path*',
+    '/api/v2/agents/chat'
   ]
 };

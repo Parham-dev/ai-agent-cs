@@ -181,7 +181,7 @@
       try {
         utils.log('Authenticating widget...');
         
-        const response = await fetch(`${widgetConfig.apiUrl}/api/widget/auth`, {
+        const response = await fetch(`${widgetConfig.apiUrl}/api/v2/widget/auth`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

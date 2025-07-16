@@ -17,13 +17,13 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
   // If agentId is provided, get integrations for that agent
   if (filters.agentId) {
     const integrations = await agentIntegrationsServiceV2.getAgentIntegrations(filters.agentId)
-    return Api.success({ integrations })
+    return Api.success(integrations)
   }
 
   // If integrationId is provided, get agents using that integration
   if (filters.integrationId) {
     const agents = await agentIntegrationsServiceV2.getIntegrationAgents(filters.integrationId)
-    return Api.success({ agents })
+    return Api.success(agents)
   }
 
   return Api.error(ErrorCodes.VALIDATION_ERROR, 'Must provide agentId or integrationId')

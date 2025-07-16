@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { run, Agent, type Tool, type MCPServerStdio } from '@openai/agents';
 import { createShopifyTools } from '@/lib/integrations/shopify/tools';
 import { createMCPClient } from '@/lib/mcp/client';
-import { agentsService } from '@/lib/database/services/agents.service';
-import { integrationsService } from '@/lib/database/services/integrations.service';
+import { agentsServiceV2 } from '@/lib/database/services/v2/agents.service';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
 import { verifyWidgetToken, extractBearerToken } from '@/lib/utils/jwt';
@@ -27,7 +26,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
   // Create initial logger
   let logger = createApiLogger({
-    endpoint: '/api/agents/chat',
+    endpoint: '/api/v2/agents/chat',
     requestId: crypto.randomUUID(),
     userAgent: request.headers.get('user-agent') || 'unknown',
   });
@@ -53,7 +52,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
     // Update logger with agentId and auth context
     logger = createApiLogger({
-      endpoint: '/api/agents/chat',
+      endpoint: '/api/v2/agents/chat',
       agentId,
       requestId: crypto.randomUUID(),
       userAgent: request.headers.get('user-agent') || 'unknown',
@@ -81,35 +80,26 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
     // Get the agent with its integrations from the database
     logger.debug('Fetching agent by ID');
-    const agentForValidation = await agentsService.getAgentById(agentId);
+    const agentData = await agentsServiceV2.getAgentById(agentId);
     
-    if (!agentForValidation) {
+    if (!agentData) {
       logger.warn('Agent not found');
       return Api.notFound('Agent', agentId);
     }
 
     logger.debug('Agent found', { 
-      id: agentForValidation.id, 
-      name: agentForValidation.name, 
-      isActive: agentForValidation.isActive 
+      id: agentData.id, 
+      name: agentData.name, 
+      isActive: agentData.isActive 
     });
 
-    if (!agentForValidation.isActive) {
+    if (!agentData.isActive) {
       logger.warn('Attempted to use inactive agent');
       return Api.error('AGENT_NOT_FOUND', 'Agent is not active');
     }
 
-    // Get agent - integrations are now in agentConfig
-    logger.debug('Fetching agent');
-    const agentData = await agentsService.getAgentById(agentId);
-    
-    if (!agentData) {
-      logger.error('Agent not found');
-      return Api.notFound('Agent', agentId);
-    }
-
-    // Get integration configurations from agent config
-    const agentIntegrations = agentData.agentConfig?.integrations || [];
+    // Get agent integrations from v2 structure
+    const agentIntegrations = agentData.agentIntegrations || [];
     logger.debug('Agent integration configs found', { 
       integrationsCount: agentIntegrations.length 
     });
@@ -127,16 +117,14 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       logger.debug('Using MCP servers for integrations');
       
       try {
-        // Prepare integrations for MCP client - need to fetch full integration details
+        // Prepare integrations for MCP client - integrations are already loaded in v2
         const mcpIntegrations = [];
         
         for (const agentIntegration of agentIntegrations) {
-          // Fetch the full integration details from the database
-          const fullIntegration = await integrationsService.getIntegrationById(agentIntegration.id);
-          if (fullIntegration && fullIntegration.isActive) {
+          if (agentIntegration.integration && agentIntegration.integration.isActive) {
             mcpIntegrations.push({
-              type: fullIntegration.type,
-              credentials: fullIntegration.credentials,
+              type: agentIntegration.integration.type,
+              credentials: agentIntegration.integration.credentials,
               // settings removed in V2 - tools are now dynamic from MCP servers
             });
           }
@@ -162,8 +150,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       
       // Add integration-specific tools (legacy approach)
       for (const agentIntegration of agentIntegrations) {
-        // Fetch the full integration details from the database
-        const integration = await integrationsService.getIntegrationById(agentIntegration.id);
+        const integration = agentIntegration.integration;
         if (!integration || !integration.isActive) continue;
         
         logger.debug('Processing integration', { 
@@ -215,14 +202,14 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     });
 
     // Create the OpenAI Agent instance with integration tools
-    const agentConfig = agentData.agentConfig && typeof agentData.agentConfig === 'object' ? agentData.agentConfig : {};
+    const agentConfig = agentData.rules && typeof agentData.rules === 'object' ? agentData.rules : {};
     // Remove tools from agentConfig to avoid conflict with our integration tools
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { tools: _, ...cleanAgentConfig } = agentConfig;
     
     const openaiAgent = new Agent({
       name: agentData.name,
-      instructions: agentData.systemPrompt || agentData.instructions || `You are ${agentData.name}, an AI assistant.`,
+      instructions: agentData.systemPrompt || `You are ${agentData.name}, an AI assistant.`,
       model: agentData.model,
       tools: tools.length > 0 ? tools : undefined, // Legacy context-passing tools
       mcpServers: mcpServers.length > 0 ? mcpServers : undefined, // MCP servers
@@ -247,10 +234,10 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
             agentId,
             agentName: agentData.name,
             organizationId: agentData.organizationId,
-            integrations: agentIntegrations.map((integration: {id: string, type?: string, name?: string}) => ({
-              id: integration.id,
-              type: integration.type || 'unknown',
-              name: integration.name || 'unknown'
+            integrations: agentIntegrations.map((ai: { integrationId: string; integration?: { type?: string; name?: string } }) => ({
+              id: ai.integrationId,
+              type: ai.integration?.type || 'unknown',
+              name: ai.integration?.name || 'unknown'
             })),
             ...context
           },

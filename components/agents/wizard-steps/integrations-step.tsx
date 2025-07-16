@@ -10,12 +10,14 @@ import {
   type IntegrationDisplayItem
 } from './components'
 import { AVAILABLE_INTEGRATIONS } from './components/integration-select-modal'
+import { integrationsClient } from '@/lib/integrations/client'
 import type { IntegrationCredentials } from '@/lib/types/integrations'
 
 interface OrganizationIntegration {
   id: string
   type: string
   name: string
+  description?: string
   credentials: IntegrationCredentials
   settings: Record<string, unknown>
   isActive: boolean
@@ -28,15 +30,15 @@ export function IntegrationsStep({ form }: StepProps) {
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0) // Force re-render key
   
-  // Fetch organization integrations on component mount
+  // Fetch organization integrations on component mount using v2 API
   useEffect(() => {
     async function fetchOrganizationIntegrations() {
       try {
         setLoading(true)
-        const response = await fetch('/api/integrations')
+        const response = await fetch('/api/v2/integrations')
         if (response.ok) {
           const data = await response.json()
-          const integrations = data.data?.integrations || []
+          const integrations = data.data || []
           setOrganizationIntegrations(integrations)
           console.log('Fetched organization integrations:', integrations)
         } else {
@@ -80,7 +82,7 @@ export function IntegrationsStep({ form }: StepProps) {
       const selectedToolsCount = agentConfig?.selectedTools?.length || 0
       
       const displayItem = {
-        id: orgIntegration.type,
+        id: orgIntegration.id, // Use the actual database ID as the unique key
         name: orgIntegration.name,
         type: orgIntegration.type,
         icon: availableIntegration?.icon || '🔗',
@@ -121,11 +123,11 @@ export function IntegrationsStep({ form }: StepProps) {
     
     if (enabled) {
       // Add this integration to the agent's configuration
-      const orgIntegration = organizationIntegrations.find(org => org.type === integrationId)
-      const availableIntegration = AVAILABLE_INTEGRATIONS.find(ai => ai.id === integrationId)
+      const orgIntegration = organizationIntegrations.find(org => org.id === integrationId)
+      const availableIntegration = AVAILABLE_INTEGRATIONS.find(ai => ai.id === orgIntegration?.type)
       
       if (orgIntegration && availableIntegration) {
-        const existingConfigIndex = currentConfigs.findIndex((config: { type: string }) => config.type === integrationId)
+        const existingConfigIndex = currentConfigs.findIndex((config: { type: string }) => config.type === orgIntegration.type)
         
         const newIntegrationConfig = {
           id: orgIntegration.id, // Use the actual organization integration ID
@@ -157,8 +159,9 @@ export function IntegrationsStep({ form }: StepProps) {
         setRefreshKey(prev => prev + 1)
       }
     } else {
-      // Remove this integration from the agent's configuration
-      const updatedConfigs = currentConfigs.filter((config: { type: string }) => config.type !== integrationId)
+      // Remove this integration from the agent's configuration  
+      const orgIntegration = organizationIntegrations.find(org => org.id === integrationId)
+      const updatedConfigs = currentConfigs.filter((config: { type: string }) => config.type !== orgIntegration?.type)
       form.setValue('integrationConfigurations', updatedConfigs)
       form.trigger('integrationConfigurations') // Force form update
       console.log('Removed integration from agent config:', integrationId)
@@ -170,50 +173,112 @@ export function IntegrationsStep({ form }: StepProps) {
   }
   
   const handleEditIntegration = (integrationId: string) => {
+    // Find the integration by database ID and get its type
+    const orgIntegration = organizationIntegrations.find(org => org.id === integrationId)
+    const integrationType = orgIntegration?.type
+    
+    if (!integrationType) return // Safety check
+    
     // Toggle the configuration - close if already open for the same integration
-    if (selectedIntegration === integrationId) {
+    if (selectedIntegration === integrationType) {
       setSelectedIntegration(null)
     } else {
-      setSelectedIntegration(integrationId)
+      setSelectedIntegration(integrationType)
     }
   }
 
-  const handleSaveIntegration = (integrationData: Omit<ConfiguredIntegration, 'id' | 'name' | 'icon' | 'color'>) => {
+  const handleSaveIntegration = async (integrationData: Omit<ConfiguredIntegration, 'id' | 'name' | 'icon' | 'color'>) => {
     if (!selectedIntegration) return
     
     const availableIntegration = AVAILABLE_INTEGRATIONS.find(i => i.id === selectedIntegration)
-    const orgIntegration = organizationIntegrations.find(org => org.type === selectedIntegration)
-    if (!availableIntegration || !orgIntegration) return
+    if (!availableIntegration) return
 
-    const newIntegrationConfig = {
-      id: orgIntegration.id, // Use the actual organization integration ID
-      name: orgIntegration.name,
-      type: orgIntegration.type,
-      credentials: integrationData.credentials,
-      selectedTools: integrationData.selectedTools || [],
-      isConnected: integrationData.isConnected || false,
-      settings: {
-        selectedTools: integrationData.selectedTools || [],
-        isConnected: integrationData.isConnected || false
+    try {
+      // Check if integration already exists in organization
+      const existingOrgIntegration = organizationIntegrations.find(org => org.type === selectedIntegration)
+      
+      let integrationId: string
+      let integrationName: string
+
+      if (existingOrgIntegration) {
+        // Scenario 1: Integration exists in DB - just update if credentials changed
+        console.log('Integration exists in DB, using existing:', existingOrgIntegration.id)
+        integrationId = existingOrgIntegration.id
+        integrationName = existingOrgIntegration.name
+        
+        // If credentials are different, update the integration
+        const credentialsChanged = JSON.stringify(existingOrgIntegration.credentials) !== JSON.stringify(integrationData.credentials)
+        if (credentialsChanged) {
+          console.log('Credentials changed, updating integration in DB')
+          await integrationsClient.updateIntegration(integrationId, {
+            credentials: integrationData.credentials,
+            description: existingOrgIntegration.description
+          })
+        }
+      } else {
+        // Scenario 2: New integration - create it in DB first
+        console.log('Creating new integration in DB for type:', selectedIntegration)
+        const newIntegration = await integrationsClient.createIntegration({
+          type: selectedIntegration,
+          name: availableIntegration.name,
+          description: `${availableIntegration.name} integration`,
+          credentials: integrationData.credentials
+        })
+        
+        integrationId = newIntegration.id
+        integrationName = newIntegration.name
+        
+        // Update local state with new integration (convert to OrganizationIntegration format)
+        const orgIntegration: OrganizationIntegration = {
+          id: newIntegration.id,
+          type: newIntegration.type,
+          name: newIntegration.name,
+          description: newIntegration.description,
+          credentials: newIntegration.credentials as IntegrationCredentials,
+          settings: {}, // New integrations start with empty settings
+          isActive: newIntegration.isActive
+        }
+        setOrganizationIntegrations(prev => [...prev, orgIntegration])
+        console.log('Created new integration:', newIntegration)
       }
-    }
 
-    // Update form data - replace existing or add new
-    const currentConfigs = form.getValues('integrationConfigurations') || []
-    const existingIndex = currentConfigs.findIndex((config: { type: string }) => config.type === orgIntegration.type)
-    
-    if (existingIndex !== -1) {
-      // Update existing
-      currentConfigs[existingIndex] = newIntegrationConfig
-    } else {
-      // Add new
-      currentConfigs.push(newIntegrationConfig)
-    }
-    
-    form.setValue('integrationConfigurations', currentConfigs)
-    console.log('Saved integration config for agent:', orgIntegration.id)
+      // Now create/update the form configuration for this agent
+      const newIntegrationConfig = {
+        id: integrationId,
+        name: integrationName,
+        type: selectedIntegration,
+        credentials: integrationData.credentials,
+        selectedTools: integrationData.selectedTools || [],
+        isConnected: integrationData.isConnected || false,
+        settings: {
+          selectedTools: integrationData.selectedTools || [],
+          isConnected: integrationData.isConnected || false
+        }
+      }
 
-    setSelectedIntegration(null)
+      // Update form data - replace existing or add new
+      const currentConfigs = form.getValues('integrationConfigurations') || []
+      const existingIndex = currentConfigs.findIndex((config: { type: string }) => config.type === selectedIntegration)
+      
+      if (existingIndex !== -1) {
+        // Update existing
+        currentConfigs[existingIndex] = newIntegrationConfig
+      } else {
+        // Add new
+        currentConfigs.push(newIntegrationConfig)
+      }
+      
+      form.setValue('integrationConfigurations', currentConfigs)
+      console.log('Saved integration config for agent:', integrationId)
+
+      // Force refresh to show updated state
+      setRefreshKey(prev => prev + 1)
+      setSelectedIntegration(null)
+      
+    } catch (error) {
+      console.error('Failed to save integration:', error)
+      // TODO: Show error toast to user
+    }
   }
 
 

@@ -19,12 +19,7 @@ import {
 } from 'lucide-react'
 import { agentsClient } from '@/lib/agents/client'
 import { toast } from 'sonner'
-import type { AgentWithStats } from '@/lib/database/services/agents.service'
-
-interface Agent extends Omit<AgentWithStats, 'createdAt' | 'updatedAt'> {
-  createdAt: string
-  updatedAt: string
-}
+import type { Agent } from '@/lib/api/types'
 
 export default function AgentsPage() {
   const router = useRouter()
@@ -39,13 +34,7 @@ export default function AgentsPage() {
       setLoading(true)
       setError(null)
       const agentsData = await agentsClient.getAgents()
-      // Convert dates to strings for consistency
-      const formattedAgents = agentsData.map(agent => ({
-        ...agent,
-        createdAt: new Date(agent.createdAt).toISOString(),
-        updatedAt: new Date(agent.updatedAt).toISOString()
-      })) as Agent[]
-      setAgents(formattedAgents)
+      setAgents(agentsData)
     } catch (err) {
       console.error('Failed to fetch agents:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch agents')
@@ -63,13 +52,7 @@ export default function AgentsPage() {
       
       // Update local state
       setAgents(prev => prev.map(a => 
-        a.id === agent.id 
-          ? { 
-              ...updatedAgent, 
-              createdAt: new Date(updatedAgent.createdAt).toISOString(),
-              updatedAt: new Date(updatedAgent.updatedAt).toISOString()
-            } as Agent
-          : a
+        a.id === agent.id ? updatedAgent : a
       ))
       
       toast.success(`Agent ${updatedAgent.isActive ? 'activated' : 'deactivated'} successfully`)
@@ -108,8 +91,8 @@ export default function AgentsPage() {
 
   const filteredAgents = agents.filter(agent =>
     agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (agent.instructions && agent.instructions.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (agent.systemPrompt && agent.systemPrompt.toLowerCase().includes(searchTerm.toLowerCase()))
+    (agent.systemPrompt && agent.systemPrompt.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (agent.description && agent.description.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   if (loading) {
@@ -195,9 +178,9 @@ export default function AgentsPage() {
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Conversations</p>
+                <p className="text-sm text-muted-foreground">Total Integrations</p>
                 <p className="text-2xl font-bold">
-                  {agents.reduce((sum, agent) => sum + (agent._count?.conversations || 0), 0)}
+                  {agents.reduce((sum, agent) => sum + (agent.integrations?.length || 0), 0)}
                 </p>
               </div>
               <MessageSquare className="h-8 w-8 text-purple-500" />
@@ -252,7 +235,7 @@ export default function AgentsPage() {
                         {agent.name}
                       </Link>
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {agent.instructions}
+                        {agent.systemPrompt || agent.description || 'No description available'}
                       </p>
                     </div>
                   </div>
@@ -270,12 +253,12 @@ export default function AgentsPage() {
                   
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Tools:</span>
-                    <span>{agent.tools.length} configured</span>
+                    <span>Via integrations</span>
                   </div>
                   
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Conversations:</span>
-                    <span>{agent._count?.conversations || 0}</span>
+                    <span className="text-muted-foreground">Integrations:</span>
+                    <span>{agent.integrations?.length || 0} connected</span>
                   </div>
                 </div>
 

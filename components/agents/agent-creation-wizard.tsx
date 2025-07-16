@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react'
+import { getOrganizationId } from '@/lib/context/organization'
 import {
   AgentSetupStep,
   ToolsStep,
@@ -26,7 +27,6 @@ const agentFormSchema = z.object({
   // Instructions
   instructions: z.string().min(10, 'Instructions must be at least 10 characters'),
   instructionTemplate: z.string().optional(),
-  dynamicInstructions: z.boolean().default(false),
   
   // Model & Settings
   model: z.string().default('gpt-4o'),
@@ -90,15 +90,14 @@ export function AgentCreationWizard({
   organizationId, 
   initialData,
   mode = 'create',
-  onSave, 
-  onCancel 
+  onSave
 }: AgentCreationWizardProps) {
   const [currentStep, setCurrentStep] = useState<StepId>('setup')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Merge initial data with defaults
+  // Merge initial data with defaults - use hardcoded organization
   const defaultValues = {
-    organizationId: organizationId || initialData?.organizationId || 'cmd50brq20000jgtb8lqfol4o',
+    organizationId: organizationId || initialData?.organizationId || getOrganizationId(),
     model: initialData?.model || 'gpt-4o',
     temperature: initialData?.temperature || 1,
     topP: initialData?.topP || 1,
@@ -111,7 +110,6 @@ export function AgentCreationWizard({
     handoffs: initialData?.handoffs || [],
     guardrails: initialData?.guardrails || { input: [], output: [] },
     isActive: initialData?.isActive ?? true,
-    dynamicInstructions: initialData?.dynamicInstructions || false,
     name: initialData?.name || '',
     instructions: initialData?.instructions || '',
     description: initialData?.description || '',
@@ -203,38 +201,68 @@ export function AgentCreationWizard({
 
   return (
     <div className="space-y-6">
-      {/* Progress Bar */}
-      <div className="space-y-2">
-        <Progress value={progress} className="h-2" />
-        <div className="text-sm text-muted-foreground text-center">
-          Step {currentStepIndex + 1} of {STEPS.length}: {STEPS[currentStepIndex].title}
-        </div>
-      </div>
-
-      {/* Step Navigation */}
-      <div className="flex justify-center">
-        <div className="flex flex-wrap justify-center gap-2 bg-muted rounded-lg p-1">
-          {STEPS.map((step, index) => (
-            <button
-              key={step.id}
-              onClick={() => goToStep(step.id)}
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                step.id === currentStep
-                  ? 'bg-primary text-primary-foreground'
-                  : index < currentStepIndex
-                  ? 'text-primary hover:bg-primary/10'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-              disabled={index > currentStepIndex}
+      {/* Three-Column Header */}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
+          {/* Left: Title and Description */}
+          <div>
+            <h2 className="text-2xl font-bold">{STEPS[currentStepIndex].title}</h2>
+            <p className="text-muted-foreground">{STEPS[currentStepIndex].description}</p>
+          </div>
+          
+          {/* Center: Step Navigation Pills */}
+          <div className="flex justify-center gap-2">
+            {STEPS.map((step, index) => (
+              <button
+                key={step.id}
+                onClick={() => goToStep(step.id)}
+                className={`px-3 py-2 rounded-full text-sm font-medium transition-all ${
+                  step.id === currentStep
+                    ? 'bg-primary text-primary-foreground shadow-lg'
+                    : index < currentStepIndex
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                    : 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600 cursor-not-allowed'
+                }`}
+                disabled={index > currentStepIndex}
+                title={step.title}
+              >
+                {index < currentStepIndex ? (
+                  <Check className="w-4 h-4" />
+                ) : (
+                  <span>{index + 1}</span>
+                )}
+              </button>
+            ))}
+          </div>
+          
+          {/* Right: Next Button */}
+          <div className="flex justify-end">
+            <Button
+              onClick={() => {
+                if (currentStep === 'review') {
+                  form.handleSubmit(handleSubmit)()
+                } else {
+                  goNext()
+                }
+              }}
+              disabled={!canGoNext() || isSubmitting}
+              loading={isSubmitting}
+              className="min-w-[120px]"
             >
-              {index < currentStepIndex && (
-                <Check className="w-4 h-4 inline mr-1" />
+              {currentStep === 'review' ? (
+                mode === 'edit' ? 'Update Agent' : 'Create Agent'
+              ) : (
+                <>
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-2" />
+                </>
               )}
-              <span className="hidden sm:inline">{step.title}</span>
-              <span className="sm:hidden">{index + 1}</span>
-            </button>
-          ))}
+            </Button>
+          </div>
         </div>
+        
+        {/* Progress Bar */}
+        <Progress value={progress} className="h-1" />
       </div>
 
       {/* Step Content */}
@@ -243,14 +271,15 @@ export function AgentCreationWizard({
           <form onSubmit={form.handleSubmit(handleSubmit)}>
             {renderStepContent()}
             
-            {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8">
+            {/* Bottom Navigation - Secondary */}
+            <div className="flex justify-between mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
               <div>
                 {canGoPrevious() && (
                   <Button
                     type="button"
                     variant="outline"
                     onClick={goPrevious}
+                    size="sm"
                   >
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Previous
@@ -258,30 +287,23 @@ export function AgentCreationWizard({
                 )}
               </div>
               
-              <div className="flex space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onCancel}
-                >
-                  Cancel
-                </Button>
-                
-                <Button
-                  type="submit"
-                  disabled={!canGoNext() || isSubmitting}
-                  loading={isSubmitting}
-                >
-                  {currentStep === 'review' ? (
-                    mode === 'edit' ? 'Update Agent' : 'Create Agent'
-                  ) : (
-                    <>
-                      Next
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                disabled={!canGoNext() || isSubmitting}
+                loading={isSubmitting}
+                size="sm"
+                variant="outline"
+                className="min-w-[100px]"
+              >
+                {currentStep === 'review' ? (
+                  mode === 'edit' ? 'Update' : 'Create'
+                ) : (
+                  <>
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
             </div>
           </form>
         </CardContent>

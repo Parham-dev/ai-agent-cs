@@ -43,7 +43,7 @@ class AgentsServiceV2 {
           agentIntegrations: {
             include: {
               integration: {
-                select: { name: true, type: true, isActive: true }
+                select: { id: true, name: true, type: true, isActive: true, credentials: true }
               }
             }
           }
@@ -73,7 +73,7 @@ class AgentsServiceV2 {
           agentIntegrations: {
             include: {
               integration: {
-                select: { name: true, type: true, isActive: true }
+                select: { id: true, name: true, type: true, isActive: true, credentials: true }
               }
             }
           }

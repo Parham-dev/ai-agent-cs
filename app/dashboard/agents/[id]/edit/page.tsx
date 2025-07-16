@@ -9,12 +9,7 @@ import { agentsClient } from '@/lib/agents/client'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Bot } from 'lucide-react'
-import type { AgentWithStats } from '@/lib/database/services/agents.service'
-
-interface Agent extends Omit<AgentWithStats, 'createdAt' | 'updatedAt'> {
-  createdAt: string
-  updatedAt: string
-}
+import type { Agent } from '@/lib/api/types'
 
 export default function EditAgentPage() {
   const router = useRouter()
@@ -30,12 +25,7 @@ export default function EditAgentPage() {
       setLoading(true)
       setError(null)
       const agentData = await agentsClient.getAgent(agentId)
-      // Convert dates to strings for consistency
-      setAgent({
-        ...agentData,
-        createdAt: new Date(agentData.createdAt).toISOString(),
-        updatedAt: new Date(agentData.updatedAt).toISOString()
-      } as Agent)
+      setAgent(agentData)
     } catch (err) {
       console.error('Failed to fetch agent:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch agent')
@@ -48,10 +38,30 @@ export default function EditAgentPage() {
     try {
       const updatedAgent = await agentsClient.updateAgent(agentId, {
         name: data.name,
-        instructions: data.instructions,
-        tools: data.selectedTools,
+        description: data.description,
+        systemPrompt: data.instructions,
         model: data.model,
-        isActive: data.isActive
+        temperature: data.temperature,
+        maxTokens: 4000,
+        isActive: data.isActive,
+        rules: {
+          behavior: {
+            temperature: data.temperature,
+            topP: data.topP,
+            toolChoice: data.toolChoice,
+            outputType: data.outputType
+          },
+          tools: {
+            selectedTools: data.selectedTools,
+            customTools: data.customTools
+          },
+          integrations: data.integrationConfigurations?.map(config => ({
+            id: config.id,
+            selectedTools: config.selectedTools || [],
+            settings: config.settings || {}
+          })) || [],
+          guardrails: data.guardrails
+        }
       })
 
       toast.success('Agent updated successfully!')
@@ -105,12 +115,12 @@ export default function EditAgentPage() {
   // Convert agent data to form data format
   const initialFormData: Partial<AgentFormData> = {
     name: agent.name,
+    description: agent.description || '',
     organizationId: agent.organizationId,
-    instructions: agent.systemPrompt || agent.instructions || '',
+    instructions: agent.systemPrompt || '',
     model: agent.model,
-    selectedTools: agent.tools,
+    selectedTools: [],
     isActive: agent.isActive,
-    // Set defaults for other fields
     temperature: agent.temperature || 1,
     topP: 1,
     toolChoice: 'auto',
@@ -118,8 +128,7 @@ export default function EditAgentPage() {
     enabledIntegrations: [],
     customTools: [],
     handoffs: [],
-    guardrails: { input: [], output: [] },
-    dynamicInstructions: false
+    guardrails: { input: [], output: [] }
   }
 
   return (

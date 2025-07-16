@@ -19,7 +19,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
 
   const integrations = await integrationsServiceV2.getIntegrations(filters)
   
-  return Api.success({ integrations })
+  return Api.success(integrations)
 });
 
 export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {

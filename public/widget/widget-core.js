@@ -37,7 +37,7 @@
           throw new Error('No session token available');
         }
         
-        const response = await fetch(`${config.apiUrl}/api/agents/chat`, {
+        const response = await fetch(`${config.apiUrl}/api/v2/agents/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

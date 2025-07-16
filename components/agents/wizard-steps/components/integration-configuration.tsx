@@ -43,7 +43,7 @@ function useIntegrationTools(integrationType: string) {
       setError(null)
 
       try {
-        const response = await fetch(`/api/integrations/tools?type=${integrationType}`)
+        const response = await fetch(`/api/v2/integrations/tools?type=${integrationType}`)
         if (!response.ok) {
           throw new Error(`Failed to fetch tools: ${response.statusText}`)
         }
