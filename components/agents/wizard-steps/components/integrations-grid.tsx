@@ -2,7 +2,7 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Check, Settings, Power } from 'lucide-react'
+import { Plus, Settings, Power, Check } from 'lucide-react'
 import type { IntegrationCredentials } from '@/lib/types/integrations'
 
 export interface ConfiguredIntegration {
@@ -107,7 +107,7 @@ export function IntegrationsGrid({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => onToggleIntegration(integration.type, !integration.isEnabled)}
+                onClick={() => onToggleIntegration(integration.id, !integration.isEnabled)}
                 className={integration.isEnabled ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}
                 title={integration.isEnabled ? 'Disable integration' : 'Enable integration'}
               >
@@ -118,7 +118,7 @@ export function IntegrationsGrid({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => onEditIntegration(integration.type)}
+                onClick={() => onEditIntegration(integration.id)}
                 title="Configure integration"
               >
                 <Settings className="h-4 w-4" />

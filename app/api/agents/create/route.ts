@@ -34,6 +34,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     instructions: data.instructions.trim(),
     tools: data.tools || [],
     model: data.model || 'gpt-4o',
+    agentConfig: data.agentConfig || {},
     isActive: data.isActive ?? true
   })
   

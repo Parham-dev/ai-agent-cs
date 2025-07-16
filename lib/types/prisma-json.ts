@@ -73,9 +73,9 @@ declare global {
       model?: string
       tools?: string[]
       integrations?: {
-        type: string
-        credentials: Record<string, unknown> // Use generic type for now, will be properly typed at usage
-        settings?: IntegrationSettings
+        id: string // ID of the organization integration
+        selectedTools?: string[] // Which tools from this integration to enable
+        settings?: IntegrationSettings // Agent-specific integration settings
       }[]
       behavior?: {
         responseStyle?: 'formal' | 'casual' | 'friendly'

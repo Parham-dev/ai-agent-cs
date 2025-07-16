@@ -51,6 +51,8 @@ const agentFormSchema = z.object({
     name: z.string(),
     type: z.string(),
     credentials: z.record(z.unknown()),
+    selectedTools: z.array(z.string()).default([]),
+    isConnected: z.boolean().default(false),
     settings: z.record(z.unknown()).default({})
   })).default([]),
   

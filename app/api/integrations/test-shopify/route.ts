@@ -5,25 +5,22 @@ import { createApiLogger } from '@/lib/utils/logger'
 
 // This is a temporary endpoint to quickly create a test Shopify integration
 export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  const { agentId, organizationId } = await request.json()
+  const { organizationId } = await request.json()
   
   const logger = createApiLogger({
     endpoint: '/api/integrations/test-shopify',
-    agentId,
     organizationId,
     requestId: crypto.randomUUID(),
     userAgent: request.headers.get('user-agent') || 'unknown',
   });
   
-  logger.info('Test Shopify endpoint called', { agentId, organizationId });
+  logger.info('Test Shopify endpoint called', { organizationId });
   
-  if (!agentId || !organizationId) {
+  if (!organizationId) {
     logger.warn('Test Shopify request validation failed', { 
-      hasAgentId: !!agentId, 
       hasOrganizationId: !!organizationId 
     });
     return Api.validationError({ 
-      agentId: !agentId ? 'Agent ID is required' : undefined,
       organizationId: !organizationId ? 'Organization ID is required' : undefined
     });
   }
@@ -34,7 +31,6 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     // Create a test Shopify integration
     const integration = await integrationsService.createIntegration({
       organizationId,
-      agentId,
       type: 'shopify',
       name: 'Test Shopify Store',
       credentials: {
@@ -49,8 +45,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     })
     
     logger.info('Test Shopify integration created successfully', { 
-      integrationId: integration.id, 
-      agentId: integration.agentId || undefined
+      integrationId: integration.id
     });
     
     return Api.success({ 

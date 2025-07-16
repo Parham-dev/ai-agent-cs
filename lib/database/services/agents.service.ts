@@ -1,6 +1,5 @@
 import { prisma } from '../database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
-import type { Integration } from './integrations.service'
 
 // Define Agent type based on our schema
 export interface Agent {
@@ -135,38 +134,6 @@ class AgentsService {
   }
 
   /**
-   * Get agent with its integrations
-   */
-  async getAgentWithIntegrations(id: string): Promise<(AgentWithStats & { integrations: Integration[] }) | null> {
-    try {
-      const agent = await prisma.agent.findUnique({
-        where: { id },
-        include: {
-          integrations: {
-            where: { isActive: true }
-          },
-          _count: {
-            select: {
-              conversations: true
-            }
-          },
-          organization: {
-            select: {
-              name: true,
-              slug: true
-            }
-          }
-        }
-      })
-
-      return agent
-    } catch (error) {
-      console.error('Database error in getAgentWithIntegrations:', error)
-      throw new DatabaseError('Failed to fetch agent with integrations')
-    }
-  }
-
-  /**
    * Create a new agent
    */
   async createAgent(data: CreateAgentData): Promise<Agent> {
@@ -186,6 +153,7 @@ class AgentsService {
           instructions: data.instructions.trim(),
           tools: data.tools || [],
           model: data.model || 'gpt-4o',
+          agentConfig: data.agentConfig || {},
           isActive: data.isActive ?? true
         }
       })

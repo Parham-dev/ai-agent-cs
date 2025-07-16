@@ -22,7 +22,7 @@ export default function NewAgentPage() {
         action: 'agent-creation'
       });
 
-      // 1. Create the agent first
+      // 1. Create the agent with integration IDs in agentConfig
       const agent = await agentsClient.createAgent({
         organizationId: data.organizationId,
         name: data.name,
@@ -41,50 +41,19 @@ export default function NewAgentPage() {
             selectedTools: data.selectedTools,
             customTools: data.customTools
           },
+          integrations: data.integrationConfigurations?.map(config => ({
+            id: config.id, // Store only the integration ID
+            selectedTools: config.selectedTools || [],
+            settings: config.settings || {}
+          })) || [],
           guardrails: data.guardrails
         }
       })
 
-      logger.info('Agent created successfully', { agentId: agent.id });
-
-      // 2. Create integrations for this agent
-      if (data.integrationConfigurations && data.integrationConfigurations.length > 0) {
-        logger.info('Creating integrations', { integrationsCount: data.integrationConfigurations.length });
-        
-        for (const integrationConfig of data.integrationConfigurations) {
-          logger.debug('Creating integration', { 
-            name: integrationConfig.name, 
-            type: integrationConfig.type 
-          });
-          
-          const response = await fetch('/api/integrations', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              organizationId: data.organizationId,
-              agentId: agent.id, // Link to the created agent
-              type: integrationConfig.type || integrationConfig.id, // Use type or fallback to id
-              name: integrationConfig.name,
-              credentials: integrationConfig.credentials,
-              settings: integrationConfig.settings || {},
-              isActive: true
-            })
-          })
-          
-          const result = await response.json();
-          logger.debug('Integration creation result', { result });
-          
-          if (!response.ok) {
-            throw new Error(`Failed to create integration: ${result.error?.message || 'Unknown error'}`);
-          }
-        }
-        
-        logger.info('All integrations created successfully');
-      } else {
-        logger.debug('No integrations to create');
-      }
+      logger.info('Agent created successfully', { 
+        agentId: agent.id,
+        integrationsCount: data.integrationConfigurations?.length || 0
+      });
 
       toast.success('Agent created successfully!')
       router.push(`/dashboard/agents/${agent.id}`)

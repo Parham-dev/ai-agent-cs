@@ -7,7 +7,6 @@ import '../../types/prisma-json'
 export interface Integration {
   id: string
   organizationId: string
-  agentId: string | null
   type: string
   name: string
   credentials: IntegrationCredentials
@@ -28,7 +27,6 @@ export interface IntegrationWithOrganization extends Integration {
 
 export interface CreateIntegrationData {
   organizationId: string
-  agentId?: string | null
   type: string
   name: string
   credentials?: IntegrationCredentials
@@ -239,7 +237,6 @@ class IntegrationsService {
       const integration = await prisma.integration.create({
         data: {
           organizationId: data.organizationId,
-          agentId: data.agentId || null,
           type: data.type.toLowerCase(),
           name: data.name.trim(),
           credentials: data.credentials || {},

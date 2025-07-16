@@ -39,7 +39,6 @@ model Organization {
 model Integration {
   id             String  @id @default(cuid())
   organizationId String
-  agentId        String?                      // Integration belongs to one agent
   type           String                       // 'shopify', 'stripe', etc.
   name           String                       // "Main Shopify Store", "Stripe Payments"
   /// [IntegrationCredentials]
@@ -52,7 +51,6 @@ model Integration {
   
   // Relations
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agent          Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
   
   @@unique([organizationId, type, name])
   @@map("integrations")
@@ -76,7 +74,6 @@ model Agent {
   // Relations
   organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   conversations  Conversation[]
-  integrations   Integration[]                // Agent can have multiple integrations
   
   @@map("agents")
 }

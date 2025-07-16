@@ -26,6 +26,7 @@ export function IntegrationsStep({ form }: StepProps) {
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null)
   const [organizationIntegrations, setOrganizationIntegrations] = useState<OrganizationIntegration[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshKey, setRefreshKey] = useState(0) // Force re-render key
   
   // Fetch organization integrations on component mount
   useEffect(() => {
@@ -57,6 +58,8 @@ export function IntegrationsStep({ form }: StepProps) {
     
     console.log('Integration configurations from form:', integrationConfigurations)
     console.log('Organization integrations:', organizationIntegrations)
+    console.log('Refresh key:', refreshKey)
+    console.log('Form values (all):', form.getValues())
     
     return organizationIntegrations.map(orgIntegration => {
       const availableIntegration = AVAILABLE_INTEGRATIONS.find(
@@ -70,6 +73,8 @@ export function IntegrationsStep({ form }: StepProps) {
       
       // Integration is "enabled for this agent" if it has a configuration
       const isEnabledForAgent = !!agentConfig
+      
+      console.log(`Integration ${orgIntegration.type} - isEnabled: ${isEnabledForAgent}, hasConfig:`, !!agentConfig)
       
       // Calculate selected tools count
       const selectedToolsCount = agentConfig?.selectedTools?.length || 0
@@ -91,7 +96,7 @@ export function IntegrationsStep({ form }: StepProps) {
       console.log('Display item for', orgIntegration.type, ':', displayItem)
       return displayItem
     })
-  }, [organizationIntegrations, form])
+  }, [organizationIntegrations, refreshKey, form])
   
   // Get available integrations that are not in the database (for the modal)
   const availableIntegrationsForModal = useMemo(() => {
@@ -123,9 +128,9 @@ export function IntegrationsStep({ form }: StepProps) {
         const existingConfigIndex = currentConfigs.findIndex((config: { type: string }) => config.type === integrationId)
         
         const newIntegrationConfig = {
-          id: integrationId,
+          id: orgIntegration.id, // Use the actual organization integration ID
           name: orgIntegration.name,
-          type: integrationId,
+          type: orgIntegration.type, // Use the actual type from org integration
           credentials: orgIntegration.credentials,
           selectedTools: orgIntegration.settings?.selectedTools || availableIntegration.tools.map(tool => tool.id), // Use existing tools or default to all
           isConnected: orgIntegration.isActive, // Use organization-level connection status
@@ -144,13 +149,23 @@ export function IntegrationsStep({ form }: StepProps) {
         }
         
         form.setValue('integrationConfigurations', currentConfigs)
+        form.trigger('integrationConfigurations') // Force form update
         console.log('Added integration to agent config:', integrationId)
+        console.log('Updated configs:', currentConfigs)
+        
+        // Force re-render
+        setRefreshKey(prev => prev + 1)
       }
     } else {
       // Remove this integration from the agent's configuration
       const updatedConfigs = currentConfigs.filter((config: { type: string }) => config.type !== integrationId)
       form.setValue('integrationConfigurations', updatedConfigs)
+      form.trigger('integrationConfigurations') // Force form update
       console.log('Removed integration from agent config:', integrationId)
+      console.log('Updated configs:', updatedConfigs)
+      
+      // Force re-render
+      setRefreshKey(prev => prev + 1)
     }
   }
   
@@ -166,13 +181,14 @@ export function IntegrationsStep({ form }: StepProps) {
   const handleSaveIntegration = (integrationData: Omit<ConfiguredIntegration, 'id' | 'name' | 'icon' | 'color'>) => {
     if (!selectedIntegration) return
     
-    const integration = AVAILABLE_INTEGRATIONS.find(i => i.id === selectedIntegration)
-    if (!integration) return
+    const availableIntegration = AVAILABLE_INTEGRATIONS.find(i => i.id === selectedIntegration)
+    const orgIntegration = organizationIntegrations.find(org => org.type === selectedIntegration)
+    if (!availableIntegration || !orgIntegration) return
 
     const newIntegrationConfig = {
-      id: integration.id,
-      name: integration.name,
-      type: integration.id, // Use id as type
+      id: orgIntegration.id, // Use the actual organization integration ID
+      name: orgIntegration.name,
+      type: orgIntegration.type,
       credentials: integrationData.credentials,
       selectedTools: integrationData.selectedTools || [],
       isConnected: integrationData.isConnected || false,
@@ -184,7 +200,7 @@ export function IntegrationsStep({ form }: StepProps) {
 
     // Update form data - replace existing or add new
     const currentConfigs = form.getValues('integrationConfigurations') || []
-    const existingIndex = currentConfigs.findIndex((config: { type: string }) => config.type === integration.id)
+    const existingIndex = currentConfigs.findIndex((config: { type: string }) => config.type === orgIntegration.type)
     
     if (existingIndex !== -1) {
       // Update existing
@@ -195,7 +211,7 @@ export function IntegrationsStep({ form }: StepProps) {
     }
     
     form.setValue('integrationConfigurations', currentConfigs)
-    console.log('Saved integration config for agent:', integration.id)
+    console.log('Saved integration config for agent:', orgIntegration.id)
 
     setSelectedIntegration(null)
   }

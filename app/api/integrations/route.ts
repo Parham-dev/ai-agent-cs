@@ -53,7 +53,6 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
   const integration = await integrationsService.createIntegration({
     organizationId: data.organizationId,
-    agentId: data.agentId || null,
     type: data.type.trim(),
     name: data.name.trim(),
     credentials: data.credentials,

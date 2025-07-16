@@ -3,6 +3,7 @@ import { run, Agent, type Tool, type MCPServerStdio } from '@openai/agents';
 import { createShopifyTools } from '@/lib/integrations/shopify/tools';
 import { createMCPClient } from '@/lib/mcp/client';
 import { agentsService } from '@/lib/database/services/agents.service';
+import { integrationsService } from '@/lib/database/services/integrations.service';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
 import { verifyWidgetToken, extractBearerToken } from '@/lib/utils/jwt';
@@ -80,35 +81,37 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
     // Get the agent with its integrations from the database
     logger.debug('Fetching agent by ID');
-    const agent = await agentsService.getAgentById(agentId);
+    const agentForValidation = await agentsService.getAgentById(agentId);
     
-    if (!agent) {
+    if (!agentForValidation) {
       logger.warn('Agent not found');
       return Api.notFound('Agent', agentId);
     }
 
     logger.debug('Agent found', { 
-      id: agent.id, 
-      name: agent.name, 
-      isActive: agent.isActive 
+      id: agentForValidation.id, 
+      name: agentForValidation.name, 
+      isActive: agentForValidation.isActive 
     });
 
-    if (!agent.isActive) {
+    if (!agentForValidation.isActive) {
       logger.warn('Attempted to use inactive agent');
       return Api.error('AGENT_NOT_FOUND', 'Agent is not active');
     }
 
-    // Get agent's integrations
-    logger.debug('Fetching agent with integrations');
-    const agentWithIntegrations = await agentsService.getAgentWithIntegrations(agentId);
+    // Get agent - integrations are now in agentConfig
+    logger.debug('Fetching agent');
+    const agentData = await agentsService.getAgentById(agentId);
     
-    if (!agentWithIntegrations) {
-      logger.error('Agent with integrations not found after agent was found');
+    if (!agentData) {
+      logger.error('Agent not found');
       return Api.notFound('Agent', agentId);
     }
 
-    logger.debug('Agent with integrations found', { 
-      integrationsCount: agentWithIntegrations.integrations.length 
+    // Get integration configurations from agent config
+    const agentIntegrations = agentData.agentConfig?.integrations || [];
+    logger.debug('Agent integration configs found', { 
+      integrationsCount: agentIntegrations.length 
     });
 
     // Build tools based on agent's configured integrations
@@ -119,19 +122,25 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     // Check if we should use MCP (feature flag or environment variable)
     const useMCP = process.env.ENABLE_MCP === 'true';
     
-    if (useMCP && agentWithIntegrations.integrations.length > 0) {
+    if (useMCP && agentIntegrations.length > 0) {
       // Use MCP servers for integrations
       logger.debug('Using MCP servers for integrations');
       
       try {
-        // Prepare integrations for MCP client
-        const mcpIntegrations = agentWithIntegrations.integrations
-          .filter(integration => integration.isActive)
-          .map(integration => ({
-            type: integration.type,
-            credentials: integration.credentials,
-            settings: integration.settings
-          }));
+        // Prepare integrations for MCP client - need to fetch full integration details
+        const mcpIntegrations = [];
+        
+        for (const agentIntegration of agentIntegrations) {
+          // Fetch the full integration details from the database
+          const fullIntegration = await integrationsService.getIntegrationById(agentIntegration.id);
+          if (fullIntegration && fullIntegration.isActive) {
+            mcpIntegrations.push({
+              type: fullIntegration.type,
+              credentials: fullIntegration.credentials,
+              settings: fullIntegration.settings
+            });
+          }
+        }
         
         // Initialize MCP client
         const mcpClientResult = await createMCPClient(mcpIntegrations);
@@ -152,8 +161,10 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       logger.debug('Using legacy context-passing tools');
       
       // Add integration-specific tools (legacy approach)
-      for (const integration of agentWithIntegrations.integrations) {
-        if (!integration.isActive) continue;
+      for (const agentIntegration of agentIntegrations) {
+        // Fetch the full integration details from the database
+        const integration = await integrationsService.getIntegrationById(agentIntegration.id);
+        if (!integration || !integration.isActive) continue;
         
         logger.debug('Processing integration', { 
           integrationId: integration.id,
@@ -201,15 +212,15 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     });
 
     // Create the OpenAI Agent instance with integration tools
-    const agentConfig = agent.agentConfig && typeof agent.agentConfig === 'object' ? agent.agentConfig : {};
+    const agentConfig = agentData.agentConfig && typeof agentData.agentConfig === 'object' ? agentData.agentConfig : {};
     // Remove tools from agentConfig to avoid conflict with our integration tools
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { tools: _, ...cleanAgentConfig } = agentConfig;
     
     const openaiAgent = new Agent({
-      name: agent.name,
-      instructions: agent.instructions,
-      model: agent.model,
+      name: agentData.name,
+      instructions: agentData.instructions,
+      model: agentData.model,
       tools: tools.length > 0 ? tools : undefined, // Legacy context-passing tools
       mcpServers: mcpServers.length > 0 ? mcpServers : undefined, // MCP servers
       ...cleanAgentConfig
@@ -231,12 +242,12 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
         return await run(openaiAgent, fullMessage, {
           context: {
             agentId,
-            agentName: agent.name,
-            organizationId: agent.organizationId,
-            integrations: agentWithIntegrations.integrations.map((i) => ({
-              id: i.id,
-              type: i.type,
-              name: i.name
+            agentName: agentData.name,
+            organizationId: agentData.organizationId,
+            integrations: agentIntegrations.map((integration: {id: string, type?: string, name?: string}) => ({
+              id: integration.id,
+              type: integration.type || 'unknown',
+              name: integration.name || 'unknown'
             })),
             ...context
           },
