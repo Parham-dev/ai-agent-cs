@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basic Widget Integration Example</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+    
+    .header p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      margin-bottom: 2rem;
+    }
+    
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-bottom: 60px;
+    }
+    
+    .feature {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2rem;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .feature h3 {
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+    
+    .feature p {
+      opacity: 0.9;
+      line-height: 1.6;
+      color: #fff;
+    }
+    
+    .cta {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 3rem;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .cta h2 {
+      margin-bottom: 1rem;
+    }
+    
+    .cta p {
+      margin-bottom: 2rem;
+      opacity: 0.9;
+      color: #fff;
+    }
+    
+    .widget-trigger {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .widget-trigger:hover {
+      background: #0056b3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 123, 255, 0.4);
+    }
+    
+    .code-example {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+    
+    .status {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      max-width: 300px;
+    }
+    
+    .status.success {
+      background: rgba(40, 167, 69, 0.9);
+    }
+    
+    .status.error {
+      background: rgba(220, 53, 69, 0.9);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 AI Customer Service Widget</h1>
+      <p>Experience intelligent customer support powered by AI agents</p>
+      <button class="widget-trigger" onclick="openWidget()">
+        💬 Try the Chat Widget
+      </button>
+    </div>
+    
+    <div class="features">
+      <div class="feature">
+        <h3>🚀 Instant Setup</h3>
+        <p>Add powerful AI customer service to your website with just one line of code.</p>
+      </div>
+      
+      <div class="feature">
+        <h3>🎨 Fully Customizable</h3>
+        <p>Match your brand with custom themes, colors, and positioning options.</p>
+      </div>
+      
+      <div class="feature">
+        <h3>📱 Mobile Ready</h3>
+        <p>Responsive design that works perfectly on desktop and mobile devices.</p>
+      </div>
+      
+      <div class="feature">
+        <h3>🔌 Smart Integrations</h3>
+        <p>Connect to Shopify, Stripe, and other business tools for real-time data access.</p>
+      </div>
+      
+      <div class="feature">
+        <h3>🔒 Secure & Private</h3>
+        <p>Enterprise-grade security with domain validation and encrypted communication.</p>
+      </div>
+      
+      <div class="feature">
+        <h3>⚡ Lightning Fast</h3>
+        <p>Optimized loading with lazy-loaded components and minimal footprint.</p>
+      </div>
+    </div>
+    
+    <div class="cta">
+      <h2>Integration Code</h2>
+      <p>Copy and paste this code into your website:</p>
+      <div class="code-example">
+&lt;script src="http://localhost:3000/widget/widget.js" 
+        data-agent-id="demo-agent-123"&gt;
+&lt;/script&gt;
+      </div>
+      <p style="font-size: 0.9rem; opacity: 0.8;">
+        Replace "demo-agent-123" with your actual agent ID from the dashboard.
+      </p>
+    </div>
+  </div>
+  
+  <div id="status" class="status" style="display: none;"></div>
+
+  <!-- Widget Integration -->
+  <script>
+    // Configuration for the widget
+    window.CustomerAgent = {
+      agentId: 'demo-agent-123',  // This should be a real agent ID
+      position: 'bottom-right',
+      theme: 'auto',
+      primaryColor: '#007bff',
+      greeting: 'Hello! Welcome to our demo. How can I help you today?',
+      triggers: {
+        showAfter: 2000,  // Show after 2 seconds
+        showOnScroll: 30  // Show after 30% scroll
+      },
+      debug: true  // Enable debug logging
+    };
+    
+    // Function to manually open widget
+    function openWidget() {
+      if (window.CustomerAgent && window.CustomerAgent.open) {
+        window.CustomerAgent.open();
+      } else {
+        showStatus('Widget not loaded yet. Please wait...', 'error');
+      }
+    }
+    
+    // Status message helper
+    function showStatus(message, type = 'info') {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = `status ${type}`;
+      status.style.display = 'block';
+      
+      setTimeout(() => {
+        status.style.display = 'none';
+      }, 3000);
+    }
+    
+    // Widget event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      // Listen for widget events (if they exist)
+      if (window.CustomerAgent) {
+        const originalInit = window.CustomerAgent.init;
+        window.CustomerAgent.init = function(...args) {
+          showStatus('Widget initialized successfully!', 'success');
+          return originalInit.apply(this, args);
+        };
+      }
+      
+      // Show initial status
+      setTimeout(() => {
+        showStatus('Page loaded - widget should appear soon!');
+      }, 1000);
+    });
+  </script>
+  
+  <!-- Load the widget -->
+  <script src="../widget.js"></script>
+</body>
+</html>

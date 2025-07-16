@@ -4,6 +4,7 @@ import { createShopifyTools } from '@/lib/integrations/shopify/tools';
 import { agentsService } from '@/lib/database/services/agents.service';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
+import { verifyWidgetToken, extractBearerToken } from '@/lib/utils/jwt';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -32,18 +33,37 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
   try {
     const { agentId, message, conversationHistory = [], context = {} }: ChatRequest = await request.json();
 
-    // Update logger with agentId
+    // Check for widget authentication token
+    const authHeader = request.headers.get('authorization');
+    const token = extractBearerToken(authHeader);
+    let widgetAuth = null;
+    
+    if (token) {
+      widgetAuth = verifyWidgetToken(token);
+      if (widgetAuth && widgetAuth.agentId !== agentId) {
+        logger.warn('Token agent ID mismatch', {
+          tokenAgentId: widgetAuth.agentId,
+          requestAgentId: agentId
+        });
+        return Api.error('VALIDATION_ERROR', 'Token agent ID does not match request');
+      }
+    }
+
+    // Update logger with agentId and auth context
     logger = createApiLogger({
       endpoint: '/api/agents/chat',
       agentId,
       requestId: crypto.randomUUID(),
       userAgent: request.headers.get('user-agent') || 'unknown',
+      isWidget: !!widgetAuth,
+      domain: widgetAuth?.domain
     });
 
     logger.info('Chat request received', { 
       agentId, 
       messageLength: message.length, 
-      conversationHistoryLength: conversationHistory.length 
+      conversationHistoryLength: conversationHistory.length,
+      isWidgetRequest: !!widgetAuth
     });
 
     if (!agentId || !message) {
