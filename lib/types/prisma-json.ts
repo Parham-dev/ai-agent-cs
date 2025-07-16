@@ -21,29 +21,7 @@ declare global {
       }
     }
 
-    // Integration credentials - type varies by integration type
-    interface IntegrationCredentials {
-      // Shopify
-      storeDomain?: string
-      accessToken?: string
-      
-      // Stripe
-      secretKey?: string
-      publicKey?: string
-      webhookSecret?: string
-      
-      // Generic OAuth
-      clientId?: string
-      clientSecret?: string
-      refreshToken?: string
-      
-      // API Keys
-      apiKey?: string
-      apiSecret?: string
-      
-      // Custom fields for other integrations
-      [key: string]: unknown
-    }
+    // Use centralized IntegrationCredentials from @/lib/types/integrations
 
     // Integration settings - non-sensitive configuration
     interface IntegrationSettings {
@@ -96,7 +74,7 @@ declare global {
       tools?: string[]
       integrations?: {
         type: string
-        credentials: IntegrationCredentials
+        credentials: Record<string, unknown> // Use generic type for now, will be properly typed at usage
         settings?: IntegrationSettings
       }[]
       behavior?: {

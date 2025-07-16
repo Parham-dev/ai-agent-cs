@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { run, Agent } from '@openai/agents';
+import { run, Agent, type Tool } from '@openai/agents';
 import { createShopifyTools } from '@/lib/integrations/shopify/tools';
 import { agentsService } from '@/lib/database/services/agents.service';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
@@ -65,7 +65,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     });
 
     // Build tools based on agent's configured integrations
-    const tools = [];
+    const tools: Tool[] = [];
     
     // Add integration-specific tools
     for (const integration of agentWithIntegrations.integrations) {
@@ -82,22 +82,13 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
         case 'shopify':
           console.log('Shopify integration credentials:', integration.credentials);
           
-          // Map credentials to expected format
-          const shopifyCredentials = {
-            storeName: integration.credentials.shopUrl || integration.credentials.storeName || integration.credentials.storeDomain,
-            accessToken: integration.credentials.accessToken
-          };
-          
-          console.log('Mapped Shopify credentials:', { 
-            storeName: shopifyCredentials.storeName, 
-            hasAccessToken: !!shopifyCredentials.accessToken 
-          });
-          
-          if (!shopifyCredentials.storeName) {
-            console.error('Missing storeName in Shopify credentials:', integration.credentials);
+          if (!integration.credentials.storeName || !integration.credentials.accessToken) {
+            console.error('Missing required Shopify credentials:', integration.credentials);
             continue; // Skip this integration
           }
           
+          // Cast to ShopifyCredentials since we've validated the required fields
+          const shopifyCredentials = integration.credentials as { storeName: string; accessToken: string };
           tools.push(...createShopifyTools(shopifyCredentials));
           break;
         // Future integrations will be added here
@@ -112,14 +103,18 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     // For now, allow chat even without tools for testing
     console.log('Tools configured:', tools.length);
 
-    // Create the OpenAI Agent instance
+    // Create the OpenAI Agent instance with integration tools
+    const agentConfig = agent.agentConfig && typeof agent.agentConfig === 'object' ? agent.agentConfig : {};
+    // Remove tools from agentConfig to avoid conflict with our integration tools
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { tools: _, ...cleanAgentConfig } = agentConfig;
+    
     const openaiAgent = new Agent({
       name: agent.name,
       instructions: agent.instructions,
       model: agent.model,
-      tools: tools.length > 0 ? tools : undefined, // Only add tools if we have them
-      // Apply any agent-specific configuration from agentConfig JSON field
-      ...(agent.agentConfig && typeof agent.agentConfig === 'object' ? agent.agentConfig : {})
+      tools: tools.length > 0 ? tools : undefined, // Only integration tools
+      ...cleanAgentConfig
     });
 
     // Build conversation context
@@ -135,7 +130,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
         agentId,
         agentName: agent.name,
         organizationId: agent.organizationId,
-        integrations: agentWithIntegrations.integrations.map((i: any) => ({
+        integrations: agentWithIntegrations.integrations.map((i) => ({
           id: i.id,
           type: i.type,
           name: i.name

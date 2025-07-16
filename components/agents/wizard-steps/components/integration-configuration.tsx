@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Check, AlertCircle, HelpCircle, ExternalLink } from 'lucide-react'
 import { AVAILABLE_INTEGRATIONS } from './integration-select-modal'
 import type { ConfiguredIntegration } from './integrations-grid'
+import type { IntegrationCredentials } from '@/lib/types/integrations'
 
 interface IntegrationConfigurationProps {
   selectedIntegration: string
@@ -19,7 +20,7 @@ export function IntegrationConfiguration({
   onSave 
 }: IntegrationConfigurationProps) {
   const [configStep, setConfigStep] = useState<'credentials' | 'tools'>('credentials')
-  const [credentials, setCredentials] = useState<Record<string, string>>({})
+  const [credentials, setCredentials] = useState<IntegrationCredentials>({})
   const [selectedTools, setSelectedTools] = useState<string[]>([])
   const [isTestingConnection, setIsTestingConnection] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle')
@@ -37,6 +38,7 @@ export function IntegrationConfiguration({
 
   const handleSaveIntegration = () => {
     onSave({
+      type: selectedIntegration,
       credentials,
       selectedTools,
       isConnected: connectionStatus === 'success'
@@ -82,12 +84,12 @@ export function IntegrationConfiguration({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="shopUrl">Shop URL</Label>
+                    <Label htmlFor="storeName">Store Name</Label>
                     <Input
-                      id="shopUrl"
-                      placeholder="your-shop.myshopify.com"
-                      value={credentials.shopUrl || ''}
-                      onChange={(e) => setCredentials({...credentials, shopUrl: e.target.value})}
+                      id="storeName"
+                      placeholder="your-store (without .myshopify.com)"
+                      value={credentials.storeName || ''}
+                      onChange={(e) => setCredentials({...credentials, storeName: e.target.value})}
                     />
                   </div>
                   <div>
@@ -102,7 +104,7 @@ export function IntegrationConfiguration({
                   </div>
                   <Button
                     onClick={handleTestConnection}
-                    disabled={!credentials.shopUrl || !credentials.accessToken || isTestingConnection}
+                    disabled={!credentials.storeName || !credentials.accessToken || isTestingConnection}
                     className="w-full"
                   >
                     {isTestingConnection ? 'Testing...' : 'Test Connection'}

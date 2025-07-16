@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import { StepProps } from './types'
 import { 
   IntegrationSelectModal, 
@@ -9,31 +9,37 @@ import {
   type ConfiguredIntegration 
 } from './components'
 import { AVAILABLE_INTEGRATIONS } from './components/integration-select-modal'
+import type { IntegrationCredentials } from '@/lib/types/integrations'
 
 export function IntegrationsStep({ form }: StepProps) {
   const [showModal, setShowModal] = useState(false)
   const [selectedIntegration, setSelectedIntegration] = useState<string | null>(null)
   
-  // Get integrations from form state
-  const formIntegrations = form.watch('integrationConfigurations') || []
-  const [configuredIntegrations, setConfiguredIntegrations] = useState<ConfiguredIntegration[]>([])
-
-  // Convert form data to display format
-  useEffect(() => {
-    const displayIntegrations = formIntegrations.map((integration: any) => {
-      const availableIntegration = AVAILABLE_INTEGRATIONS.find(ai => ai.id === integration.type || ai.id === integration.id)
+  // Convert form integrations to display format using useMemo
+  const configuredIntegrations = useMemo(() => {
+    const formIntegrations = form.watch('integrationConfigurations') || []
+    return formIntegrations.map((integration: { 
+      type: string; 
+      name: string; 
+      credentials: IntegrationCredentials; 
+      selectedTools: string[]; 
+      isConnected: boolean;
+      settings?: { selectedTools?: string[]; isConnected?: boolean };
+    }) => {
+      const availableIntegration = AVAILABLE_INTEGRATIONS.find(ai => ai.id === integration.type)
       return {
-        id: integration.id || integration.type,
+        id: integration.type, // Use type as the ID for consistency
         name: integration.name,
+        type: integration.type,
         icon: availableIntegration?.icon || '🔗',
         color: availableIntegration?.color || 'blue',
         credentials: integration.credentials,
-        selectedTools: integration.settings?.selectedTools || [],
-        isConnected: integration.settings?.isConnected || false
+        selectedTools: integration.selectedTools || integration.settings?.selectedTools || [],
+        isConnected: integration.isConnected || integration.settings?.isConnected || false
       }
     })
-    setConfiguredIntegrations(displayIntegrations)
-  }, [formIntegrations])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.watch('integrationConfigurations')])
 
   const handleSelectIntegration = (integrationId: string) => {
     setSelectedIntegration(integrationId)
@@ -73,7 +79,7 @@ export function IntegrationsStep({ form }: StepProps) {
   const handleDeleteIntegration = (integrationId: string) => {
     // Remove from form data
     const currentConfigs = form.getValues('integrationConfigurations') || []
-    const updatedConfigs = currentConfigs.filter((config: any) => (config.id || config.type) !== integrationId)
+    const updatedConfigs = currentConfigs.filter((config: ConfiguredIntegration) => config.type !== integrationId)
     form.setValue('integrationConfigurations', updatedConfigs)
     
     // Also remove from enabled integrations

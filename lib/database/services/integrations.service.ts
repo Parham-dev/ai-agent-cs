@@ -1,5 +1,6 @@
 import { prisma } from '../database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
+import type { IntegrationCredentials } from '@/lib/types/integrations'
 import '../../types/prisma-json'
 
 // Define Integration type based on our schema
@@ -9,7 +10,7 @@ export interface Integration {
   agentId: string | null
   type: string
   name: string
-  credentials: PrismaJson.IntegrationCredentials
+  credentials: IntegrationCredentials
   settings: PrismaJson.IntegrationSettings
   isActive: boolean
   createdAt: Date
@@ -30,14 +31,14 @@ export interface CreateIntegrationData {
   agentId?: string | null
   type: string
   name: string
-  credentials?: PrismaJson.IntegrationCredentials
+  credentials?: IntegrationCredentials
   settings?: PrismaJson.IntegrationSettings
   isActive?: boolean
 }
 
 export interface UpdateIntegrationData {
   name?: string
-  credentials?: PrismaJson.IntegrationCredentials
+  credentials?: IntegrationCredentials
   settings?: PrismaJson.IntegrationSettings
   isActive?: boolean
 }
@@ -333,7 +334,7 @@ class IntegrationsService {
   /**
    * Update integration credentials (encrypted storage)
    */
-  async updateIntegrationCredentials(id: string, credentials: PrismaJson.IntegrationCredentials): Promise<Integration> {
+  async updateIntegrationCredentials(id: string, credentials: IntegrationCredentials): Promise<Integration> {
     try {
       const integration = await this.getIntegrationByIdOrThrow(id)
       
@@ -402,14 +403,14 @@ class IntegrationsService {
   /**
    * Validate integration credentials (placeholder for specific validation logic)
    */
-  async validateIntegrationCredentials(type: string, credentials: PrismaJson.IntegrationCredentials): Promise<{ isValid: boolean; message: string }> {
+  async validateIntegrationCredentials(type: string, credentials: IntegrationCredentials): Promise<{ isValid: boolean; message: string }> {
     try {
       // This would contain type-specific validation logic
       // For now, return a basic validation
       switch (type.toLowerCase()) {
         case INTEGRATION_TYPES.SHOPIFY:
-          if (!credentials.storeDomain || !credentials.accessToken) {
-            return { isValid: false, message: 'Shopify integration requires storeDomain and accessToken' }
+          if (!credentials.storeName || !credentials.accessToken) {
+            return { isValid: false, message: 'Shopify integration requires storeName and accessToken' }
           }
           break
         case INTEGRATION_TYPES.STRIPE:

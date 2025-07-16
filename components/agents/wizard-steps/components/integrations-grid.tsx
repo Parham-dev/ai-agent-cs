@@ -3,13 +3,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Trash2, Check } from 'lucide-react'
+import type { IntegrationCredentials } from '@/lib/types/integrations'
 
 export interface ConfiguredIntegration {
   id: string
   name: string
+  type: string  // Integration type (e.g., 'shopify', 'stripe')
   icon: React.ReactNode
   color: string
-  credentials: Record<string, string>
+  credentials: IntegrationCredentials
   selectedTools: string[]
   isConnected: boolean
 }

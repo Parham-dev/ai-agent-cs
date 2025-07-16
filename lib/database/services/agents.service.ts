@@ -1,5 +1,6 @@
 import { prisma } from '../database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
+import type { Integration } from './integrations.service'
 
 // Define Agent type based on our schema
 export interface Agent {
@@ -9,7 +10,7 @@ export interface Agent {
   instructions: string
   tools: string[]
   model: string
-  agentConfig: any // JSON field for agent configuration
+  agentConfig: PrismaJson.AgentConfigData // JSON field for agent configuration
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -32,7 +33,7 @@ export interface CreateAgentData {
   instructions: string
   tools?: string[]
   model?: string
-  agentConfig?: any
+  agentConfig?: PrismaJson.AgentConfigData
   isActive?: boolean
 }
 
@@ -41,7 +42,7 @@ export interface UpdateAgentData {
   instructions?: string
   tools?: string[]
   model?: string
-  agentConfig?: any
+  agentConfig?: PrismaJson.AgentConfigData
   isActive?: boolean
 }
 
@@ -136,7 +137,7 @@ class AgentsService {
   /**
    * Get agent with its integrations
    */
-  async getAgentWithIntegrations(id: string): Promise<(AgentWithStats & { integrations: any[] }) | null> {
+  async getAgentWithIntegrations(id: string): Promise<(AgentWithStats & { integrations: Integration[] }) | null> {
     try {
       const agent = await prisma.agent.findUnique({
         where: { id },

@@ -6,7 +6,7 @@ export interface CreateAgentRequest {
   instructions: string
   tools?: string[]
   model?: string
-  agentConfig?: any
+  agentConfig?: Record<string, unknown>
   isActive?: boolean
 }
 
