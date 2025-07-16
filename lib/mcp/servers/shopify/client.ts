@@ -16,7 +16,7 @@ export class ShopifyMCPClient {
     
     // Initialize the base Shopify client
     this.client = new BaseShopifyClient({
-      storeName: credentials.shopDomain as string,
+      storeName: credentials.shopUrl as string,
       accessToken: credentials.accessToken as string
     });
   }
@@ -99,7 +99,7 @@ export class ShopifyMCPClient {
       const response = await this.client.listProducts(1);
       
       logger.info('Shopify credentials validated', { 
-        shopDomain: this.credentials.shopDomain,
+        shopDomain: this.credentials.shopUrl,
         productCount: response?.length || 0
       });
       
@@ -200,13 +200,13 @@ export class ShopifyMCPClient {
    * Get client statistics
    */
   getStats(): {
-    shopDomain: string;
+    shopUrl: string;
     apiVersion: string;
     connected: boolean;
     lastActivity?: Date;
   } {
     return {
-      shopDomain: this.credentials.shopDomain,
+      shopUrl: this.credentials.shopUrl,
       apiVersion: this.credentials.apiVersion || '2023-10',
       connected: true, // Simplified for now
       lastActivity: new Date()

@@ -175,21 +175,24 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
         
         switch (integration.type) {
           case 'shopify':
-            if (!integration.credentials.storeName || !integration.credentials.accessToken) {
+            if (!integration.credentials.shopUrl || !integration.credentials.accessToken) {
               logger.error('Missing required Shopify credentials', {
                 integrationId: integration.id,
-                hasStoreName: !!integration.credentials.storeName,
+                hasShopUrl: !!integration.credentials.shopUrl,
                 hasAccessToken: !!integration.credentials.accessToken
               });
               continue; // Skip this integration
             }
             
-            // Cast to ShopifyCredentials since we've validated the required fields
-            const shopifyCredentials = integration.credentials as { storeName: string; accessToken: string };
+            // Convert shopUrl to storeName for legacy tools and cast to ShopifyCredentials
+            const shopifyCredentials = {
+              storeName: integration.credentials.shopUrl as string,
+              accessToken: integration.credentials.accessToken as string
+            };
             tools.push(...createShopifyTools(shopifyCredentials));
             logger.debug('Added Shopify tools', { 
               integrationId: integration.id,
-              storeName: shopifyCredentials.storeName
+              shopUrl: integration.credentials.shopUrl
             });
             break;
           // Future integrations will be added here

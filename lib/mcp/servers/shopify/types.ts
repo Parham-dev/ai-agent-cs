@@ -9,7 +9,7 @@ export * from '@/lib/integrations/shopify/types';
 export interface MCPServerCredentials {
   type: 'shopify';
   credentials: {
-    shopDomain: string;
+    shopUrl: string;
     accessToken: string;
     apiVersion?: string;
   };

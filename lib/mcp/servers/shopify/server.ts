@@ -193,7 +193,7 @@ class ShopifyMCPServer {
         continue;
       }
 
-      const required = ['shopDomain', 'accessToken'];
+      const required = ['shopUrl', 'accessToken'];
       const missing = required.filter(field => !(credential.credentials as Record<string, unknown>)[field]);
       
       if (missing.length > 0) {
@@ -201,7 +201,7 @@ class ShopifyMCPServer {
       }
 
       logger.debug('Shopify credentials validated', {
-        shopDomain: credential.credentials.shopDomain
+        shopDomain: credential.credentials.shopUrl
       });
     }
   }
