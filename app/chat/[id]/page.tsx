@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Bot, Activity, Brain } from 'lucide-react'
+import { ArrowLeft, Bot, Activity } from 'lucide-react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { Thread } from '@/components/assistant-ui/thread'
 import { apiClient } from '@/lib/api/client'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAgentChatRuntime } from '@/lib/assistant-ui/runtime'
+import { DashboardLayout } from '@/components/dashboard/layout'
 import type { ApiAgent } from '@/lib/types'
 
 
@@ -104,83 +105,89 @@ export default function AgentChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 flex flex-col">
-      <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/agents" className="flex items-center space-x-2">
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to Agents</span>
-              </Link>
-            </Button>
-          </div>
-          
-          <div className="flex items-center space-x-3 bg-background rounded-lg px-4 py-2 shadow-md">
-            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-              <Bot className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="font-medium text-sm">{agent.name}</p>
-              <div className="flex items-center space-x-2">
-                <Badge variant={agent.isActive ? "default" : "secondary"} className="text-xs">
-                  {agent.isActive ? "Active" : "Inactive"}
-                </Badge>
-                <span className="text-xs text-muted-foreground">{agent.model}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Chat Container */}
-        <div className="flex-1 bg-background rounded-xl shadow-lg flex flex-col overflow-hidden">
-          {/* Chat Header */}
-          <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-6 py-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                <Brain className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="font-bold text-lg">{agent.name}</h1>
-                <div className="flex items-center space-x-2 text-sm opacity-90">
-                  <Activity className="w-4 h-4" />
-                  <span>Ready to chat</span>
-                  {agent.agentIntegrations && agent.agentIntegrations.length > 0 && (
-                    <>
-                      <span>•</span>
-                      <span>{agent.agentIntegrations.length} integrations connected</span>
-                    </>
-                  )}
+    <DashboardLayout 
+      title={agent ? `Chat with ${agent.name}` : 'Agent Chat'}
+      subtitle={agent ? agent.description || 'AI Customer Service Agent' : undefined}
+    >
+      {/* Chat container that accounts for fixed footer */}
+      <div className="flex flex-col h-full">
+        {/* Sticky Header */}
+        <div className="fixed top-20 left-0 right-0 z-50 bg-background/98 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 lg:ml-[280px]">
+            <div className="max-w-4xl mx-auto">
+              {/* Single Row Header */}
+              <div className="flex items-center gap-4">
+                {/* Left: Back button and Agent info */}
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/agents" className="flex items-center gap-2 text-sm">
+                      <ArrowLeft size={16} />
+                      Back to Agents
+                    </Link>
+                  </Button>
+                  
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                      <Bot className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    
+                    <div className="flex items-center gap-3 min-w-0">
+                      <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                        {agent.name}
+                      </h1>
+                      <Badge variant={agent.isActive ? "default" : "secondary"} className="font-medium text-xs">
+                        {agent.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                      
+                      <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Model:</span>
+                          <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">
+                            {agent.model}
+                          </code>
+                        </div>
+                        
+                        {agent.agentIntegrations && agent.agentIntegrations.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">Integrations:</span>
+                            <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">
+                              {agent.agentIntegrations.length} connected
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-1">
+                          <Activity className="h-3 w-3" />
+                          <span>Ready to chat</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Assistant UI Thread */}
-          <div className="flex-1 overflow-hidden">
-            {(() => {
-              console.log('🔥 Rendering AssistantRuntimeProvider with runtime:', runtime)
-              return null
-            })()}
-            <AssistantRuntimeProvider runtime={runtime}>
-              {(() => {
-                console.log('🔥 Rendering Thread component')
-                return null
-              })()}
-              <Thread />
-            </AssistantRuntimeProvider>
-          </div>
-          
-          {!agent.isActive && (
-            <div className="border-t bg-background p-4">
-              <p className="text-xs text-muted-foreground text-center">
-                This agent is currently inactive. Please activate it to start chatting.
-              </p>
-            </div>
-          )}
         </div>
+
+        {/* Chat Interface - takes remaining space with top padding for sticky header */}
+        <div className="flex-1 min-h-0 relative pt-16">
+          <AssistantRuntimeProvider runtime={runtime}>
+            <Thread />
+          </AssistantRuntimeProvider>
+        </div>
+        
+        {!agent.isActive && (
+          <div className="fixed bottom-20 left-0 right-0 z-40 bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-200 dark:border-yellow-800">
+            <div className="p-3 lg:ml-[280px]">
+              <div className="max-w-4xl mx-auto">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
+                  This agent is currently inactive. Please activate it to start chatting.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </DashboardLayout>
   )
 }

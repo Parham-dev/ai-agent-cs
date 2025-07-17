@@ -1,5 +1,3 @@
-'use client'
-
 import {
   ActionBarPrimitive,
   BranchPickerPrimitive,
@@ -27,31 +25,43 @@ import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button
 export const Thread: FC = () => {
   return (
     <ThreadPrimitive.Root
-      className="bg-background box-border flex h-full flex-col overflow-hidden"
+      className="bg-background flex flex-col h-full relative"
       style={{
-        ["--thread-max-width" as string]: "42rem",
+        ["--thread-max-width" as string]: "48rem",
       }}
     >
-      <ThreadPrimitive.Viewport className="flex h-full flex-col items-center overflow-y-scroll scroll-smooth bg-inherit px-4 pt-8">
-        <ThreadWelcome />
+      {/* Chat Messages Area */}
+      <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto bg-inherit">
+        <div className="flex flex-col items-center px-4 py-6 pb-28 min-h-full">
+          <ThreadWelcome />
 
-        <ThreadPrimitive.Messages
-          components={{
-            UserMessage: UserMessage,
-            EditComposer: EditComposer,
-            AssistantMessage: AssistantMessage,
-          }}
-        />
+          <ThreadPrimitive.Messages
+            components={{
+              UserMessage: UserMessage,
+              EditComposer: EditComposer,
+              AssistantMessage: AssistantMessage,
+            }}
+          />
 
-        <ThreadPrimitive.If empty={false}>
-          <div className="min-h-8 flex-grow" />
-        </ThreadPrimitive.If>
-
-        <div className="sticky bottom-0 mt-3 flex w-full max-w-[var(--thread-max-width)] flex-col items-center justify-end rounded-t-lg bg-inherit pb-4">
-          <ThreadScrollToBottom />
-          <Composer />
+          <ThreadPrimitive.If empty={false}>
+            <div className="flex-grow min-h-8" />
+          </ThreadPrimitive.If>
         </div>
       </ThreadPrimitive.Viewport>
+
+      {/* Scroll to Bottom Button */}
+      <ThreadScrollToBottom />
+
+      {/* Fixed Composer at Bottom */}
+      <div className="fixed bottom-10 left-0 right-0 z-50 bg-background/98 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700">
+        <div className="p-4 lg:ml-[280px]">
+          <div className="w-full max-w-4xl mx-auto">
+            <div className="w-full max-w-[var(--thread-max-width)] mx-auto">
+              <Composer />
+            </div>
+          </div>
+        </div>
+      </div>
     </ThreadPrimitive.Root>
   );
 };
@@ -62,7 +72,7 @@ const ThreadScrollToBottom: FC = () => {
       <TooltipIconButton
         tooltip="Scroll to bottom"
         variant="outline"
-        className="absolute -top-8 rounded-full disabled:invisible"
+        className="fixed bottom-24 z-40 rounded-full disabled:invisible shadow-lg bg-background border-2 lg:left-[calc(50%+140px)] left-1/2 transform -translate-x-1/2"
       >
         <ArrowDownIcon />
       </TooltipIconButton>
@@ -73,9 +83,11 @@ const ThreadScrollToBottom: FC = () => {
 const ThreadWelcome: FC = () => {
   return (
     <ThreadPrimitive.Empty>
-      <div className="flex w-full max-w-[var(--thread-max-width)] flex-grow flex-col">
-        <div className="flex w-full flex-grow flex-col items-center justify-center">
-          <p className="mt-4 font-medium">How can I help you today?</p>
+      <div className="flex w-full max-w-4xl flex-col items-center justify-center min-h-[50vh] px-4">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            How can I help you today?
+          </h1>
         </div>
         <ThreadWelcomeSuggestions />
       </div>
@@ -85,25 +97,25 @@ const ThreadWelcome: FC = () => {
 
 const ThreadWelcomeSuggestions: FC = () => {
   return (
-    <div className="mt-3 flex w-full items-stretch justify-center gap-4">
+    <div className="mt-8 flex w-full items-stretch justify-center gap-3 max-w-2xl">
       <ThreadPrimitive.Suggestion
-        className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-        prompt="What can you help me with?"
+        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 flex flex-1 flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 p-4 transition-colors ease-in cursor-pointer"
+        prompt="What services do you offer?"
         method="replace"
         autoSend
       >
-        <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-          What can you help me with?
+        <span className="text-sm text-center font-medium text-gray-700 dark:text-gray-300">
+          What services do you offer?
         </span>
       </ThreadPrimitive.Suggestion>
       <ThreadPrimitive.Suggestion
-        className="hover:bg-muted/80 flex max-w-sm grow basis-0 flex-col items-center justify-center rounded-lg border p-3 transition-colors ease-in"
-        prompt="Tell me about your capabilities"
+        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 flex flex-1 flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 p-4 transition-colors ease-in cursor-pointer"
+        prompt="How can I get support?"
         method="replace"
         autoSend
       >
-        <span className="line-clamp-2 text-ellipsis text-sm font-semibold">
-          Tell me about your capabilities
+        <span className="text-sm text-center font-medium text-gray-700 dark:text-gray-300">
+          How can I get support?
         </span>
       </ThreadPrimitive.Suggestion>
     </div>
@@ -112,14 +124,16 @@ const ThreadWelcomeSuggestions: FC = () => {
 
 const Composer: FC = () => {
   return (
-    <ComposerPrimitive.Root className="focus-within:border-ring/20 flex w-full flex-wrap items-end rounded-lg border bg-inherit px-2.5 shadow-sm transition-colors ease-in">
+    <ComposerPrimitive.Root className="relative flex w-full items-end rounded-2xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 focus-within:border-gray-300 dark:focus-within:border-gray-600">
       <ComposerPrimitive.Input
         rows={1}
         autoFocus
-        placeholder="Type your message..."
-        className="placeholder:text-muted-foreground max-h-40 flex-grow resize-none border-none bg-transparent px-2 py-4 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed"
+        placeholder="Message..."
+        className="placeholder:text-muted-foreground max-h-32 min-h-12 flex-grow resize-none border-none bg-transparent px-4 py-3 text-sm outline-none focus:ring-0 disabled:cursor-not-allowed"
       />
-      <ComposerAction />
+      <div className="absolute right-2 bottom-2">
+        <ComposerAction />
+      </div>
     </ComposerPrimitive.Root>
   );
 };
@@ -132,9 +146,9 @@ const ComposerAction: FC = () => {
           <TooltipIconButton
             tooltip="Send"
             variant="default"
-            className="my-2.5 size-8 p-2 transition-opacity ease-in"
+            className="size-8 rounded-lg bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 disabled:opacity-50"
           >
-            <SendHorizontalIcon />
+            <SendHorizontalIcon className="size-4" />
           </TooltipIconButton>
         </ComposerPrimitive.Send>
       </ThreadPrimitive.If>
@@ -143,7 +157,7 @@ const ComposerAction: FC = () => {
           <TooltipIconButton
             tooltip="Cancel"
             variant="default"
-            className="my-2.5 size-8 p-2 transition-opacity ease-in"
+            className="size-8 rounded-lg bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
           >
             <CircleStopIcon />
           </TooltipIconButton>
@@ -193,7 +207,7 @@ const EditComposer: FC = () => {
           <Button variant="ghost">Cancel</Button>
         </ComposerPrimitive.Cancel>
         <ComposerPrimitive.Send asChild>
-          <Button>Save</Button>
+          <Button>Send</Button>
         </ComposerPrimitive.Send>
       </div>
     </ComposerPrimitive.Root>
