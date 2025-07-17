@@ -22,18 +22,12 @@ interface AgentIntegrationCardProps {
   integration: ApiIntegration
   agentIntegration?: ApiAgentIntegration
   isConnected: boolean
-  onToggleConnection: (integrationId: string, connect: boolean) => Promise<void>
-  onConfigureTools: (integrationId: string) => void
-  loading?: boolean
 }
 
 export function AgentIntegrationCard({
   integration,
   agentIntegration,
-  isConnected,
-  onToggleConnection,
-  onConfigureTools,
-  loading = false
+  isConnected
 }: AgentIntegrationCardProps) {
   const selectedToolsCount = agentIntegration?.selectedTools?.length || 0
 

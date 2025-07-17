@@ -282,7 +282,7 @@ export default function AgentDetailPage() {
                     </ThemeIcon>
                     <Title order={3} fw={600}>Integrations</Title>
                   </Group>
-                  {agent && <AgentIntegrationsManager agentId={agent.id} agentName={agent.name || 'Unknown Agent'} />}
+                  {agent && <AgentIntegrationsManager agentId={agent.id} />}
                 </Paper>
 
                 {/* Tools */}

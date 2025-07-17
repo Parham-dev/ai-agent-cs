@@ -6,6 +6,7 @@ import "./globals.css";
 import { MantineThemeProvider } from "@/components/providers";
 import { ColorSchemeScript } from "@mantine/core";
 import { Toaster } from "sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = {
   title: "AI Customer Service Platform",
@@ -23,10 +24,12 @@ export default function RootLayout({
         <ColorSchemeScript />
       </head>
       <body className="antialiased">
-        <MantineThemeProvider>
-          {children}
-          <Toaster richColors />
-        </MantineThemeProvider>
+        <TooltipProvider>
+          <MantineThemeProvider>
+            {children}
+            <Toaster richColors />
+          </MantineThemeProvider>
+        </TooltipProvider>
       </body>
     </html>
   );
