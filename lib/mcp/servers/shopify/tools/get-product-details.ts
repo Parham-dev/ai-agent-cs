@@ -60,7 +60,7 @@ export const getProductDetailsTool = {
       // Get product details
       const response = await client.getProductDetails(params.productId);
 
-      if (!response.product) {
+      if (!response) {
         return {
           success: false,
           error: {
@@ -77,13 +77,13 @@ export const getProductDetailsTool = {
 
       // Format response
       const formattedResponse: GetProductDetailsResponse = {
-        product: formatProductDetails(response.product as Record<string, unknown>)
+        product: formatProductDetails(response as unknown as Record<string, unknown>)
       };
 
       logger.info('Get product details completed successfully', {
         requestId: context.requestId,
         productId: params.productId,
-        productTitle: (response.product as Record<string, unknown>).title,
+        productTitle: response.title,
         executionTime: Date.now() - startTime
       });
 

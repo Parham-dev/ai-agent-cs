@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@assistant-ui/react": "^0.10.25",
+    "@assistant-ui/react-markdown": "^0.10.6",
     "@hookform/resolvers": "^5.1.1",
     "@mantine/charts": "^8.1.0",
     "@mantine/core": "^8.1.0",

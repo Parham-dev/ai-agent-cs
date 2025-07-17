@@ -71,8 +71,8 @@ export const listProductsTool = {
 
       // Format response
       const formattedResponse: ListProductsResponse = {
-        products: response.products.map((product: unknown) => formatProductListing(product as Record<string, unknown>)),
-        totalCount: response.products.length,
+        products: response.map((product: unknown) => formatProductListing(product as Record<string, unknown>)),
+        totalCount: response.length,
         hasNextPage: false, // Simplified for now
         hasPreviousPage: false // Simplified for now
       };
@@ -81,7 +81,7 @@ export const listProductsTool = {
         requestId: context.requestId,
         limit: params.limit,
         status: params.status,
-        resultCount: formattedResponse.products.length,
+        resultCount: response.length,
         executionTime: Date.now() - startTime
       });
 

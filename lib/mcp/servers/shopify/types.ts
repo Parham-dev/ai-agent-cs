@@ -2,8 +2,288 @@
  * TypeScript interfaces for Shopify MCP server
  */
 
-// Re-export types from the existing integration for compatibility
-export * from '@/lib/integrations/shopify/types';
+// Core Shopify types
+export interface ShopifyCredentials {
+  shopUrl: string;
+  accessToken: string;
+}
+
+export interface ShopifyProduct {
+  id: number;
+  title: string;
+  body_html: string;
+  vendor: string;
+  product_type: string;
+  handle: string;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+  status: string;
+  tags: string;
+  variants: ShopifyVariant[];
+  images: ShopifyImage[];
+  options: ShopifyOption[];
+}
+
+export interface ShopifyVariant {
+  id: number;
+  title: string;
+  price: string;
+  compare_at_price: string | null;
+  sku: string;
+  inventory_quantity: number;
+  available: boolean;
+  weight: number;
+  weight_unit: string;
+}
+
+export interface ShopifyImage {
+  id: number;
+  src: string;
+  alt: string | null;
+}
+
+export interface ShopifyOption {
+  id: number;
+  name: string;
+  values: string[];
+}
+
+// New Admin API types
+export interface ShopifyLocation {
+  id: number;
+  name: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  zip: string;
+  province: string;
+  country: string;
+  phone?: string;
+  created_at: string;
+  updated_at: string;
+  country_code: string;
+  country_name: string;
+  province_code: string;
+  legacy: boolean;
+  active: boolean;
+  admin_graphql_api_id: string;
+  localized_country_name: string;
+  localized_province_name: string;
+}
+
+export interface ShopifyInventoryLevel {
+  inventory_item_id: number;
+  location_id: number;
+  available: number;
+  updated_at: string;
+  admin_graphql_api_id: string;
+}
+
+export interface ShopifyInventoryItem {
+  id: number;
+  sku: string;
+  created_at: string;
+  updated_at: string;
+  requires_shipping: boolean;
+  cost: string;
+  country_code_of_origin: string;
+  province_code_of_origin: string;
+  harmonized_system_code: string;
+  tracked: boolean;
+  country_harmonized_system_codes: Record<string, unknown>[];
+  admin_graphql_api_id: string;
+}
+
+export interface ShopifyPolicy {
+  title: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+  handle: string;
+  id: number;
+  url: string;
+}
+
+export interface ShopifyMarketingEvent {
+  id: number;
+  event_type: string;
+  marketing_channel: string;
+  paid: boolean;
+  referring_domain: string;
+  budget: string;
+  currency: string;
+  budget_type: string;
+  started_at: string;
+  ended_at: string;
+  scheduled_to_end_at: string;
+  utm_campaign: string;
+  utm_source: string;
+  utm_medium: string;
+  event_target: string;
+  description: string;
+  manage_url: string;
+  preview_url: string;
+  utm_parameters: Record<string, string>;
+  marketed_resources: Array<{
+    id: number;
+    type: string;
+  }>;
+  remote_id: string;
+  admin_graphql_api_id: string;
+}
+
+export interface ShopifyPage {
+  id: number;
+  title: string;
+  shop_id: number;
+  handle: string;
+  body_html: string;
+  author: string;
+  created_at: string;
+  updated_at: string;
+  published_at: string;
+  template_suffix: string;
+  admin_graphql_api_id: string;
+}
+
+export interface ShopifyNavigation {
+  id: number;
+  handle: string;
+  title: string;
+  updated_at: string;
+  body_html: string;
+  published_at: string;
+  summary_only: boolean;
+  template_suffix: string;
+  tags: string;
+  admin_graphql_api_id: string;
+}
+
+export interface ShopifyPaymentTerm {
+  id: number;
+  name: string;
+  net_payment_term_days: number;
+  payment_schedules: Array<{
+    id: number;
+    percentage: number;
+    issued_at: string;
+    due_at: string;
+    completed_at: string;
+    expected_amount: string;
+    amount: string;
+  }>;
+  type: string;
+  payment_terms_type: string;
+  due_in_days: number;
+  created_at: string;
+  updated_at: string;
+  admin_graphql_api_id: string;
+}
+
+export interface ShopifyProductListing {
+  product_id: number;
+  created_at: string;
+  updated_at: string;
+  body_html: string;
+  handle: string;
+  product_type: string;
+  title: string;
+  vendor: string;
+  available: boolean;
+  tags: string;
+  published_at: string;
+  variants: Array<{
+    id: number;
+    title: string;
+    option_values: Array<{
+      option_id: number;
+      name: string;
+      value: string;
+    }>;
+    price: string;
+    formatted_price: string;
+    compare_at_price: string;
+    grams: number;
+    requires_shipping: boolean;
+    sku: string;
+    barcode: string;
+    available: boolean;
+    inventory_policy: string;
+    inventory_quantity: number;
+    weight: number;
+    weight_unit: string;
+    position: number;
+    created_at: string;
+    updated_at: string;
+  }>;
+  images: Array<{
+    id: number;
+    created_at: string;
+    position: number;
+    updated_at: string;
+    src: string;
+    variant_ids: number[];
+  }>;
+  options: Array<{
+    id: number;
+    name: string;
+    position: number;
+    values: string[];
+  }>;
+}
+
+export interface ShopifyShippingZone {
+  id: number;
+  name: string;
+  profile_id: string;
+  location_group_id: string;
+  admin_graphql_api_id: string;
+  countries: Array<{
+    id: number;
+    name: string;
+    code: string;
+    tax: number;
+    provinces: Array<{
+      id: number;
+      name: string;
+      code: string;
+      tax: number;
+      tax_name: string;
+      tax_type: string;
+      shipping_zone_id: number;
+    }>;
+  }>;
+  weight_based_shipping_rates: Array<{
+    id: number;
+    weight_low: number;
+    weight_high: number;
+    price: string;
+    name: string;
+  }>;
+  price_based_shipping_rates: Array<{
+    id: number;
+    min_order_subtotal: string;
+    max_order_subtotal: string;
+    price: string;
+    name: string;
+  }>;
+  carrier_shipping_rate_providers: Array<{
+    id: number;
+    carrier_service_id: number;
+    flat_modifier: string;
+    percent_modifier: number;
+    service_filter: Record<string, unknown>;
+    shipping_zone_id: number;
+  }>;
+}
+
+export interface ShopifyLocale {
+  locale: string;
+  name: string;
+  primary: boolean;
+  published: boolean;
+}
 
 // Additional MCP-specific types
 export interface MCPServerCredentials {

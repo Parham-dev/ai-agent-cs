@@ -315,6 +315,7 @@ export default function AgentDetailPage() {
                       justify="flex-start"
                       component={Link} 
                       href={`/chat/${agent.id}`}
+                      target="_blank"
                       leftSection={<MessageSquare size={18} />}
                       radius="md"
                     >

@@ -1,91 +1,271 @@
-import { ShopifyClient as BaseShopifyClient } from '@/lib/integrations/shopify/client';
 import { logger } from '@/lib/utils/logger';
-import { MCPServerCredentials, MCPServerError } from './types';
+import { 
+  MCPServerCredentials, 
+  MCPServerError,
+  ShopifyCredentials,
+  ShopifyProduct,
+  ShopifyLocation,
+  ShopifyInventoryLevel,
+  ShopifyInventoryItem,
+  ShopifyPolicy,
+  ShopifyMarketingEvent,
+  ShopifyPage,
+  ShopifyPaymentTerm,
+  ShopifyProductListing,
+  ShopifyShippingZone,
+  ShopifyLocale,
+  ShopifyVariant
+} from './types';
 
 /**
  * Shopify API client wrapper for MCP server
  */
+function cleanStoreName(storeName: string): string {
+  return storeName.replace(/^https?:\/\//, '').replace(/\.myshopify\.com$/, '').replace(/\/$/, '');
+}
+
 export class ShopifyMCPClient {
-  private client: BaseShopifyClient;
   private credentials: MCPServerCredentials['credentials'];
   private settings: MCPServerCredentials['settings'];
+  private baseUrl: string;
 
   constructor(credentials: MCPServerCredentials['credentials'], settings?: MCPServerCredentials['settings']) {
     this.credentials = credentials;
     this.settings = settings || {};
-    
-    // Initialize the base Shopify client
-    this.client = new BaseShopifyClient({
-      shopUrl: credentials.shopUrl as string,
-      accessToken: credentials.accessToken as string
+    this.baseUrl = `https://${cleanStoreName(credentials.shopUrl as string)}.myshopify.com/admin/api/2024-01`;
+  }
+
+  /**
+   * Make authenticated request to Shopify API
+   */
+  private async makeRequest(endpoint: string): Promise<Response> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'GET',
+      headers: {
+        'X-Shopify-Access-Token': this.credentials.accessToken as string,
+        'Content-Type': 'application/json',
+      },
     });
+
+    return response;
   }
 
   /**
    * Search products by query
    */
-  async searchProducts(query: string, limit: number = 10): Promise<{ products: unknown[] }> {
-    try {
-      logger.debug('Searching products', { query, limit });
-      
-      const response = await this.client.searchProducts(query, limit);
-      
-      logger.debug('Product search completed', { 
-        query, 
-        resultCount: (response as unknown as { products: unknown[] }).products?.length || 0 
-      });
-      
-      return { products: response } as { products: unknown[] };
-      
-    } catch (error) {
-      logger.error('Product search failed', { query, limit }, error as Error);
-      throw this.handleError(error, 'searchProducts');
+  async searchProducts(query: string, limit: number = 10): Promise<ShopifyProduct[]> {
+    const searchLimit = Math.min(limit, 50);
+    const endpoint = `/products.json?title=${encodeURIComponent(query)}&limit=${searchLimit}`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to search products. Status: ${response.status}`);
     }
+
+    const data = await response.json();
+    return data.products || [];
   }
 
   /**
    * Get product details by ID
    */
-  async getProductDetails(productId: string): Promise<{ product: unknown }> {
-    try {
-      logger.debug('Getting product details', { productId });
-      
-      const response = await this.client.getProductDetails(productId);
-      
-      logger.debug('Product details retrieved', { 
-        productId, 
-        title: (response as { title: string })?.title 
-      });
-      
-      return { product: response } as { product: unknown };
-      
-    } catch (error) {
-      logger.error('Get product details failed', { productId }, error as Error);
-      throw this.handleError(error, 'getProductDetails');
+  async getProductDetails(productId: string): Promise<ShopifyProduct | null> {
+    const endpoint = `/products/${productId}.json`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch product details. Status: ${response.status}`);
     }
+
+    const data = await response.json();
+    return data.product || null;
   }
 
   /**
    * List products with optional filtering
    */
-  async listProducts(limit: number = 50, status?: string): Promise<{ products: unknown[] }> {
-    try {
-      logger.debug('Listing products', { limit, status });
-      
-      const response = await this.client.listProducts(limit, status as "active" | "archived" | "draft" | "all" | undefined);
-      
-      logger.debug('Product listing completed', { 
-        limit, 
-        status,
-        resultCount: (response as unknown as { products: unknown[] }).products?.length || 0 
-      });
-      
-      return { products: response } as { products: unknown[] };
-      
-    } catch (error) {
-      logger.error('List products failed', { limit, status }, error as Error);
-      throw this.handleError(error, 'listProducts');
+  async listProducts(limit: number = 50, status?: string): Promise<ShopifyProduct[]> {
+    const productLimit = Math.min(limit, 250);
+    let endpoint = `/products.json?limit=${productLimit}`;
+    
+    if (status && status !== 'all') {
+      endpoint += `&status=${status}`;
     }
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch products. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.products || [];
+  }
+
+  /**
+   * Get store locations
+   */
+  async getLocations(): Promise<ShopifyLocation[]> {
+    const endpoint = `/locations.json`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch locations. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.locations || [];
+  }
+
+  /**
+   * Get inventory levels for a location
+   */
+  async getInventoryLevels(locationId?: number, limit: number = 50): Promise<ShopifyInventoryLevel[]> {
+    let endpoint = `/inventory_levels.json?limit=${Math.min(limit, 250)}`;
+    
+    if (locationId) {
+      endpoint += `&location_ids=${locationId}`;
+    }
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch inventory levels. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.inventory_levels || [];
+  }
+
+  /**
+   * Get inventory items
+   */
+  async getInventoryItems(limit: number = 50): Promise<ShopifyInventoryItem[]> {
+    const endpoint = `/inventory_items.json?limit=${Math.min(limit, 250)}`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch inventory items. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.inventory_items || [];
+  }
+
+  /**
+   * Get store policies (legal policies)
+   */
+  async getPolicies(): Promise<ShopifyPolicy[]> {
+    const endpoint = `/policies.json`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch policies. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.policies || [];
+  }
+
+  /**
+   * Get marketing events
+   */
+  async getMarketingEvents(limit: number = 50): Promise<ShopifyMarketingEvent[]> {
+    const endpoint = `/marketing_events.json?limit=${Math.min(limit, 250)}`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch marketing events. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.marketing_events || [];
+  }
+
+  /**
+   * Get online store pages
+   */
+  async getPages(limit: number = 50): Promise<ShopifyPage[]> {
+    const endpoint = `/pages.json?limit=${Math.min(limit, 250)}`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch pages. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.pages || [];
+  }
+
+  /**
+   * Get payment terms
+   */
+  async getPaymentTerms(limit: number = 50): Promise<ShopifyPaymentTerm[]> {
+    const endpoint = `/payment_terms.json?limit=${Math.min(limit, 250)}`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch payment terms. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.payment_terms || [];
+  }
+
+  /**
+   * Get product listings (for online store)
+   */
+  async getProductListings(limit: number = 50): Promise<ShopifyProductListing[]> {
+    const endpoint = `/product_listings.json?limit=${Math.min(limit, 250)}`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch product listings. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.product_listings || [];
+  }
+
+  /**
+   * Get shipping zones
+   */
+  async getShippingZones(): Promise<ShopifyShippingZone[]> {
+    const endpoint = `/shipping_zones.json`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch shipping zones. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.shipping_zones || [];
+  }
+
+  /**
+   * Get available locales
+   */
+  async getLocales(): Promise<ShopifyLocale[]> {
+    const endpoint = `/locales.json`;
+    
+    const response = await this.makeRequest(endpoint);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch locales. Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.locales || [];
   }
 
   /**
@@ -96,7 +276,7 @@ export class ShopifyMCPClient {
       logger.debug('Validating Shopify credentials');
       
       // Test with a simple API call - use list products as shop endpoint may not exist
-      const response = await this.client.listProducts(1);
+      const response = await this.listProducts(1);
       
       logger.info('Shopify credentials validated', { 
         shopDomain: this.credentials.shopUrl,
@@ -218,7 +398,7 @@ export class ShopifyMCPClient {
    */
   async healthCheck(): Promise<boolean> {
     try {
-      await this.client.listProducts(1);
+      await this.listProducts(1);
       return true;
     } catch (error) {
       logger.error('Shopify health check failed', {}, error as Error);

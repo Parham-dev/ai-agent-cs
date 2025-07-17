@@ -70,8 +70,8 @@ export const searchProductsTool = {
 
       // Format response
       const formattedResponse: SearchProductsResponse = {
-        products: response.products.map((product: unknown) => formatProductSummary(product as Record<string, unknown>)),
-        totalCount: response.products.length
+        products: response.map((product: unknown) => formatProductSummary(product as Record<string, unknown>)),
+        totalCount: response.length
       };
 
       logger.info('Search products completed successfully', {
