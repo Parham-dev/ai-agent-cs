@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/dashboard/layout'
-import { AgentCreationWizard, type AgentFormData } from '@/components/agents/agent-creation-wizard'
+import { AgentCreationWizard, type AgentFormData } from '@/components/agents/creation'
 import { apiClient } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -39,29 +39,12 @@ export default function EditAgentPage() {
       const updatedAgent = await apiClient.updateAgent(agentId, {
         name: data.name,
         description: data.description,
-        systemPrompt: data.instructions,
+        systemPrompt: data.systemPrompt,
         model: data.model,
         temperature: data.temperature,
-        maxTokens: 4000,
+        maxTokens: data.maxTokens,
         isActive: data.isActive,
-        rules: {
-          behavior: {
-            temperature: data.temperature,
-            topP: data.topP,
-            toolChoice: data.toolChoice,
-            outputType: data.outputType
-          },
-          tools: {
-            selectedTools: data.selectedTools,
-            customTools: data.customTools
-          },
-          integrations: data.integrationConfigurations?.map(config => ({
-            id: config.id,
-            selectedTools: config.selectedTools || [],
-            settings: config.settings || {}
-          })) || [],
-          guardrails: data.guardrails
-        }
+        rules: data.rules,
       })
 
       toast.success('Agent updated successfully!')
@@ -117,18 +100,21 @@ export default function EditAgentPage() {
     name: agent.name,
     description: agent.description || '',
     organizationId: agent.organizationId,
-    instructions: agent.systemPrompt || '',
+    systemPrompt: agent.systemPrompt || '',
     model: agent.model,
-    selectedTools: [],
+    temperature: agent.temperature,
+    maxTokens: agent.maxTokens,
     isActive: agent.isActive,
-    temperature: agent.temperature || 1,
-    topP: 1,
-    toolChoice: 'auto',
-    outputType: 'text',
-    enabledIntegrations: [],
-    customTools: [],
-    handoffs: [],
-    guardrails: { input: [], output: [] }
+    rules: {
+      outputType: (agent.rules as Record<string, unknown>)?.outputType as 'text' | 'structured' || 'text',
+      toolChoice: (agent.rules as Record<string, unknown>)?.toolChoice as 'auto' | 'required' | 'none' || 'auto',
+      handoffs: (agent.rules as Record<string, unknown>)?.handoffs as string[] || [],
+      guardrails: (agent.rules as Record<string, unknown>)?.guardrails as { input: string[], output: string[] } || { input: [], output: [] },
+      customInstructions: (agent.rules as Record<string, unknown>)?.customInstructions as string[] || []
+    },
+    selectedIntegrations: [],
+    availableTools: [],
+    selectedTools: [],
   }
 
   return (
@@ -136,25 +122,13 @@ export default function EditAgentPage() {
       title={`Edit ${agent.name}`} 
       subtitle="Update your agent configuration and settings"
     >
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/agents/${agent.id}`} className="inline-flex items-center space-x-2">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Agent</span>
-            </Link>
-          </Button>
-        </div>
-
-        <AgentCreationWizard
-          organizationId={agent.organizationId}
-          initialData={initialFormData}
-          mode="edit"
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
-      </div>
+      <AgentCreationWizard
+        organizationId={agent.organizationId}
+        initialData={initialFormData}
+        mode="edit"
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
     </DashboardLayout>
   )
 }

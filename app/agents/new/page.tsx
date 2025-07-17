@@ -1,13 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { DashboardLayout } from '@/components/dashboard/layout'
-import { AgentCreationWizard, type AgentFormData } from '@/components/agents/agent-creation-wizard'
+import { AgentCreationWizard, type AgentFormData } from '@/components/agents/creation'
 import { apiClient } from '@/lib/api/client'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
 import { createClientLogger } from '@/lib/utils/client-logger'
 
 export default function NewAgentPage() {
@@ -18,7 +15,7 @@ export default function NewAgentPage() {
     try {
       logger.info('Creating agent', {
         name: data.name,
-        integrationsCount: data.integrationConfigurations?.length || 0,
+        integrationsCount: data.selectedIntegrations?.length || 0,
         action: 'agent-creation'
       });
 
@@ -26,53 +23,36 @@ export default function NewAgentPage() {
       const agent = await apiClient.createAgent({
         name: data.name,
         description: data.description,
-        systemPrompt: data.instructions,
+        systemPrompt: data.systemPrompt,
         model: data.model,
         temperature: data.temperature,
-        maxTokens: 4000,
-        rules: {
-          behavior: {
-            temperature: data.temperature,
-            topP: data.topP,
-            toolChoice: data.toolChoice,
-            outputType: data.outputType
-          },
-          tools: {
-            selectedTools: data.selectedTools,
-            customTools: data.customTools
-          },
-          integrations: data.integrationConfigurations?.map(config => ({
-            id: config.id,
-            selectedTools: config.selectedTools || [],
-            settings: config.settings || {}
-          })) || [],
-          guardrails: data.guardrails
-        }
+        maxTokens: data.maxTokens,
+        rules: data.rules
       })
 
       // Create agent-integration relationships if there are any configured integrations
-      if (data.integrationConfigurations && data.integrationConfigurations.length > 0) {
+      if (data.selectedIntegrations && data.selectedIntegrations.length > 0) {
         logger.info('Creating agent-integration relationships', {
           agentId: agent.id,
-          integrationsCount: data.integrationConfigurations.length
+          integrationsCount: data.selectedIntegrations.length
         });
 
-        for (const config of data.integrationConfigurations) {
+        for (const integration of data.selectedIntegrations) {
           try {
             await apiClient.createAgentIntegration({
               agentId: agent.id,
-              integrationId: config.id,
-              selectedTools: config.selectedTools || []
+              integrationId: integration.integrationId,
+              selectedTools: integration.selectedTools || []
             });
             logger.info('Created agent-integration relationship', {
               agentId: agent.id,
-              integrationId: config.id,
-              toolsCount: config.selectedTools?.length || 0
+              integrationId: integration.integrationId,
+              toolsCount: integration.selectedTools?.length || 0
             });
           } catch (integrationError) {
             logger.error('Failed to create agent-integration relationship', {
               agentId: agent.id,
-              integrationId: config.id
+              integrationId: integration.integrationId
             }, integrationError as Error);
             // Continue with other integrations even if one fails
           }
@@ -81,7 +61,7 @@ export default function NewAgentPage() {
 
       logger.info('Agent created successfully', { 
         agentId: agent.id,
-        integrationsCount: data.integrationConfigurations?.length || 0
+        integrationsCount: data.selectedIntegrations?.length || 0
       });
 
       toast.success('Agent created successfully!')
@@ -93,26 +73,19 @@ export default function NewAgentPage() {
   }
 
 
+  const handleCancel = () => {
+    router.push('/agents')
+  }
+
   return (
     <DashboardLayout 
       title="Create New Agent" 
       subtitle="Configure your AI agent with custom instructions, tools, and integrations"
     >
-      <div className="space-y-6">
-        {/* Back Navigation */}
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/agents" className="inline-flex items-center space-x-2">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Agents</span>
-            </Link>
-          </Button>
-        </div>
-
-        <AgentCreationWizard
-          onSave={handleSave}
-        />
-      </div>
+      <AgentCreationWizard
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
     </DashboardLayout>
   )
 }

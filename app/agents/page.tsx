@@ -4,9 +4,20 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { 
+  Card, 
+  Grid, 
+  Text, 
+  Button, 
+  Group, 
+  Stack, 
+  TextInput, 
+  Badge, 
+  ThemeIcon,
+  ActionIcon,
+  Center,
+  Loader
+} from '@mantine/core'
 import { 
   Bot, 
   Plus, 
@@ -15,7 +26,8 @@ import {
   Edit,
   Trash2,
   MessageSquare,
-  Eye
+  Eye,
+  AlertCircle
 } from 'lucide-react'
 import { apiClient } from '@/lib/api/client'
 import { toast } from 'sonner'
@@ -98,12 +110,12 @@ export default function AgentsPage() {
   if (loading) {
     return (
       <DashboardLayout title="Agents" subtitle="Manage your AI customer service agents">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading agents...</p>
-          </div>
-        </div>
+        <Center h={300}>
+          <Stack align="center" gap="md">
+            <Loader size="lg" />
+            <Text c="dimmed">Loading agents...</Text>
+          </Stack>
+        </Center>
       </DashboardLayout>
     )
   }
@@ -111,15 +123,19 @@ export default function AgentsPage() {
   if (error) {
     return (
       <DashboardLayout title="Agents" subtitle="Manage your AI customer service agents">
-        <Card className="p-8 text-center">
-          <div className="text-red-500 mb-4">
-            <Bot className="h-12 w-12 mx-auto mb-2" />
-            <h3 className="text-lg font-semibold">Error Loading Agents</h3>
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </div>
-          <Button onClick={fetchAgents}>
-            Try Again
-          </Button>
+        <Card withBorder padding="xl" radius="md">
+          <Stack align="center" gap="md">
+            <ThemeIcon size="xl" variant="light" color="red">
+              <AlertCircle size={24} />
+            </ThemeIcon>
+            <Stack align="center" gap="xs">
+              <Text size="lg" fw={600}>Error Loading Agents</Text>
+              <Text size="sm" c="dimmed" ta="center">{error}</Text>
+            </Stack>
+            <Button onClick={fetchAgents} leftSection={<Bot size={16} />}>
+              Try Again
+            </Button>
+          </Stack>
         </Card>
       </DashboardLayout>
     )
@@ -127,198 +143,212 @@ export default function AgentsPage() {
 
   return (
     <DashboardLayout title="Agents" subtitle="Manage your AI customer service agents">
-      <div className="space-y-6">
+      <Stack gap="xl">
         {/* Header Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search agents..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
+        <Group justify="space-between" align="flex-start">
+          <TextInput
+            placeholder="Search agents..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.currentTarget.value)}
+            leftSection={<Search size={16} />}
+            w={{ base: '100%', sm: 300 }}
+          />
           
-          <Button asChild>
-            <Link href="/agents/new" className="inline-flex items-center space-x-2">
-              <Plus className="h-4 w-4" />
-              <span>Create Agent</span>
-            </Link>
+          <Button 
+            component={Link} 
+            href="/agents/new" 
+            leftSection={<Plus size={16} />}
+          >
+            Create Agent
           </Button>
-        </div>
+        </Group>
 
         {/* Agents Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Agents</p>
-                <p className="text-2xl font-bold">
-                  {agents.length}
-                </p>
-              </div>
-              <Bot className="h-8 w-8 text-primary" />
-            </div>
-          </Card>
+        <Grid>
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="flex-start">
+                <Stack gap="xs">
+                  <Text size="sm" c="dimmed">Total Agents</Text>
+                  <Text size="xl" fw={700}>{agents.length}</Text>
+                </Stack>
+                <ThemeIcon size="xl" variant="light" color="blue">
+                  <Bot size={24} />
+                </ThemeIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
           
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Active Agents</p>
-                <p className="text-2xl font-bold">
-                  {agents.filter(a => a.isActive).length}
-                </p>
-              </div>
-              <Power className="h-8 w-8 text-green-500" />
-            </div>
-          </Card>
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="flex-start">
+                <Stack gap="xs">
+                  <Text size="sm" c="dimmed">Active Agents</Text>
+                  <Text size="xl" fw={700}>{agents.filter(a => a.isActive).length}</Text>
+                </Stack>
+                <ThemeIcon size="xl" variant="light" color="green">
+                  <Power size={24} />
+                </ThemeIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
           
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Integrations</p>
-                <p className="text-2xl font-bold">
-                  {agents.reduce((sum, agent) => sum + (agent.integrations?.length || 0), 0)}
-                </p>
-              </div>
-              <MessageSquare className="h-8 w-8 text-purple-500" />
-            </div>
-          </Card>
-        </div>
+          <Grid.Col span={{ base: 12, md: 4 }}>
+            <Card withBorder padding="lg" radius="md">
+              <Group justify="space-between" align="flex-start">
+                <Stack gap="xs">
+                  <Text size="sm" c="dimmed">Total Integrations</Text>
+                  <Text size="xl" fw={700}>
+                    {agents.reduce((sum, agent) => sum + (agent.integrations?.length || 0), 0)}
+                  </Text>
+                </Stack>
+                <ThemeIcon size="xl" variant="light" color="grape">
+                  <MessageSquare size={24} />
+                </ThemeIcon>
+              </Group>
+            </Card>
+          </Grid.Col>
+        </Grid>
 
         {/* Agents List */}
         {filteredAgents.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Bot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              {searchTerm ? 'No agents found' : 'No agents yet'}
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              {searchTerm 
-                ? `No agents match "${searchTerm}". Try adjusting your search.`
-                : 'Create your first AI agent to start handling customer inquiries.'
-              }
-            </p>
-            {!searchTerm && (
-              <Button asChild size="lg">
-                <Link href="/agents/new" className="inline-flex items-center space-x-2">
-                  <Plus className="h-4 w-4" />
-                  <span>Create Your First Agent</span>
-                </Link>
-              </Button>
-            )}
+          <Card withBorder padding="xl" radius="md">
+            <Stack align="center" gap="md">
+              <ThemeIcon size="xl" variant="light" color="gray">
+                <Bot size={24} />
+              </ThemeIcon>
+              <Stack align="center" gap="xs">
+                <Text size="lg" fw={600}>
+                  {searchTerm ? 'No agents found' : 'No agents yet'}
+                </Text>
+                <Text size="sm" c="dimmed" ta="center">
+                  {searchTerm 
+                    ? `No agents match "${searchTerm}". Try adjusting your search.`
+                    : 'Create your first AI agent to start handling customer inquiries.'
+                  }
+                </Text>
+              </Stack>
+              {!searchTerm && (
+                <Button 
+                  component={Link} 
+                  href="/agents/new" 
+                  size="lg"
+                  leftSection={<Plus size={16} />}
+                >
+                  Create Your First Agent
+                </Button>
+              )}
+            </Stack>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Grid>
             {filteredAgents.map((agent) => (
-              <Card key={agent.id} className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start space-x-3">
-                    <div className={`p-2 rounded-lg ${
-                      agent.isActive 
-                        ? 'bg-green-100 dark:bg-green-900/20' 
-                        : 'bg-muted'
-                    }`}>
-                      <Bot className={`h-5 w-5 ${
-                        agent.isActive 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-muted-foreground'
-                      }`} />
-                    </div>
-                    <div className="flex-1">
-                      <Link 
-                        href={`/agents/${agent.id}`}
-                        className="font-semibold hover:text-primary transition-colors"
+              <Grid.Col key={agent.id} span={{ base: 12, lg: 6 }}>
+                <Card withBorder padding="lg" radius="md" style={{ height: '100%' }}>
+                  <Stack gap="md" h="100%">
+                    {/* Agent Header */}
+                    <Group justify="space-between" align="flex-start">
+                      <Group gap="md" align="flex-start" style={{ flex: 1 }}>
+                        <ThemeIcon 
+                          size="lg" 
+                          variant="light" 
+                          color={agent.isActive ? 'green' : 'gray'}
+                        >
+                          <Bot size={20} />
+                        </ThemeIcon>
+                        <Stack gap="xs" style={{ flex: 1 }}>
+                          <Text 
+                            component={Link} 
+                            href={`/agents/${agent.id}`}
+                            fw={600} 
+                            style={{ textDecoration: 'none' }}
+                            c="inherit"
+                          >
+                            {agent.name}
+                          </Text>
+                          <Text size="sm" c="dimmed" lineClamp={2}>
+                            {agent.systemPrompt || agent.description || 'No description available'}
+                          </Text>
+                        </Stack>
+                      </Group>
+                      <Badge variant={agent.isActive ? 'filled' : 'light'} color={agent.isActive ? 'green' : 'gray'}>
+                        {agent.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </Group>
+
+                    {/* Agent Details */}
+                    <Stack gap="xs" style={{ flex: 1 }}>
+                      <Group justify="space-between">
+                        <Text size="sm" c="dimmed">Model:</Text>
+                        <Badge variant="outline" size="sm">{agent.model}</Badge>
+                      </Group>
+                      
+                      <Group justify="space-between">
+                        <Text size="sm" c="dimmed">Tools:</Text>
+                        <Text size="sm">Via integrations</Text>
+                      </Group>
+                      
+                      <Group justify="space-between">
+                        <Text size="sm" c="dimmed">Integrations:</Text>
+                        <Text size="sm">{agent.integrations?.length || 0} connected</Text>
+                      </Group>
+                    </Stack>
+
+                    {/* Action Buttons */}
+                    <Group justify="space-between" pt="md" style={{ borderTop: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))' }}>
+                      <Group gap="xs">
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => router.push(`/agents/${agent.id}`)}
+                          title="View details"
+                        >
+                          <Eye size={16} />
+                        </ActionIcon>
+                        
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => handleToggleStatus(agent)}
+                          loading={actionLoading === agent.id}
+                          color={agent.isActive ? 'red' : 'green'}
+                          title={agent.isActive ? 'Deactivate agent' : 'Activate agent'}
+                        >
+                          <Power size={16} />
+                        </ActionIcon>
+                        
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => router.push(`/agents/${agent.id}/edit`)}
+                          title="Edit agent"
+                        >
+                          <Edit size={16} />
+                        </ActionIcon>
+                        
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => router.push(`/chat/${agent.id}`)}
+                          title="Test chat"
+                        >
+                          <MessageSquare size={16} />
+                        </ActionIcon>
+                      </Group>
+                      
+                      <ActionIcon
+                        variant="subtle"
+                        onClick={() => handleDelete(agent)}
+                        loading={actionLoading === agent.id}
+                        color="red"
+                        title="Delete agent"
                       >
-                        {agent.name}
-                      </Link>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {agent.systemPrompt || agent.description || 'No description available'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <Badge variant={agent.isActive ? 'default' : 'secondary'}>
-                    {agent.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Model:</span>
-                    <Badge variant="outline">{agent.model}</Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Tools:</span>
-                    <span>Via integrations</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Integrations:</span>
-                    <span>{agent.integrations?.length || 0} connected</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mt-6 pt-4 border-t">
-                  <div className="flex items-center space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/agents/${agent.id}`)}
-                      title="View details"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleToggleStatus(agent)}
-                      disabled={actionLoading === agent.id}
-                      className={agent.isActive ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}
-                      title={agent.isActive ? 'Deactivate agent' : 'Activate agent'}
-                    >
-                      <Power className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/agents/${agent.id}/edit`)}
-                      title="Edit agent"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/chat/${agent.id}`)}
-                      title="Test chat"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(agent)}
-                    disabled={actionLoading === agent.id}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    title="Delete agent"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </Card>
+                        <Trash2 size={16} />
+                      </ActionIcon>
+                    </Group>
+                  </Stack>
+                </Card>
+              </Grid.Col>
             ))}
-          </div>
+          </Grid>
         )}
-      </div>
+      </Stack>
     </DashboardLayout>
   )
 }

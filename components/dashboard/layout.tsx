@@ -22,12 +22,12 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
       }}
     >
       {/* Header */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100 }}>
         <Header title={title} subtitle={subtitle} />
       </div>
 
       {/* Main layout with sidebar and content */}
-      <div style={{ display: 'flex', flex: 1, paddingTop: '80px' }}>
+      <div style={{ display: 'flex', flex: 1, paddingTop: '80px', paddingBottom: '80px' }}>
         {/* Sidebar */}
         <div 
           style={{ 
@@ -36,7 +36,7 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
             top: '80px',
             bottom: '80px',
             left: 0,
-            zIndex: 999
+            zIndex: 90
           }}
           className="hidden lg:block"
         >
@@ -49,6 +49,7 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
             flex: 1,
             marginLeft: '280px',
             padding: 'var(--mantine-spacing-lg)',
+            paddingBottom: '2rem', // Additional padding for content spacing
             minHeight: 'calc(100vh - 160px)', // Full height minus header and footer
             overflowY: 'auto'
           }}

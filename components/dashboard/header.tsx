@@ -15,7 +15,7 @@ export function Header({ title = "Dashboard", subtitle }: HeaderProps) {
   const [menuOpened, { toggle: toggleMenu }] = useDisclosure(false)
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: 80, position: 'relative', zIndex: 1000 }}>
+    <div style={{ display: 'flex', width: '100%', height: 80, position: 'relative' }}>
       {/* Logo Section - Fixed width to match sidebar - Hidden on mobile */}
       <div
         style={{
@@ -116,7 +116,7 @@ export function Header({ title = "Dashboard", subtitle }: HeaderProps) {
           <MantineThemeToggle />
 
           {/* Profile Menu */}
-          <Menu opened={menuOpened} onClose={toggleMenu} position="bottom-end">
+          <Menu opened={menuOpened} onClose={toggleMenu} position="bottom-end" zIndex={200}>
             <Menu.Target>
               <Group gap="xs" style={{ cursor: 'pointer' }} onClick={toggleMenu}>
                 <Avatar 
