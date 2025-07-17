@@ -2,65 +2,86 @@
 
 import Link from 'next/link'
 import { Heart, Github, Twitter } from 'lucide-react'
+import { Group, Text, ActionIcon, Anchor } from '@mantine/core'
 
 export function Footer() {
   return (
-    <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-      <div className="px-6 py-4">
-        <div className="flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
-          {/* Left side - Copyright */}
-          <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-            <span>© 2024 AI Customer Service Platform</span>
-            <span>•</span>
-            <span className="flex items-center space-x-1">
-              Made with <Heart className="h-3 w-3 text-red-500 mx-1" /> by the community
-            </span>
-          </div>
+    <Group 
+      justify="space-between" 
+      px="lg" 
+      py="md"
+      h={80}
+      wrap="wrap" 
+      style={{ 
+        borderTop: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
+        backgroundColor: 'light-dark(var(--mantine-color-white), var(--mantine-color-dark-7))'
+      }}
+    >
+      {/* Left side - Copyright */}
+      <Group gap="xs" wrap="wrap">
+        <Text size="sm" c="dimmed">
+          © 2024 AI Customer Service Platform
+        </Text>
+        <Text size="sm" c="dimmed">•</Text>
+        <Group gap={4} align="center">
+          <Text size="sm" c="dimmed">Made with</Text>
+          <Heart size={12} color="red" fill="red" />
+          <Text size="sm" c="dimmed">by the community</Text>
+        </Group>
+      </Group>
 
-          {/* Right side - Links */}
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-4 text-sm">
-              <Link 
-                href="/docs" 
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              >
-                Docs
-              </Link>
-              <Link 
-                href="/support" 
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              >
-                Support
-              </Link>
-              <Link 
-                href="/changelog" 
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              >
-                Changelog
-              </Link>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Link 
-                href="https://github.com/yourusername/ai-customer-service-platform" 
-                className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Github className="h-4 w-4" />
-              </Link>
-              <Link 
-                href="https://twitter.com/aicustomerplatform" 
-                className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Twitter className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer>
+      {/* Right side - Links */}
+      <Group gap="lg">
+        <Group gap="md">
+          <Anchor 
+            component={Link} 
+            href="/docs" 
+            size="sm" 
+            c="dimmed"
+          >
+            Docs
+          </Anchor>
+          <Anchor 
+            component={Link} 
+            href="/support" 
+            size="sm" 
+            c="dimmed"
+          >
+            Support
+          </Anchor>
+          <Anchor 
+            component={Link} 
+            href="/changelog" 
+            size="sm" 
+            c="dimmed"
+          >
+            Changelog
+          </Anchor>
+        </Group>
+        
+        <Group gap="xs">
+          <ActionIcon 
+            component={Link}
+            href="https://github.com/yourusername/ai-customer-service-platform"
+            variant="subtle"
+            size="sm"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Github size={16} />
+          </ActionIcon>
+          <ActionIcon 
+            component={Link}
+            href="https://twitter.com/aicustomerplatform"
+            variant="subtle"
+            size="sm"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Twitter size={16} />
+          </ActionIcon>
+        </Group>
+      </Group>
+    </Group>
   )
 }

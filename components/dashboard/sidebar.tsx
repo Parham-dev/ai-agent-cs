@@ -1,141 +1,156 @@
 "use client"
 
-import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { 
   Home, 
   Menu, 
   X,
-  Bot,
-  Zap
+  Bot
 } from 'lucide-react'
-import { cn } from '@/lib'
+import { NavLink, Group, Text, ActionIcon, Indicator } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
 
 interface NavItem {
   name: string
   href: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ size?: number }>
   badge?: string
 }
 
 const navigation: NavItem[] = [
-  { name: 'Overview', href: '/dashboard', icon: Home },
-  { name: 'Agents', href: '/dashboard/agents', icon: Bot },
+  { name: 'Overview', href: '/', icon: Home },
+  { name: 'Agents', href: '/agents', icon: Bot },
 ]
 
-interface SidebarProps {
-  className?: string
-}
-
-export function Sidebar({ className }: SidebarProps) {
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
+export function Sidebar() {
+  const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false)
   const pathname = usePathname()
 
-  const closeMobile = () => setIsMobileOpen(false)
-
   const SidebarContent = () => (
-    <div className="flex h-full flex-col min-h-screen">
-      {/* Logo */}
-      <div className="flex h-16 shrink-0 items-center px-6 border-b border-gray-200 dark:border-gray-700">
-        <Link href="/dashboard" className="flex items-center space-x-2" onClick={closeMobile}>
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
-            <Zap className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-xl font-bold text-gray-900 dark:text-white">
-            AI CS
-          </span>
-        </Link>
-      </div>
-
+    <div 
+      style={{ 
+        height: '100%',
+        backgroundColor: 'light-dark(var(--mantine-color-white), var(--mantine-color-dark-7))',
+        borderRight: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
+        display: 'flex',
+        flexDirection: 'column'
+      }}
+    >
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+      <div style={{ flex: 1, padding: '16px', paddingTop: '24px' }}>
         {navigation.map((item) => {
           const isActive = pathname === item.href
           return (
-            <Link
+            <NavLink
               key={item.name}
+              component={Link}
               href={item.href}
+              label={item.name}
+              leftSection={<item.icon size={18} />}
+              rightSection={
+                item.badge ? (
+                  <Text size="xs" c="blue" fw={500}>
+                    {item.badge}
+                  </Text>
+                ) : undefined
+              }
+              active={isActive}
+              variant="filled"
               onClick={closeMobile}
-              className={cn(
-                "group flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg transition-colors",
-                isActive
-                  ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
-              )}
-            >
-              <div className="flex items-center space-x-3">
-                <item.icon className={cn(
-                  "h-5 w-5 shrink-0",
-                  isActive 
-                    ? "text-blue-600 dark:text-blue-400" 
-                    : "text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"
-                )} />
-                <span>{item.name}</span>
-              </div>
-              {item.badge && (
-                <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
+            />
           )
         })}
-      </nav>
+      </div>
 
       {/* Bottom section */}
-      <div className="shrink-0 px-4 py-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          Demo Store
-          <div className="mt-1 text-green-600 dark:text-green-400">● Online</div>
+      <Group justify="center" p="md" style={{ borderTop: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))' }}>
+        <div style={{ textAlign: 'center' }}>
+          <Text size="xs" c="dimmed">
+            Demo Store
+          </Text>
+          <Group justify="center" gap="xs" mt={4}>
+            <Indicator color="green" size={6} />
+            <Text size="xs" c="green">
+              Online
+            </Text>
+          </Group>
         </div>
-      </div>
+      </Group>
     </div>
   )
 
   return (
     <>
       {/* Mobile menu button */}
-      <div className="lg:hidden">
-        <button
-          type="button"
-          className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-          onClick={() => setIsMobileOpen(true)}
-        >
-          <Menu className="h-6 w-6" />
-        </button>
-      </div>
+      <ActionIcon
+        onClick={toggleMobile}
+        hiddenFrom="lg"
+        size="lg"
+        variant="subtle"
+      >
+        <Menu size={18} />
+      </ActionIcon>
 
       {/* Mobile sidebar overlay */}
-      {isMobileOpen && (
-        <div className="lg:hidden">
-          <div className="fixed inset-0 z-50 flex">
-            <div 
-              className="fixed inset-0 bg-gray-600 bg-opacity-75"
-              onClick={() => setIsMobileOpen(false)}
-            />
-            <div className="relative flex w-full max-w-xs flex-1 flex-col bg-white dark:bg-gray-900">
-              <div className="absolute top-0 right-0 -mr-12 pt-2">
-                <button
-                  type="button"
-                  className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                  onClick={() => setIsMobileOpen(false)}
-                >
-                  <X className="h-6 w-6 text-white" />
-                </button>
-              </div>
-              <SidebarContent />
+      {mobileOpened && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 2000
+          }}
+          onClick={closeMobile}
+        >
+          <div 
+            style={{
+              width: '280px',
+              height: '100%',
+              backgroundColor: 'light-dark(var(--mantine-color-white), var(--mantine-color-dark-7))',
+              borderRight: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Group justify="space-between" px="lg" py="md" style={{ borderBottom: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))' }}>
+              <Text size="lg" fw={600}>Menu</Text>
+              <ActionIcon variant="subtle" onClick={closeMobile}>
+                <X size={18} />
+              </ActionIcon>
+            </Group>
+            <div style={{ padding: '16px', flex: 1 }}>
+              {navigation.map((item) => {
+                const isActive = pathname === item.href
+                return (
+                  <NavLink
+                    key={item.name}
+                    component={Link}
+                    href={item.href}
+                    label={item.name}
+                    leftSection={<item.icon size={18} />}
+                    rightSection={
+                      item.badge ? (
+                        <Text size="xs" c="blue" fw={500}>
+                          {item.badge}
+                        </Text>
+                      ) : undefined
+                    }
+                    active={isActive}
+                    variant="filled"
+                    onClick={closeMobile}
+                  />
+                )
+              })}
             </div>
           </div>
         </div>
       )}
 
-      {/* Desktop sidebar */}
-      <div className={cn("hidden lg:flex lg:w-72 lg:flex-col lg:fixed lg:inset-y-0 lg:z-50", className)}>
-        <div className="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
-          <SidebarContent />
-        </div>
-      </div>
+      {/* Desktop sidebar content */}
+      <SidebarContent />
     </>
   )
 }

@@ -78,7 +78,7 @@ export default function AgentDetailPage() {
     try {
       await apiClient.deleteAgent(agent.id)
       toast.success('Agent deleted successfully')
-      router.push('/dashboard/agents')
+      router.push('/agents')
     } catch (err) {
       console.error('Failed to delete agent:', err)
       toast.error('Failed to delete agent')
@@ -116,7 +116,7 @@ export default function AgentDetailPage() {
             <p className="text-muted-foreground">{error || 'The requested agent could not be found.'}</p>
           </div>
           <Button asChild>
-            <Link href="/dashboard/agents">
+            <Link href="/agents">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Agents
             </Link>
@@ -136,7 +136,7 @@ export default function AgentDetailPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/agents" className="inline-flex items-center space-x-2">
+              <Link href="/agents" className="inline-flex items-center space-x-2">
                 <ArrowLeft className="h-4 w-4" />
                 <span>Back to Agents</span>
               </Link>
@@ -164,7 +164,7 @@ export default function AgentDetailPage() {
             </Button>
             
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/dashboard/agents/${agent.id}/edit`}>
+              <Link href={`/agents/${agent.id}/edit`}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Link>
@@ -311,7 +311,7 @@ export default function AgentDetailPage() {
                 </Button>
                 
                 <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                  <Link href={`/dashboard/agents/${agent.id}/edit`}>
+                  <Link href={`/agents/${agent.id}/edit`}>
                     <Settings className="h-4 w-4 mr-2" />
                     Settings
                   </Link>

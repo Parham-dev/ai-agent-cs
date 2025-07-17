@@ -1,7 +1,10 @@
 "use client"
 
-import { Bell, Search, User, ChevronDown } from 'lucide-react'
-import { ThemeToggleIcon } from '@/components/theme-toggle'
+import { Bell, Search, User, ChevronDown, Zap } from 'lucide-react'
+import { Group, TextInput, ActionIcon, Badge, Avatar, Menu, Title, Text } from '@mantine/core'
+import { useDisclosure } from '@mantine/hooks'
+import { MantineThemeToggle } from '@/components/providers'
+import Link from 'next/link'
 
 interface HeaderProps {
   title?: string
@@ -9,64 +12,135 @@ interface HeaderProps {
 }
 
 export function Header({ title = "Dashboard", subtitle }: HeaderProps) {
+  const [menuOpened, { toggle: toggleMenu }] = useDisclosure(false)
+
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-      <div className="px-6 py-4">
-        <div className="flex items-center justify-between">
-          {/* Left side - Title */}
-          <div className="flex items-center space-x-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {title}
-              </h1>
-              {subtitle && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {subtitle}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Right side - Search, Notifications, Theme, Profile */}
-          <div className="flex items-center space-x-4">
-            {/* Search */}
-            <div className="relative hidden md:block">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search conversations..."
-                className="block w-64 pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              />
-            </div>
-
-            {/* Notifications */}
-            <button className="relative p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-medium">
-                3
-              </span>
-            </button>
-
-            {/* Theme Toggle */}
-            <ThemeToggleIcon />
-
-            {/* Profile Dropdown */}
-            <div className="relative">
-              <button className="flex items-center space-x-2 p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
-                <div className="h-7 w-7 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                <span className="hidden md:block text-sm font-medium text-gray-900 dark:text-white">
-                  Demo User
-                </span>
-                <ChevronDown className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
+    <div style={{ display: 'flex', width: '100%', height: 80, position: 'relative', zIndex: 1000 }}>
+      {/* Logo Section - Fixed width to match sidebar - Hidden on mobile */}
+      <div
+        style={{
+          width: 280,
+          alignItems: 'center',
+          paddingLeft: 'var(--mantine-spacing-lg)',
+          paddingRight: 'var(--mantine-spacing-lg)',
+          borderBottom: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
+          borderRight: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
+          backgroundColor: 'light-dark(var(--mantine-color-white), var(--mantine-color-dark-7))'
+        }}
+        className="hidden lg:flex"
+      >
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <Group gap="sm">
+            <Avatar 
+              size="sm" 
+              radius="md"
+              variant="gradient"
+              gradient={{ from: 'blue', to: 'purple' }}
+            >
+              <Zap size={16} />
+            </Avatar>
+            <Text size="xl" fw={700}>
+              AI CS
+            </Text>
+          </Group>
+        </Link>
       </div>
-    </header>
+
+      {/* Main Header Content */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingLeft: 'var(--mantine-spacing-lg)',
+          paddingRight: 'var(--mantine-spacing-lg)',
+          borderBottom: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
+          backgroundColor: 'light-dark(var(--mantine-color-white), var(--mantine-color-dark-7))'
+        }}
+      >
+        {/* Title Section */}
+        <div>
+          <Title order={2} size="h1">
+            {title}
+          </Title>
+          {subtitle && (
+            <Text size="sm" c="dimmed" mt={4}>
+              {subtitle}
+            </Text>
+          )}
+        </div>
+
+        {/* Right side - Search, Notifications, Theme, Profile */}
+        <Group gap="sm">
+          {/* Search */}
+          <TextInput
+            placeholder="Search conversations..."
+            leftSection={<Search size={16} />}
+            w={250}
+            visibleFrom="md"
+          />
+
+          {/* Notifications */}
+          <ActionIcon 
+            variant="subtle" 
+            size="lg" 
+            pos="relative"
+            style={{ overflow: 'visible' }}
+          >
+            <Bell size={18} />
+            <Badge 
+              size="xs" 
+              variant="filled" 
+              color="red" 
+              pos="absolute" 
+              top={-8} 
+              right={-8}
+              style={{ 
+                minWidth: 18, 
+                height: 18, 
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '10px',
+                fontWeight: 600,
+                zIndex: 10
+              }}
+            >
+              3
+            </Badge>
+          </ActionIcon>
+
+          {/* Theme Toggle */}
+          <MantineThemeToggle />
+
+          {/* Profile Menu */}
+          <Menu opened={menuOpened} onClose={toggleMenu} position="bottom-end">
+            <Menu.Target>
+              <Group gap="xs" style={{ cursor: 'pointer' }} onClick={toggleMenu}>
+                <Avatar 
+                  size="sm" 
+                  radius="xl"
+                  variant="gradient"
+                  gradient={{ from: 'blue', to: 'purple' }}
+                >
+                  <User size={16} />
+                </Avatar>
+                <Text size="sm" visibleFrom="md">Demo User</Text>
+                <ChevronDown size={16} />
+              </Group>
+            </Menu.Target>
+
+            <Menu.Dropdown>
+              <Menu.Item>Profile</Menu.Item>
+              <Menu.Item>Settings</Menu.Item>
+              <Menu.Divider />
+              <Menu.Item color="red">Logout</Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      </div>
+    </div>
   )
 }

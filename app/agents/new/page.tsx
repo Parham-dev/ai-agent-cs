@@ -85,7 +85,7 @@ export default function NewAgentPage() {
       });
 
       toast.success('Agent created successfully!')
-      router.push(`/dashboard/agents/${agent.id}`)
+      router.push(`/agents/${agent.id}`)
     } catch (error) {
       logger.error('Failed to create agent', {}, error as Error)
       toast.error('Failed to create agent. Please try again.')
@@ -102,7 +102,7 @@ export default function NewAgentPage() {
         {/* Back Navigation */}
         <div className="flex items-center space-x-4">
           <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard/agents" className="inline-flex items-center space-x-2">
+            <Link href="/agents" className="inline-flex items-center space-x-2">
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Agents</span>
             </Link>

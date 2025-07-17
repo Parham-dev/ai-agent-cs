@@ -142,7 +142,7 @@ export default function AgentsPage() {
           </div>
           
           <Button asChild>
-            <Link href="/dashboard/agents/new" className="inline-flex items-center space-x-2">
+            <Link href="/agents/new" className="inline-flex items-center space-x-2">
               <Plus className="h-4 w-4" />
               <span>Create Agent</span>
             </Link>
@@ -203,7 +203,7 @@ export default function AgentsPage() {
             </p>
             {!searchTerm && (
               <Button asChild size="lg">
-                <Link href="/dashboard/agents/new" className="inline-flex items-center space-x-2">
+                <Link href="/agents/new" className="inline-flex items-center space-x-2">
                   <Plus className="h-4 w-4" />
                   <span>Create Your First Agent</span>
                 </Link>
@@ -229,7 +229,7 @@ export default function AgentsPage() {
                     </div>
                     <div className="flex-1">
                       <Link 
-                        href={`/dashboard/agents/${agent.id}`}
+                        href={`/agents/${agent.id}`}
                         className="font-semibold hover:text-primary transition-colors"
                       >
                         {agent.name}
@@ -267,7 +267,7 @@ export default function AgentsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => router.push(`/dashboard/agents/${agent.id}`)}
+                      onClick={() => router.push(`/agents/${agent.id}`)}
                       title="View details"
                     >
                       <Eye className="h-4 w-4" />
@@ -287,7 +287,7 @@ export default function AgentsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => router.push(`/dashboard/agents/${agent.id}/edit`)}
+                      onClick={() => router.push(`/agents/${agent.id}/edit`)}
                       title="Edit agent"
                     >
                       <Edit className="h-4 w-4" />

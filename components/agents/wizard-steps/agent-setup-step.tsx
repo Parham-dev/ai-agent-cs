@@ -10,6 +10,7 @@ import { Slider } from '@/components/ui/slider'
 import { Bot, Lightbulb, Settings } from 'lucide-react'
 import { StepProps } from './types'
 import { INSTRUCTION_TEMPLATES, AI_MODELS } from './constants'
+import { getOrganizationId } from '@/lib/context/organization'
 
 export function AgentSetupStep({ form }: StepProps) {
   const { register, watch, setValue, formState: { errors } } = form
@@ -90,7 +91,7 @@ export function AgentSetupStep({ form }: StepProps) {
             </div>
           </div>
           
-          <input type="hidden" {...register('organizationId', { value: 'cmd50brq20000jgtb8lqfol4o' })} />
+          <input type="hidden" {...register('organizationId', { value: getOrganizationId() })} />
         </CardContent>
       </Card>
 

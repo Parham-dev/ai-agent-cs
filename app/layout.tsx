@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import "@mantine/core/styles.css";
+import "@mantine/dates/styles.css";
+import "@mantine/notifications/styles.css";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
+import { MantineThemeProvider } from "@/components/providers";
+import { ColorSchemeScript } from "@mantine/core";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -15,16 +19,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <ColorSchemeScript />
+      </head>
       <body className="antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <MantineThemeProvider>
           {children}
           <Toaster richColors />
-        </ThemeProvider>
+        </MantineThemeProvider>
       </body>
     </html>
   );

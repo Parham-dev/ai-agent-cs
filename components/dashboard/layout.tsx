@@ -13,26 +13,54 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, title, subtitle }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Sidebar */}
-      <Sidebar />
-      
-      {/* Main content area */}
-      <div className="lg:pl-72">
-        <div className="flex min-h-screen flex-col">
-          {/* Header */}
-          <Header title={title} subtitle={subtitle} />
-          
-          {/* Main content */}
-          <main className="flex-1 bg-gray-50 dark:bg-gray-950">
-            <div className="px-6 py-6">
-              {children}
-            </div>
-          </main>
-          
-          {/* Footer */}
-          <Footer />
+    <div 
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        backgroundColor: 'light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-8))'
+      }}
+    >
+      {/* Header */}
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
+        <Header title={title} subtitle={subtitle} />
+      </div>
+
+      {/* Main layout with sidebar and content */}
+      <div style={{ display: 'flex', flex: 1, paddingTop: '80px' }}>
+        {/* Sidebar */}
+        <div 
+          style={{ 
+            width: '280px',
+            position: 'fixed',
+            top: '80px',
+            bottom: '80px',
+            left: 0,
+            zIndex: 999
+          }}
+          className="hidden lg:block"
+        >
+          <Sidebar />
         </div>
+
+        {/* Main content */}
+        <div 
+          style={{ 
+            flex: 1,
+            marginLeft: '280px',
+            padding: 'var(--mantine-spacing-lg)',
+            minHeight: 'calc(100vh - 160px)', // Full height minus header and footer
+            overflowY: 'auto'
+          }}
+          className="lg:ml-[280px] ml-0"
+        >
+          {children}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
+        <Footer />
       </div>
     </div>
   )

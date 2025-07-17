@@ -65,7 +65,7 @@ export default function EditAgentPage() {
       })
 
       toast.success('Agent updated successfully!')
-      router.push(`/dashboard/agents/${updatedAgent.id}`)
+      router.push(`/agents/${updatedAgent.id}`)
     } catch (error) {
       console.error('Failed to update agent:', error)
       toast.error('Failed to update agent. Please try again.')
@@ -73,7 +73,7 @@ export default function EditAgentPage() {
   }
 
   const handleCancel = () => {
-    router.push(`/dashboard/agents/${agentId}`)
+    router.push(`/agents/${agentId}`)
   }
 
   useEffect(() => {
@@ -102,7 +102,7 @@ export default function EditAgentPage() {
             <p className="text-muted-foreground">{error || 'The requested agent could not be found.'}</p>
           </div>
           <Button asChild>
-            <Link href="/dashboard/agents">
+            <Link href="/agents">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Agents
             </Link>
@@ -140,7 +140,7 @@ export default function EditAgentPage() {
         {/* Header */}
         <div className="flex items-center space-x-4">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/agents/${agent.id}`} className="inline-flex items-center space-x-2">
+            <Link href={`/agents/${agent.id}`} className="inline-flex items-center space-x-2">
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Agent</span>
             </Link>

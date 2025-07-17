@@ -1,21 +1,28 @@
 import { PrismaClient } from '@prisma/client'
+import { ORGANIZATION_CONTEXT } from '../lib/context/organization'
 
 const prisma = new PrismaClient()
 
 async function main() {
   console.log('🌱 Seeding database...')
 
-  // Create demo organization
-  const org = await prisma.organization.create({
-    data: {
-      name: 'Demo Store',
-      slug: 'demo-store',
-      description: 'Demo organization for testing V2 schema'
-      // settings removed in V2
+  // Create organization using context
+  const org = await prisma.organization.upsert({
+    where: { id: ORGANIZATION_CONTEXT.id },
+    update: {
+      name: ORGANIZATION_CONTEXT.name,
+      slug: ORGANIZATION_CONTEXT.slug,
+      description: 'Main organization for the system'
+    },
+    create: {
+      id: ORGANIZATION_CONTEXT.id,
+      name: ORGANIZATION_CONTEXT.name,
+      slug: ORGANIZATION_CONTEXT.slug,
+      description: 'Main organization for the system'
     }
   })
 
-  console.log('✅ Created organization:', org.name, `(${org.id})`)
+  console.log('✅ Created/updated organization:', org.name, `(${org.id})`)
 
   // Create Shopify integration
   const shopifyIntegration = await prisma.integration.create({
