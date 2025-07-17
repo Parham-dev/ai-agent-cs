@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { run, Agent, type Tool, type MCPServerStdio } from '@openai/agents';
-import { createShopifyTools } from '@/lib/integrations/shopify/tools';
+import { run, Agent, type MCPServerStdio } from '@openai/agents';
 import { createMCPClient } from '@/lib/mcp/client';
 import { agentsService } from '@/lib/database/services';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
@@ -104,15 +103,11 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       integrationsCount: agentIntegrations.length 
     });
 
-    // Build tools based on agent's configured integrations
-    const tools: Tool[] = [];
+    // Build MCP servers based on agent's configured integrations
     let mcpClient = null;
     let mcpServers: MCPServerStdio[] = [];
     
-    // Check if we should use MCP (feature flag or environment variable)
-    const useMCP = process.env.ENABLE_MCP === 'true';
-    
-    if (useMCP && agentIntegrations.length > 0) {
+    if (agentIntegrations.length > 0) {
       // Use MCP servers for integrations
       logger.debug('Using MCP servers for integrations');
       
@@ -140,70 +135,20 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
           integrationTypes: mcpIntegrations.map(i => i.type)
         });
       } catch (error) {
-        logger.error('Failed to initialize MCP client, falling back to legacy tools', {}, error as Error);
-      }
-    }
-    
-    // Fallback to legacy context-passing tools if MCP is not available
-    if (!useMCP || mcpServers.length === 0) {
-      logger.debug('Using legacy context-passing tools');
-      
-      // Add integration-specific tools (legacy approach)
-      for (const agentIntegration of agentIntegrations) {
-        const integration = agentIntegration.integration;
-        if (!integration || !integration.isActive) continue;
-        
-        logger.debug('Processing integration', { 
-          integrationId: integration.id,
-          type: integration.type, 
-          name: integration.name,
-          hasCredentials: !!integration.credentials 
-        });
-        
-        switch (integration.type) {
-          case 'shopify':
-            if (!integration.credentials.shopUrl || !integration.credentials.accessToken) {
-              logger.error('Missing required Shopify credentials', {
-                integrationId: integration.id,
-                hasShopUrl: !!integration.credentials.shopUrl,
-                hasAccessToken: !!integration.credentials.accessToken
-              });
-              continue; // Skip this integration
-            }
-            
-            // Use standardized shopUrl field for ShopifyCredentials
-            const shopifyCredentials = {
-              shopUrl: integration.credentials.shopUrl as string,
-              accessToken: integration.credentials.accessToken as string
-            };
-            tools.push(...createShopifyTools(shopifyCredentials));
-            logger.debug('Added Shopify tools', { 
-              integrationId: integration.id,
-              shopUrl: integration.credentials.shopUrl
-            });
-            break;
-          // Future integrations will be added here
-          default:
-            logger.warn('Unknown integration type', { 
-              type: integration.type,
-              integrationId: integration.id
-            });
-        }
+        logger.error('Failed to initialize MCP client', {}, error as Error);
       }
     }
 
     // Add universal tools based on agent configuration
     // TODO: Add OpenAI hosted tools, custom tools based on agent.tools
 
-    logger.info('Tools configured for agent', { 
-      toolsCount: tools.length,
-      mcpServersCount: mcpServers.length,
-      useMCP 
+    logger.info('MCP servers configured for agent', { 
+      mcpServersCount: mcpServers.length
     });
 
-    // Create the OpenAI Agent instance with integration tools
+    // Create the OpenAI Agent instance with MCP servers
     const agentConfig = agentData.rules && typeof agentData.rules === 'object' ? agentData.rules : {};
-    // Remove tools from agentConfig to avoid conflict with our integration tools
+    // Remove tools from agentConfig to avoid conflict with our MCP servers
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { tools: _, ...cleanAgentConfig } = agentConfig;
     
@@ -211,7 +156,6 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       name: agentData.name,
       instructions: agentData.systemPrompt || `You are ${agentData.name}, an AI assistant.`,
       model: agentData.model,
-      tools: tools.length > 0 ? tools : undefined, // Legacy context-passing tools
       mcpServers: mcpServers.length > 0 ? mcpServers : undefined, // MCP servers
       ...cleanAgentConfig
     });

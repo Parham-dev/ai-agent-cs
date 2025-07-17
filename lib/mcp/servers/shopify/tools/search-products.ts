@@ -1,5 +1,5 @@
 import { logger } from '@/lib/utils/logger';
-import { ShopifyMCPClient } from '../client';
+import { ShopifyMCPClient } from '../client/index';
 import { 
   SearchProductsParams, 
   SearchProductsResponse, 
