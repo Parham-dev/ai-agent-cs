@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { agentIntegrationsServiceV2 } from '@/lib/database/services/v2/agent-integrations.service'
+import { agentIntegrationsService } from '@/lib/database/services'
 import { Api, withErrorHandling, validateMethod, ErrorCodes } from '@/lib/api'
 
 export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
@@ -16,13 +16,13 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
 
   // If agentId is provided, get integrations for that agent
   if (filters.agentId) {
-    const integrations = await agentIntegrationsServiceV2.getAgentIntegrations(filters.agentId)
+    const integrations = await agentIntegrationsService.getAgentIntegrations(filters.agentId)
     return Api.success(integrations)
   }
 
   // If integrationId is provided, get agents using that integration
   if (filters.integrationId) {
-    const agents = await agentIntegrationsServiceV2.getIntegrationAgents(filters.integrationId)
+    const agents = await agentIntegrationsService.getIntegrationAgents(filters.integrationId)
     return Api.success(agents)
   }
 
@@ -51,7 +51,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     return Api.error(ErrorCodes.VALIDATION_ERROR, 'Validation failed', { errors: validationErrors });
   }
 
-  const relationship = await agentIntegrationsServiceV2.createAgentIntegration({
+  const relationship = await agentIntegrationsService.createAgentIntegration({
     agentId: data.agentId,
     integrationId: data.integrationId,
     config: data.config || {},
@@ -75,7 +75,7 @@ export const DELETE = withErrorHandling(async (request: NextRequest): Promise<Ne
     return Api.error(ErrorCodes.VALIDATION_ERROR, 'Both agentId and integrationId are required');
   }
 
-  await agentIntegrationsServiceV2.deleteAgentIntegration(agentId, integrationId)
+  await agentIntegrationsService.deleteAgentIntegration(agentId, integrationId)
   
   return Api.success({ message: 'Agent-integration relationship removed successfully' })
 });

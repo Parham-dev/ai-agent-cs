@@ -66,6 +66,33 @@ declare global {
       }
     }
 
+    // Agent rules and behavior settings (for V2 schema)
+    interface AgentRules {
+      canAccessCustomerData?: boolean
+      canProcessPayments?: boolean
+      canCreateOrders?: boolean
+      escalationRules?: {
+        keywords?: string[]
+        conditions?: string[]
+        action?: 'escalate' | 'flag' | 'transfer'
+      }[]
+      responseStyle?: 'formal' | 'casual' | 'friendly'
+      maxResponseLength?: number
+      contextWindow?: number
+      [key: string]: unknown
+    }
+
+    // Agent-specific integration configuration (for V2 schema)
+    interface AgentIntegrationConfig {
+      syncSettings?: {
+        autoSync?: boolean
+        syncInterval?: number
+      }
+      customMappings?: Record<string, string>
+      preferences?: Record<string, unknown>
+      [key: string]: unknown
+    }
+
     // Agent configuration data - complete agent configuration
     interface AgentConfigData {
       name?: string

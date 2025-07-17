@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { integrationsServiceV2 } from '@/lib/database/services/v2/integrations.service'
+import { integrationsService } from '@/lib/database/services'
 import { Api, withErrorHandling, validateMethod, ErrorCodes } from '@/lib/api'
 
 export const GET = withErrorHandling(async (
@@ -11,7 +11,7 @@ export const GET = withErrorHandling(async (
   if (methodError) return methodError;
 
   const { id } = await params;
-  const integration = await integrationsServiceV2.getIntegrationById(id)
+  const integration = await integrationsService.getIntegrationById(id)
   
   if (!integration) {
     return Api.error(ErrorCodes.NOT_FOUND, 'Integration not found');
@@ -51,7 +51,7 @@ export const PUT = withErrorHandling(async (
   if (data.description !== undefined) updateData.description = data.description?.trim() || null;
   if (data.credentials !== undefined) updateData.credentials = data.credentials;
 
-  const integration = await integrationsServiceV2.updateIntegration(id, updateData)
+  const integration = await integrationsService.updateIntegration(id, updateData)
   
   return Api.success({ integration })
 });
@@ -65,7 +65,7 @@ export const DELETE = withErrorHandling(async (
   if (methodError) return methodError;
 
   const { id } = await params;
-  await integrationsServiceV2.deleteIntegration(id)
+  await integrationsService.deleteIntegration(id)
   
   return Api.success({ message: 'Integration deleted successfully' })
 });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { integrationsServiceV2 } from '@/lib/database/services/v2/integrations.service'
+import { integrationsService } from '@/lib/database/services'
 import { Api, withErrorHandling, validateMethod, ErrorCodes } from '@/lib/api'
 
 export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
@@ -17,7 +17,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
     offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined,
   }
 
-  const integrations = await integrationsServiceV2.getIntegrations(filters)
+  const integrations = await integrationsService.getIntegrations(filters)
   
   return Api.success(integrations)
 });
@@ -52,7 +52,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     return Api.error(ErrorCodes.VALIDATION_ERROR, 'Validation failed', { errors: validationErrors });
   }
 
-  const integration = await integrationsServiceV2.createIntegration({
+  const integration = await integrationsService.createIntegration({
     organizationId: data.organizationId,
     type: data.type.trim(),
     name: data.name.trim(),

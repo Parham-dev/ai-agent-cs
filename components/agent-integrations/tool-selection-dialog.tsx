@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2, Wrench } from 'lucide-react'
-import { integrationsClient } from '@/lib/integrations/client'
+import { apiClient } from '@/lib/api/client'
 import { toast } from 'sonner'
-import type { IntegrationTool } from '@/lib/api/types'
+import type { IntegrationTool } from '@/lib/types'
 
 interface ToolSelectionDialogProps {
   integrationId: string
@@ -39,11 +39,11 @@ export function ToolSelectionDialog({
         setLoading(true)
         
         // Get integration details to determine type
-        const integration = await integrationsClient.getIntegration(integrationId)
+        const integration = await apiClient.getIntegration(integrationId)
         setIntegrationType(integration.type)
         
         // Get available tools for this integration type
-        const tools = await integrationsClient.getIntegrationTools(integration.type)
+        const tools = await apiClient.getIntegrationTools(integration.type)
         setAvailableTools(tools)
       } catch (error) {
         console.error('Failed to fetch tools:', error)

@@ -17,13 +17,13 @@ import {
   MessageSquare,
   Eye
 } from 'lucide-react'
-import { agentsClient } from '@/lib/agents/client'
+import { apiClient } from '@/lib/api/client'
 import { toast } from 'sonner'
-import type { Agent } from '@/lib/api/types'
+import type { ApiAgent } from '@/lib/types'
 
 export default function AgentsPage() {
   const router = useRouter()
-  const [agents, setAgents] = useState<Agent[]>([])
+  const [agents, setAgents] = useState<ApiAgent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -33,7 +33,7 @@ export default function AgentsPage() {
     try {
       setLoading(true)
       setError(null)
-      const agentsData = await agentsClient.getAgents()
+      const agentsData = await apiClient.getAgents()
       setAgents(agentsData)
     } catch (err) {
       console.error('Failed to fetch agents:', err)
@@ -43,10 +43,10 @@ export default function AgentsPage() {
     }
   }
 
-  const handleToggleStatus = async (agent: Agent) => {
+  const handleToggleStatus = async (agent: ApiAgent) => {
     try {
       setActionLoading(agent.id)
-      const updatedAgent = await agentsClient.updateAgent(agent.id, { 
+      const updatedAgent = await apiClient.updateAgent(agent.id, { 
         isActive: !agent.isActive 
       })
       
@@ -64,14 +64,14 @@ export default function AgentsPage() {
     }
   }
 
-  const handleDelete = async (agent: Agent) => {
+  const handleDelete = async (agent: ApiAgent) => {
     if (!confirm(`Are you sure you want to delete "${agent.name}"? This action cannot be undone.`)) {
       return
     }
 
     try {
       setActionLoading(agent.id)
-      await agentsClient.deleteAgent(agent.id)
+      await apiClient.deleteAgent(agent.id)
       
       // Remove from local state
       setAgents(prev => prev.filter(a => a.id !== agent.id))

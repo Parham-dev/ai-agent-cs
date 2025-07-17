@@ -4,10 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Send, Bot, User, Activity, Brain } from 'lucide-react'
-import { agentsClient } from '@/lib/agents/client'
+import { apiClient } from '@/lib/api/client'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import type { Agent } from '@/lib/api/types'
+import type { ApiAgent } from '@/lib/types'
 
 interface Message {
   id: string
@@ -30,7 +30,7 @@ export default function AgentChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // State
-  const [agent, setAgent] = useState<Agent | null>(null)
+  const [agent, setAgent] = useState<ApiAgent | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -42,7 +42,7 @@ export default function AgentChatPage() {
     try {
       setAgentLoading(true)
       setError(null)
-      const agentData = await agentsClient.getAgent(agentId)
+      const agentData = await apiClient.getAgent(agentId)
       setAgent(agentData)
     } catch (err) {
       console.error('Failed to fetch agent:', err)

@@ -1,18 +1,17 @@
-import { prisma } from '../../database'
+import { prisma } from '@/lib/database/database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
 import type {
-  IntegrationV2,
-  IntegrationV2WithRelations,
-  CreateIntegrationV2Data,
-  UpdateIntegrationV2Data,
-  IntegrationV2Filters
-} from '@/lib/types/v2/schema'
+  Integration,
+  IntegrationWithRelations,
+  CreateIntegrationData,
+  UpdateIntegrationData,
+  IntegrationFilters
+} from '@/lib/types/database'
 
-class IntegrationsServiceV2 {
+class IntegrationsService {
   /**
-   * Get all integrations with optional filtering and pagination (V2)
-   */
-  async getIntegrations(filters: IntegrationV2Filters = {}): Promise<IntegrationV2WithRelations[]> {
+   * Get all integrations with optional filtering and pagination   */
+  async getIntegrations(filters: IntegrationFilters = {}): Promise<IntegrationWithRelations[]> {
     try {
       const {
         organizationId,
@@ -51,16 +50,15 @@ class IntegrationsServiceV2 {
         skip: offset
       })
 
-      return integrations as IntegrationV2WithRelations[]
+      return integrations as IntegrationWithRelations[]
     } catch (error) {
       throw new DatabaseError('Failed to fetch integrations (V2)', error as Error)
     }
   }
 
   /**
-   * Get a single integration by ID (V2)
-   */
-  async getIntegrationById(id: string): Promise<IntegrationV2WithRelations | null> {
+   * Get a single integration by ID   */
+  async getIntegrationById(id: string): Promise<IntegrationWithRelations | null> {
     try {
       const integration = await prisma.integration.findUnique({
         where: { id },
@@ -74,16 +72,15 @@ class IntegrationsServiceV2 {
         }
       })
 
-      return integration as IntegrationV2WithRelations | null
+      return integration as IntegrationWithRelations | null
     } catch (error) {
       throw new DatabaseError(`Failed to fetch integration ${id} (V2)`, error as Error)
     }
   }
 
   /**
-   * Get integration by ID or throw error if not found (V2)
-   */
-  async getIntegrationByIdOrThrow(id: string): Promise<IntegrationV2WithRelations> {
+   * Get integration by ID or throw error if not found   */
+  async getIntegrationByIdOrThrow(id: string): Promise<IntegrationWithRelations> {
     const integration = await this.getIntegrationById(id)
     if (!integration) {
       throw new NotFoundError('Integration', id)
@@ -92,12 +89,11 @@ class IntegrationsServiceV2 {
   }
 
   /**
-   * Get integration by organization and type (V2)
-   */
+   * Get integration by organization and type   */
   async getIntegrationByOrganizationAndType(
     organizationId: string, 
     type: string
-  ): Promise<IntegrationV2 | null> {
+  ): Promise<Integration | null> {
     try {
       const integration = await prisma.integration.findUnique({
         where: {
@@ -108,16 +104,15 @@ class IntegrationsServiceV2 {
         }
       })
 
-      return integration as IntegrationV2 | null
+      return integration as Integration | null
     } catch (error) {
       throw new DatabaseError(`Failed to fetch integration ${type} for organization ${organizationId} (V2)`, error as Error)
     }
   }
 
   /**
-   * Create a new integration (V2)
-   */
-  async createIntegration(data: CreateIntegrationV2Data): Promise<IntegrationV2> {
+   * Create a new integration   */
+  async createIntegration(data: CreateIntegrationData): Promise<Integration> {
     try {
       // Validate required fields
       if (!data.name?.trim()) {
@@ -157,7 +152,7 @@ class IntegrationsServiceV2 {
         }
       })
 
-      return integration as IntegrationV2
+      return integration as Integration
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error
@@ -167,9 +162,8 @@ class IntegrationsServiceV2 {
   }
 
   /**
-   * Update an existing integration (V2)
-   */
-  async updateIntegration(id: string, data: UpdateIntegrationV2Data): Promise<IntegrationV2> {
+   * Update an existing integration   */
+  async updateIntegration(id: string, data: UpdateIntegrationData): Promise<Integration> {
     try {
       // Check if integration exists
       await this.getIntegrationByIdOrThrow(id)
@@ -186,7 +180,7 @@ class IntegrationsServiceV2 {
         data: updateData
       })
 
-      return integration as IntegrationV2
+      return integration as Integration
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error
@@ -196,8 +190,7 @@ class IntegrationsServiceV2 {
   }
 
   /**
-   * Delete an integration (V2)
-   */
+   * Delete an integration   */
   async deleteIntegration(id: string): Promise<void> {
     try {
       // Check if integration exists
@@ -215,13 +208,11 @@ class IntegrationsServiceV2 {
   }
 
   /**
-   * Get integrations by organization (V2)
-   */
-  async getIntegrationsByOrganization(organizationId: string): Promise<IntegrationV2WithRelations[]> {
+   * Get integrations by organization   */
+  async getIntegrationsByOrganization(organizationId: string): Promise<IntegrationWithRelations[]> {
     return this.getIntegrations({ organizationId })
   }
 }
 
-// Export singleton instance following your pattern
-export const integrationsServiceV2 = new IntegrationsServiceV2()
-export default integrationsServiceV2
+// Export singleton instance
+export const integrationsService = new IntegrationsService()

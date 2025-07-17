@@ -1,16 +1,15 @@
-import { prisma } from '../../database'
+import { prisma } from '@/lib/database/database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
 import type {
-  AgentIntegrationV2,
-  CreateAgentIntegrationV2Data,
-  UpdateAgentIntegrationV2Data
-} from '@/lib/types/v2/schema'
+  AgentIntegration,
+  CreateAgentIntegrationData,
+  UpdateAgentIntegrationData
+} from '@/lib/types/database'
 
-class AgentIntegrationsServiceV2 {
+class AgentIntegrationsService {
   /**
-   * Get agent integration relationship (V2)
-   */
-  async getAgentIntegration(agentId: string, integrationId: string): Promise<AgentIntegrationV2 | null> {
+   * Get agent integration relationship   */
+  async getAgentIntegration(agentId: string, integrationId: string): Promise<AgentIntegration | null> {
     try {
       const agentIntegration = await prisma.agentIntegration.findUnique({
         where: {
@@ -21,16 +20,15 @@ class AgentIntegrationsServiceV2 {
         }
       })
 
-      return agentIntegration as AgentIntegrationV2 | null
+      return agentIntegration as AgentIntegration | null
     } catch (error) {
       throw new DatabaseError(`Failed to fetch agent integration for agent ${agentId} and integration ${integrationId} (V2)`, error as Error)
     }
   }
 
   /**
-   * Get all integrations for an agent (V2)
-   */
-  async getAgentIntegrations(agentId: string): Promise<(AgentIntegrationV2 & { integration: { name: string; type: string; isActive: boolean } })[]> {
+   * Get all integrations for an agent   */
+  async getAgentIntegrations(agentId: string): Promise<(AgentIntegration & { integration: { name: string; type: string; isActive: boolean } })[]> {
     try {
       const agentIntegrations = await prisma.agentIntegration.findMany({
         where: { agentId },
@@ -42,16 +40,15 @@ class AgentIntegrationsServiceV2 {
         orderBy: { createdAt: 'desc' }
       })
 
-      return agentIntegrations as (AgentIntegrationV2 & { integration: { name: string; type: string; isActive: boolean } })[]
+      return agentIntegrations as (AgentIntegration & { integration: { name: string; type: string; isActive: boolean } })[]
     } catch (error) {
       throw new DatabaseError(`Failed to fetch integrations for agent ${agentId} (V2)`, error as Error)
     }
   }
 
   /**
-   * Get all agents using an integration (V2)
-   */
-  async getIntegrationAgents(integrationId: string): Promise<(AgentIntegrationV2 & { agent: { name: string; isActive: boolean } })[]> {
+   * Get all agents using an integration   */
+  async getIntegrationAgents(integrationId: string): Promise<(AgentIntegration & { agent: { name: string; isActive: boolean } })[]> {
     try {
       const agentIntegrations = await prisma.agentIntegration.findMany({
         where: { integrationId },
@@ -63,16 +60,15 @@ class AgentIntegrationsServiceV2 {
         orderBy: { createdAt: 'desc' }
       })
 
-      return agentIntegrations as (AgentIntegrationV2 & { agent: { name: string; isActive: boolean } })[]
+      return agentIntegrations as (AgentIntegration & { agent: { name: string; isActive: boolean } })[]
     } catch (error) {
       throw new DatabaseError(`Failed to fetch agents for integration ${integrationId} (V2)`, error as Error)
     }
   }
 
   /**
-   * Create agent-integration relationship (V2)
-   */
-  async createAgentIntegration(data: CreateAgentIntegrationV2Data): Promise<AgentIntegrationV2> {
+   * Create agent-integration relationship   */
+  async createAgentIntegration(data: CreateAgentIntegrationData): Promise<AgentIntegration> {
     try {
       // Validate required fields
       if (!data.agentId) {
@@ -96,12 +92,12 @@ class AgentIntegrationsServiceV2 {
           agentId: data.agentId,
           integrationId: data.integrationId,
           selectedTools: data.selectedTools,
-          config: data.config || null,
+          config: data.config || undefined,
           isEnabled: data.isEnabled ?? true
         }
       })
 
-      return agentIntegration as AgentIntegrationV2
+      return agentIntegration as AgentIntegration
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error
@@ -111,13 +107,12 @@ class AgentIntegrationsServiceV2 {
   }
 
   /**
-   * Update agent-integration relationship (V2)
-   */
+   * Update agent-integration relationship   */
   async updateAgentIntegration(
     agentId: string, 
     integrationId: string, 
-    data: UpdateAgentIntegrationV2Data
-  ): Promise<AgentIntegrationV2> {
+    data: UpdateAgentIntegrationData
+  ): Promise<AgentIntegration> {
     try {
       // Check if relationship exists
       const existingRelation = await this.getAgentIntegration(agentId, integrationId)
@@ -141,7 +136,7 @@ class AgentIntegrationsServiceV2 {
         data: updateData
       })
 
-      return agentIntegration as AgentIntegrationV2
+      return agentIntegration as AgentIntegration
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error
@@ -151,8 +146,7 @@ class AgentIntegrationsServiceV2 {
   }
 
   /**
-   * Delete agent-integration relationship (V2)
-   */
+   * Delete agent-integration relationship   */
   async deleteAgentIntegration(agentId: string, integrationId: string): Promise<void> {
     try {
       // Check if relationship exists
@@ -178,20 +172,17 @@ class AgentIntegrationsServiceV2 {
   }
 
   /**
-   * Enable/disable agent-integration relationship (V2)
-   */
-  async toggleAgentIntegration(agentId: string, integrationId: string, isEnabled: boolean): Promise<AgentIntegrationV2> {
+   * Enable/disable agent-integration relationship   */
+  async toggleAgentIntegration(agentId: string, integrationId: string, isEnabled: boolean): Promise<AgentIntegration> {
     return this.updateAgentIntegration(agentId, integrationId, { isEnabled })
   }
 
   /**
-   * Update selected tools for agent-integration (V2)
-   */
-  async updateSelectedTools(agentId: string, integrationId: string, selectedTools: string[]): Promise<AgentIntegrationV2> {
+   * Update selected tools for agent-integration   */
+  async updateSelectedTools(agentId: string, integrationId: string, selectedTools: string[]): Promise<AgentIntegration> {
     return this.updateAgentIntegration(agentId, integrationId, { selectedTools })
   }
 }
 
-// Export singleton instance following your pattern
-export const agentIntegrationsServiceV2 = new AgentIntegrationsServiceV2()
-export default agentIntegrationsServiceV2
+// Export singleton instance
+export const agentIntegrationsService = new AgentIntegrationsService()

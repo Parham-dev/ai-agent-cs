@@ -10,7 +10,7 @@ import {
   type IntegrationDisplayItem
 } from './components'
 import { AVAILABLE_INTEGRATIONS } from './components/integration-select-modal'
-import { integrationsClient } from '@/lib/integrations/client'
+import { apiClient } from '@/lib/api/client'
 import type { IntegrationCredentials } from '@/lib/types/integrations'
 
 interface OrganizationIntegration {
@@ -30,7 +30,7 @@ export function IntegrationsStep({ form }: StepProps) {
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0) // Force re-render key
   
-  // Fetch organization integrations on component mount using v2 API
+  // Fetch organization integrations on component mount using API
   useEffect(() => {
     async function fetchOrganizationIntegrations() {
       try {
@@ -210,7 +210,7 @@ export function IntegrationsStep({ form }: StepProps) {
         const credentialsChanged = JSON.stringify(existingOrgIntegration.credentials) !== JSON.stringify(integrationData.credentials)
         if (credentialsChanged) {
           console.log('Credentials changed, updating integration in DB')
-          await integrationsClient.updateIntegration(integrationId, {
+          await apiClient.updateIntegration(integrationId, {
             credentials: integrationData.credentials,
             description: existingOrgIntegration.description
           })
@@ -218,7 +218,7 @@ export function IntegrationsStep({ form }: StepProps) {
       } else {
         // Scenario 2: New integration - create it in DB first
         console.log('Creating new integration in DB for type:', selectedIntegration)
-        const newIntegration = await integrationsClient.createIntegration({
+        const newIntegration = await apiClient.createIntegration({
           type: selectedIntegration,
           name: availableIntegration.name,
           description: `${availableIntegration.name} integration`,
@@ -233,7 +233,7 @@ export function IntegrationsStep({ form }: StepProps) {
           id: newIntegration.id,
           type: newIntegration.type,
           name: newIntegration.name,
-          description: newIntegration.description,
+          description: newIntegration.description || undefined,
           credentials: newIntegration.credentials as IntegrationCredentials,
           settings: {}, // New integrations start with empty settings
           isActive: newIntegration.isActive

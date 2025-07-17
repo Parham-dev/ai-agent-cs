@@ -5,18 +5,18 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { AgentCreationWizard, type AgentFormData } from '@/components/agents/agent-creation-wizard'
-import { agentsClient } from '@/lib/agents/client'
+import { apiClient } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Bot } from 'lucide-react'
-import type { Agent } from '@/lib/api/types'
+import type { ApiAgent } from '@/lib/types'
 
 export default function EditAgentPage() {
   const router = useRouter()
   const params = useParams()
   const agentId = params.id as string
 
-  const [agent, setAgent] = useState<Agent | null>(null)
+  const [agent, setAgent] = useState<ApiAgent | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -24,7 +24,7 @@ export default function EditAgentPage() {
     try {
       setLoading(true)
       setError(null)
-      const agentData = await agentsClient.getAgent(agentId)
+      const agentData = await apiClient.getAgent(agentId)
       setAgent(agentData)
     } catch (err) {
       console.error('Failed to fetch agent:', err)
@@ -36,7 +36,7 @@ export default function EditAgentPage() {
 
   const handleSave = async (data: AgentFormData) => {
     try {
-      const updatedAgent = await agentsClient.updateAgent(agentId, {
+      const updatedAgent = await apiClient.updateAgent(agentId, {
         name: data.name,
         description: data.description,
         systemPrompt: data.instructions,

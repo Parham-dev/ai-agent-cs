@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { agentsServiceV2 } from '@/lib/database/services/v2/agents.service'
+import { agentsService } from '@/lib/database/services'
 import { Api, withErrorHandling, validateMethod, ErrorCodes } from '@/lib/api'
 
 export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
@@ -16,7 +16,7 @@ export const GET = withErrorHandling(async (request: NextRequest): Promise<NextR
     offset: searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : undefined,
   }
 
-  const agents = await agentsServiceV2.getAgents(filters)
+  const agents = await agentsService.getAgents(filters)
   
   return Api.success(agents)
 });
@@ -47,7 +47,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     return Api.error(ErrorCodes.VALIDATION_ERROR, 'Validation failed', { errors: validationErrors });
   }
 
-  const agent = await agentsServiceV2.createAgent({
+  const agent = await agentsService.createAgent({
     organizationId: data.organizationId,
     name: data.name.trim(),
     description: data.description?.trim() || null,

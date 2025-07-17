@@ -4,8 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { AgentCreationWizard, type AgentFormData } from '@/components/agents/agent-creation-wizard'
-import { agentsClient } from '@/lib/agents/client'
-import { agentIntegrationsClient } from '@/lib/agent-integrations/client'
+import { apiClient } from '@/lib/api/client'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
@@ -24,7 +23,7 @@ export default function NewAgentPage() {
       });
 
       // Create the agent using v2 API format
-      const agent = await agentsClient.createAgent({
+      const agent = await apiClient.createAgent({
         name: data.name,
         description: data.description,
         systemPrompt: data.instructions,
@@ -60,7 +59,7 @@ export default function NewAgentPage() {
 
         for (const config of data.integrationConfigurations) {
           try {
-            await agentIntegrationsClient.connectAgentToIntegration({
+            await apiClient.createAgentIntegration({
               agentId: agent.id,
               integrationId: config.id,
               selectedTools: config.selectedTools || []

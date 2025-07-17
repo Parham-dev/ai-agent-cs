@@ -1,69 +1,17 @@
-import { prisma } from '../database'
+import { prisma } from '@/lib/database/database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
-import '../../types/prisma-json'
-
-// Define Organization type based on our V2 schema (updated)
-export interface Organization {
-  id: string
-  name: string
-  slug: string
-  description?: string | null  // New field in V2
-  createdAt: Date
-  updatedAt: Date
-  
-  // Removed in V2 for simplicity
-  // settings: PrismaJson.OrganizationSettings
-  // isActive: boolean
-}
-
-// Extended types for better API responses
-export interface OrganizationWithStats extends Organization {
-  _count?: {
-    agents: number
-    integrations: number
-    conversations: number
-  }
-}
-
-export interface OrganizationWithRelations extends Organization {
-  agents?: Array<{
-    id: string
-    name: string
-    isActive: boolean
-  }>
-  integrations?: Array<{
-    id: string
-    type: string
-    name: string
-    isActive: boolean
-  }>
-}
-
-export interface CreateOrganizationData {
-  name: string
-  slug: string
-  description?: string  // New in V2
-  // settings and isActive removed in V2
-}
-
-export interface UpdateOrganizationData {
-  name?: string
-  slug?: string
-  description?: string  // New in V2
-  // settings and isActive removed in V2
-}
-
-export interface OrganizationFilters {
-  search?: string
-  limit?: number
-  offset?: number
-  // isActive removed in V2
-}
+import type {
+  Organization,
+  OrganizationWithStats,
+  OrganizationWithRelations,
+  CreateOrganizationData,
+  UpdateOrganizationData,
+  OrganizationFilters
+} from '@/lib/types/database'
 
 class OrganizationsService {
   /**
-   * Get all organizations with optional filtering and pagination
-   */
+   * Get all organizations with optional filtering and pagination   */
   async getOrganizations(filters: OrganizationFilters = {}): Promise<OrganizationWithStats[]> {
     try {
       const {
@@ -73,11 +21,11 @@ class OrganizationsService {
       } = filters
 
       const where = {
-        // isActive removed in V2 schema
         ...(search && {
           OR: [
             { name: { contains: search, mode: 'insensitive' as const } },
-            { slug: { contains: search, mode: 'insensitive' as const } }
+            { slug: { contains: search, mode: 'insensitive' as const } },
+            { description: { contains: search, mode: 'insensitive' as const } }
           ]
         })
       }
@@ -98,15 +46,14 @@ class OrganizationsService {
         skip: offset
       })
 
-      return organizations
+      return organizations as OrganizationWithStats[]
     } catch (error) {
-      throw new DatabaseError('Failed to fetch organizations', error as Error)
+      throw new DatabaseError('Failed to fetch organizations (V2)', error as Error)
     }
   }
 
   /**
-   * Get a single organization by ID
-   */
+   * Get a single organization by ID   */
   async getOrganizationById(id: string): Promise<OrganizationWithStats | null> {
     try {
       const organization = await prisma.organization.findUnique({
@@ -122,15 +69,14 @@ class OrganizationsService {
         }
       })
 
-      return organization
+      return organization as OrganizationWithStats | null
     } catch (error) {
-      throw new DatabaseError(`Failed to fetch organization ${id}`, error as Error)
+      throw new DatabaseError(`Failed to fetch organization ${id} (V2)`, error as Error)
     }
   }
 
   /**
-   * Get organization by slug
-   */
+   * Get organization by slug   */
   async getOrganizationBySlug(slug: string): Promise<OrganizationWithStats | null> {
     try {
       const organization = await prisma.organization.findUnique({
@@ -146,15 +92,14 @@ class OrganizationsService {
         }
       })
 
-      return organization
+      return organization as OrganizationWithStats | null
     } catch (error) {
-      throw new DatabaseError(`Failed to fetch organization with slug ${slug}`, error as Error)
+      throw new DatabaseError(`Failed to fetch organization with slug ${slug} (V2)`, error as Error)
     }
   }
 
   /**
-   * Get organization by ID or throw error if not found
-   */
+   * Get organization by ID or throw error if not found   */
   async getOrganizationByIdOrThrow(id: string): Promise<OrganizationWithStats> {
     const organization = await this.getOrganizationById(id)
     if (!organization) {
@@ -164,8 +109,7 @@ class OrganizationsService {
   }
 
   /**
-   * Get organization with full relations (agents, integrations)
-   */
+   * Get organization with full relations (agents, integrations)   */
   async getOrganizationWithRelations(id: string): Promise<OrganizationWithRelations | null> {
     try {
       const organization = await prisma.organization.findUnique({
@@ -190,15 +134,14 @@ class OrganizationsService {
         }
       })
 
-      return organization
+      return organization as OrganizationWithRelations | null
     } catch (error) {
-      throw new DatabaseError(`Failed to fetch organization ${id} with relations`, error as Error)
+      throw new DatabaseError(`Failed to fetch organization ${id} with relations (V2)`, error as Error)
     }
   }
 
   /**
-   * Create a new organization
-   */
+   * Create a new organization   */
   async createOrganization(data: CreateOrganizationData): Promise<Organization> {
     try {
       // Validate required fields
@@ -228,22 +171,20 @@ class OrganizationsService {
           name: data.name.trim(),
           slug: data.slug.trim(),
           description: data.description?.trim() || null
-          // settings and isActive removed in V2
         }
       })
 
-      return organization
+      return organization as Organization
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error
       }
-      throw new DatabaseError('Failed to create organization', error as Error)
+      throw new DatabaseError('Failed to create organization (V2)', error as Error)
     }
   }
 
   /**
-   * Update an existing organization
-   */
+   * Update an existing organization   */
   async updateOrganization(id: string, data: UpdateOrganizationData): Promise<Organization> {
     try {
       // Check if organization exists
@@ -270,22 +211,20 @@ class OrganizationsService {
           ...(data.name && { name: data.name.trim() }),
           ...(data.slug && { slug: data.slug.trim() }),
           ...(data.description !== undefined && { description: data.description?.trim() || null })
-          // settings and isActive removed in V2
         }
       })
 
-      return organization
+      return organization as Organization
     } catch (error) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error
       }
-      throw new DatabaseError(`Failed to update organization ${id}`, error as Error)
+      throw new DatabaseError(`Failed to update organization ${id} (V2)`, error as Error)
     }
   }
 
   /**
-   * Delete an organization (this will cascade delete related data)
-   */
+   * Delete an organization (this will cascade delete related data)   */
   async deleteOrganization(id: string): Promise<void> {
     try {
       // Check if organization exists
@@ -298,28 +237,22 @@ class OrganizationsService {
       if (error instanceof NotFoundError) {
         throw error
       }
-      throw new DatabaseError(`Failed to delete organization ${id}`, error as Error)
+      throw new DatabaseError(`Failed to delete organization ${id} (V2)`, error as Error)
     }
   }
 
-  // toggleOrganizationStatus removed in V2 (no isActive field)
-
-  // updateOrganizationSettings removed in V2 (no settings field)
-
   /**
-   * Get organizations count (V2: no isActive filter)
-   */
+   * Get organizations count   */
   async getOrganizationsCount(): Promise<number> {
     try {
       return await prisma.organization.count()
     } catch (error) {
-      throw new DatabaseError('Failed to count organizations', error as Error)
+      throw new DatabaseError('Failed to count organizations (V2)', error as Error)
     }
   }
 
   /**
-   * Check if slug is available
-   */
+   * Check if slug is available   */
   async isSlugAvailable(slug: string, excludeId?: string): Promise<boolean> {
     try {
       const organization = await prisma.organization.findUnique({
@@ -328,7 +261,7 @@ class OrganizationsService {
       
       return !organization || (!!excludeId && organization.id === excludeId)
     } catch (error) {
-      throw new DatabaseError('Failed to check slug availability', error as Error)
+      throw new DatabaseError('Failed to check slug availability (V2)', error as Error)
     }
   }
 }

@@ -11,10 +11,9 @@ import { Button } from '@/components/ui/button'
 import { Plus, RefreshCw } from 'lucide-react'
 import { AgentIntegrationCard } from './agent-integration-card'
 import { ToolSelectionDialog } from './tool-selection-dialog'
-import { agentIntegrationsClient } from '@/lib/agent-integrations/client'
-import { integrationsClient } from '@/lib/integrations/client'
+import { apiClient } from '@/lib/api/client'
 import { toast } from 'sonner'
-import type { Integration, AgentIntegration } from '@/lib/api/types'
+import type { ApiIntegration, ApiAgentIntegration } from '@/lib/types'
 
 interface AgentIntegrationsManagerProps {
   agentId: string
@@ -22,8 +21,8 @@ interface AgentIntegrationsManagerProps {
 }
 
 export function AgentIntegrationsManager({ agentId, agentName }: AgentIntegrationsManagerProps) {
-  const [integrations, setIntegrations] = useState<Integration[]>([])
-  const [agentIntegrations, setAgentIntegrations] = useState<AgentIntegration[]>([])
+  const [integrations, setIntegrations] = useState<ApiIntegration[]>([])
+  const [agentIntegrations, setAgentIntegrations] = useState<ApiAgentIntegration[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null)
@@ -32,8 +31,8 @@ export function AgentIntegrationsManager({ agentId, agentName }: AgentIntegratio
     try {
       setLoading(true)
       const [integrationsData, agentIntegrationsData] = await Promise.all([
-        integrationsClient.getIntegrations({ isActive: true }),
-        agentIntegrationsClient.getAgentIntegrations(agentId)
+        apiClient.getIntegrations({ isActive: true }),
+        apiClient.getAgentIntegrations(agentId)
       ])
       
       setIntegrations(integrationsData)
@@ -56,19 +55,19 @@ export function AgentIntegrationsManager({ agentId, agentName }: AgentIntegratio
     try {
       if (connect) {
         // Connect with no tools initially - user can configure later
-        await agentIntegrationsClient.connectAgentToIntegration({
+        await apiClient.createAgentIntegration({
           agentId,
           integrationId,
           selectedTools: []
         })
         toast.success('Integration connected successfully')
       } else {
-        await agentIntegrationsClient.disconnectAgentFromIntegration(agentId, integrationId)
+        await apiClient.deleteAgentIntegration(agentId, integrationId)
         toast.success('Integration disconnected successfully')
       }
       
       // Refresh agent integrations
-      const updatedAgentIntegrations = await agentIntegrationsClient.getAgentIntegrations(agentId)
+      const updatedAgentIntegrations = await apiClient.getAgentIntegrations(agentId)
       setAgentIntegrations(updatedAgentIntegrations)
     } catch (error) {
       console.error('Failed to toggle integration:', error)
@@ -82,11 +81,18 @@ export function AgentIntegrationsManager({ agentId, agentName }: AgentIntegratio
 
   const handleToolsConfigured = async (integrationId: string, selectedTools: string[]) => {
     try {
-      await agentIntegrationsClient.updateAgentIntegrationTools(agentId, integrationId, selectedTools)
+      // Since updateAgentIntegrationTools doesn't exist in apiClient,
+      // we need to disconnect and reconnect with the new tools
+      await apiClient.deleteAgentIntegration(agentId, integrationId)
+      await apiClient.createAgentIntegration({
+        agentId,
+        integrationId,
+        selectedTools
+      })
       toast.success('Tools configured successfully')
       
       // Refresh agent integrations
-      const updatedAgentIntegrations = await agentIntegrationsClient.getAgentIntegrations(agentId)
+      const updatedAgentIntegrations = await apiClient.getAgentIntegrations(agentId)
       setAgentIntegrations(updatedAgentIntegrations)
     } catch (error) {
       console.error('Failed to configure tools:', error)

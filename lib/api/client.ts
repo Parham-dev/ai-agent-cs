@@ -1,24 +1,24 @@
 /**
- * V2 API Client with proper error handling and organization context
+ * API Client with proper error handling and organization context
  */
 
 import { 
   ApiResponse, 
-  Agent,
-  Integration,
-  Organization,
-  AgentIntegration,
+  ApiAgent,
+  ApiIntegration,
+  ApiOrganization,
+  ApiAgentIntegration,
   CreateAgentRequest,
   UpdateAgentRequest,
   CreateIntegrationRequest,
   UpdateIntegrationRequest,
   CreateAgentIntegrationRequest,
-  AgentFilters,
-  IntegrationFilters,
+  ApiAgentFilters,
+  ApiIntegrationFilters,
   IntegrationTool,
   API_ERROR_CODES,
   ApiErrorCode
-} from './types';
+} from '@/lib/types';
 
 export class ApiError extends Error {
   constructor(
@@ -31,7 +31,7 @@ export class ApiError extends Error {
   }
 }
 
-export class V2ApiClient {
+export class ApiClient {
   private baseUrl: string;
   private organizationId: string;
 
@@ -68,16 +68,16 @@ export class V2ApiClient {
   }
 
   // Organizations
-  async getOrganizations(): Promise<Organization[]> {
-    return this.request<Organization[]>('/organizations');
+  async getOrganizations(): Promise<ApiOrganization[]> {
+    return this.request<ApiOrganization[]>('/organizations');
   }
 
-  async getOrganization(id: string): Promise<Organization> {
-    return this.request<Organization>(`/organizations/${id}`);
+  async getOrganization(id: string): Promise<ApiOrganization> {
+    return this.request<ApiOrganization>(`/organizations/${id}`);
   }
 
   // Agents
-  async getAgents(filters?: Omit<AgentFilters, 'organizationId'>): Promise<Agent[]> {
+  async getAgents(filters?: Omit<ApiAgentFilters, 'organizationId'>): Promise<ApiAgent[]> {
     const params = new URLSearchParams();
     
     // Always filter by organization
@@ -89,15 +89,15 @@ export class V2ApiClient {
     if (filters?.limit) params.append('limit', filters.limit.toString());
 
     const query = params.toString();
-    return this.request<Agent[]>(`/agents${query ? `?${query}` : ''}`);
+    return this.request<ApiAgent[]>(`/agents${query ? `?${query}` : ''}`);
   }
 
-  async getAgent(id: string): Promise<Agent> {
-    return this.request<Agent>(`/agents/${id}`);
+  async getAgent(id: string): Promise<ApiAgent> {
+    return this.request<ApiAgent>(`/agents/${id}`);
   }
 
-  async createAgent(data: Omit<CreateAgentRequest, 'organizationId'>): Promise<Agent> {
-    return this.request<Agent>('/agents', {
+  async createAgent(data: Omit<CreateAgentRequest, 'organizationId'>): Promise<ApiAgent> {
+    return this.request<ApiAgent>('/agents', {
       method: 'POST',
       body: JSON.stringify({
         ...data,
@@ -106,8 +106,8 @@ export class V2ApiClient {
     });
   }
 
-  async updateAgent(id: string, data: UpdateAgentRequest): Promise<Agent> {
-    return this.request<Agent>(`/agents/${id}`, {
+  async updateAgent(id: string, data: UpdateAgentRequest): Promise<ApiAgent> {
+    return this.request<ApiAgent>(`/agents/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -120,7 +120,7 @@ export class V2ApiClient {
   }
 
   // Integrations
-  async getIntegrations(filters?: Omit<IntegrationFilters, 'organizationId'>): Promise<Integration[]> {
+  async getIntegrations(filters?: Omit<ApiIntegrationFilters, 'organizationId'>): Promise<ApiIntegration[]> {
     const params = new URLSearchParams();
     
     // Always filter by organization
@@ -133,15 +133,15 @@ export class V2ApiClient {
     if (filters?.limit) params.append('limit', filters.limit.toString());
 
     const query = params.toString();
-    return this.request<Integration[]>(`/integrations${query ? `?${query}` : ''}`);
+    return this.request<ApiIntegration[]>(`/integrations${query ? `?${query}` : ''}`);
   }
 
-  async getIntegration(id: string): Promise<Integration> {
-    return this.request<Integration>(`/integrations/${id}`);
+  async getIntegration(id: string): Promise<ApiIntegration> {
+    return this.request<ApiIntegration>(`/integrations/${id}`);
   }
 
-  async createIntegration(data: Omit<CreateIntegrationRequest, 'organizationId'>): Promise<Integration> {
-    return this.request<Integration>('/integrations', {
+  async createIntegration(data: Omit<CreateIntegrationRequest, 'organizationId'>): Promise<ApiIntegration> {
+    return this.request<ApiIntegration>('/integrations', {
       method: 'POST',
       body: JSON.stringify({
         ...data,
@@ -150,8 +150,8 @@ export class V2ApiClient {
     });
   }
 
-  async updateIntegration(id: string, data: UpdateIntegrationRequest): Promise<Integration> {
-    return this.request<Integration>(`/integrations/${id}`, {
+  async updateIntegration(id: string, data: UpdateIntegrationRequest): Promise<ApiIntegration> {
+    return this.request<ApiIntegration>(`/integrations/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -168,16 +168,16 @@ export class V2ApiClient {
   }
 
   // Agent-Integration Relationships
-  async getAgentIntegrations(agentId: string): Promise<AgentIntegration[]> {
-    return this.request<AgentIntegration[]>(`/agent-integrations?agentId=${agentId}`);
+  async getAgentIntegrations(agentId: string): Promise<ApiAgentIntegration[]> {
+    return this.request<ApiAgentIntegration[]>(`/agent-integrations?agentId=${agentId}`);
   }
 
-  async getIntegrationAgents(integrationId: string): Promise<AgentIntegration[]> {
-    return this.request<AgentIntegration[]>(`/agent-integrations?integrationId=${integrationId}`);
+  async getIntegrationAgents(integrationId: string): Promise<ApiAgentIntegration[]> {
+    return this.request<ApiAgentIntegration[]>(`/agent-integrations?integrationId=${integrationId}`);
   }
 
-  async createAgentIntegration(data: CreateAgentIntegrationRequest): Promise<AgentIntegration> {
-    return this.request<AgentIntegration>('/agent-integrations', {
+  async createAgentIntegration(data: CreateAgentIntegrationRequest): Promise<ApiAgentIntegration> {
+    return this.request<ApiAgentIntegration>('/agent-integrations', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -198,7 +198,7 @@ export class V2ApiClient {
   }
 }
 
-import { getOrganizationId } from '../context/organization';
+import { getOrganizationId } from '@/lib/context/organization';
 
 // Default client instance with parham organization context
-export const v2ApiClient = new V2ApiClient(getOrganizationId());
+export const apiClient = new ApiClient(getOrganizationId());

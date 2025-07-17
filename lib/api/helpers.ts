@@ -5,7 +5,7 @@ import {
   ERROR_STATUS_MAPPING, 
   API_ERROR_CODES,
   PaginatedResponse 
-} from './types';
+} from '@/lib/types';
 
 /**
  * API Response Helpers

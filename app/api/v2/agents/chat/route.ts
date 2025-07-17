@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { run, Agent, type Tool, type MCPServerStdio } from '@openai/agents';
 import { createShopifyTools } from '@/lib/integrations/shopify/tools';
 import { createMCPClient } from '@/lib/mcp/client';
-import { agentsServiceV2 } from '@/lib/database/services/v2/agents.service';
+import { agentsService } from '@/lib/database/services';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
 import { verifyWidgetToken, extractBearerToken } from '@/lib/utils/jwt';
@@ -80,7 +80,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
     // Get the agent with its integrations from the database
     logger.debug('Fetching agent by ID');
-    const agentData = await agentsServiceV2.getAgentById(agentId);
+    const agentData = await agentsService.getAgentById(agentId);
     
     if (!agentData) {
       logger.warn('Agent not found');

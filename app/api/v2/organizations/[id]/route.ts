@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { organizationsService } from '@/lib/database/services/organizations.service'
+import { organizationsService } from '@/lib/database/services'
 import { Api, withErrorHandling, validateMethod, ErrorCodes } from '@/lib/api'
 
 export const GET = withErrorHandling(async (

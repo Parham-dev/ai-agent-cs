@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { agentsServiceV2 } from '@/lib/database/services/v2/agents.service';
+import { agentsService } from '@/lib/database/services';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
 import { sign } from 'jsonwebtoken';
@@ -68,7 +68,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     }
 
     // Get agent with its integrations
-    const agent = await agentsServiceV2.getAgentById(agentId);
+    const agent = await agentsService.getAgentById(agentId);
     
     if (!agent) {
       logger.warn('Widget auth: agent not found', { agentId });

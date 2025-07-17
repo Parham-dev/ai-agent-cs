@@ -10,11 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Settings, ChevronDown, ChevronUp } from 'lucide-react'
-import type { Integration, AgentIntegration } from '@/lib/api/types'
+import type { ApiIntegration, ApiAgentIntegration } from '@/lib/types'
 
 interface AgentIntegrationCardProps {
-  integration: Integration
-  agentIntegration?: AgentIntegration
+  integration: ApiIntegration
+  agentIntegration?: ApiAgentIntegration
   isConnected: boolean
   onToggleConnection: (integrationId: string, connect: boolean) => Promise<void>
   onConfigureTools: (integrationId: string) => void

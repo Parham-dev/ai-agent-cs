@@ -1,18 +1,17 @@
-import { prisma } from '../../database'
+import { prisma } from '@/lib/database/database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
 import type {
-  AgentV2,
-  AgentV2WithRelations,
-  CreateAgentV2Data,
-  UpdateAgentV2Data,
-  AgentV2Filters
-} from '@/lib/types/v2/schema'
+  Agent,
+  AgentWithRelations,
+  CreateAgentData,
+  UpdateAgentData,
+  AgentFilters
+} from '@/lib/types/database'
 
-class AgentsServiceV2 {
+class AgentsService {
   /**
-   * Get all agents with optional filtering and pagination (V2)
-   */
-  async getAgents(filters: AgentV2Filters = {}): Promise<AgentV2WithRelations[]> {
+   * Get all agents with optional filtering and pagination   */
+  async getAgents(filters: AgentFilters = {}): Promise<AgentWithRelations[]> {
     try {
       const {
         organizationId,
@@ -53,16 +52,15 @@ class AgentsServiceV2 {
         skip: offset
       })
 
-      return agents as AgentV2WithRelations[]
+      return agents as AgentWithRelations[]
     } catch (error) {
       throw new DatabaseError('Failed to fetch agents (V2)', error as Error)
     }
   }
 
   /**
-   * Get a single agent by ID (V2)
-   */
-  async getAgentById(id: string): Promise<AgentV2WithRelations | null> {
+   * Get a single agent by ID   */
+  async getAgentById(id: string): Promise<AgentWithRelations | null> {
     try {
       const agent = await prisma.agent.findUnique({
         where: { id },
@@ -80,16 +78,15 @@ class AgentsServiceV2 {
         }
       })
 
-      return agent as AgentV2WithRelations | null
+      return agent as AgentWithRelations | null
     } catch (error) {
       throw new DatabaseError(`Failed to fetch agent ${id} (V2)`, error as Error)
     }
   }
 
   /**
-   * Get agent by ID or throw error if not found (V2)
-   */
-  async getAgentByIdOrThrow(id: string): Promise<AgentV2WithRelations> {
+   * Get agent by ID or throw error if not found   */
+  async getAgentByIdOrThrow(id: string): Promise<AgentWithRelations> {
     const agent = await this.getAgentById(id)
     if (!agent) {
       throw new NotFoundError('Agent', id)
@@ -98,9 +95,8 @@ class AgentsServiceV2 {
   }
 
   /**
-   * Create a new agent (V2)
-   */
-  async createAgent(data: CreateAgentV2Data): Promise<AgentV2> {
+   * Create a new agent   */
+  async createAgent(data: CreateAgentData): Promise<Agent> {
     try {
       // Validate required fields
       if (!data.name?.trim()) {
@@ -119,12 +115,12 @@ class AgentsServiceV2 {
           model: data.model || 'gpt-4o',
           temperature: data.temperature ?? 0.7,
           maxTokens: data.maxTokens ?? 4000,
-          rules: data.rules || null,
+          rules: data.rules || undefined,
           isActive: data.isActive ?? true
         }
       })
 
-      return agent as AgentV2
+      return agent as Agent
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error
@@ -134,9 +130,8 @@ class AgentsServiceV2 {
   }
 
   /**
-   * Update an existing agent (V2)
-   */
-  async updateAgent(id: string, data: UpdateAgentV2Data): Promise<AgentV2> {
+   * Update an existing agent   */
+  async updateAgent(id: string, data: UpdateAgentData): Promise<Agent> {
     try {
       // Check if agent exists
       await this.getAgentByIdOrThrow(id)
@@ -157,7 +152,7 @@ class AgentsServiceV2 {
         data: updateData
       })
 
-      return agent as AgentV2
+      return agent as Agent
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error
@@ -167,8 +162,7 @@ class AgentsServiceV2 {
   }
 
   /**
-   * Delete an agent (V2)
-   */
+   * Delete an agent   */
   async deleteAgent(id: string): Promise<void> {
     try {
       // Check if agent exists
@@ -186,13 +180,11 @@ class AgentsServiceV2 {
   }
 
   /**
-   * Get agents by organization (V2)
-   */
-  async getAgentsByOrganization(organizationId: string): Promise<AgentV2WithRelations[]> {
+   * Get agents by organization   */
+  async getAgentsByOrganization(organizationId: string): Promise<AgentWithRelations[]> {
     return this.getAgents({ organizationId })
   }
 }
 
-// Export singleton instance following your pattern
-export const agentsServiceV2 = new AgentsServiceV2()
-export default agentsServiceV2
+// Export singleton instance
+export const agentsService = new AgentsService()

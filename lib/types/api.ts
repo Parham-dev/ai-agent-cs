@@ -1,6 +1,5 @@
-/**
- * Unified API Response Types and Interfaces
- */
+// API-specific types for requests, responses, and client-server communication
+// These types use string dates for JSON serialization
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -65,57 +64,74 @@ export const API_ERROR_CODES = {
 
 export type ApiErrorCode = typeof API_ERROR_CODES[keyof typeof API_ERROR_CODES];
 
-// V2 API Types
-export interface Organization {
+// HTTP Status Code mappings
+export const ERROR_STATUS_MAPPING: Record<ApiErrorCode, number> = {
+  [API_ERROR_CODES.VALIDATION_ERROR]: 400,
+  [API_ERROR_CODES.AUTHENTICATION_ERROR]: 401,
+  [API_ERROR_CODES.AUTHORIZATION_ERROR]: 403,
+  [API_ERROR_CODES.NOT_FOUND]: 404,
+  [API_ERROR_CODES.CONFLICT]: 409,
+  [API_ERROR_CODES.RATE_LIMITED]: 429,
+  [API_ERROR_CODES.INTERNAL_ERROR]: 500,
+  [API_ERROR_CODES.SERVICE_UNAVAILABLE]: 503,
+  [API_ERROR_CODES.DATABASE_ERROR]: 500,
+  [API_ERROR_CODES.EXTERNAL_API_ERROR]: 502,
+  [API_ERROR_CODES.AGENT_NOT_FOUND]: 404,
+  [API_ERROR_CODES.INTEGRATION_ERROR]: 400,
+  [API_ERROR_CODES.CHAT_ERROR]: 500,
+};
+
+// API Entity Types (with string dates for JSON serialization)
+export interface ApiOrganization {
   id: string;
   name: string;
   slug: string;
-  description?: string;
+  description?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Integration {
+export interface ApiIntegration {
   id: string;
   organizationId: string;
   name: string;
   type: string;
-  description?: string;
+  description?: string | null;
   isActive: boolean;
   credentials: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Agent {
+export interface ApiAgent {
   id: string;
   organizationId: string;
   name: string;
-  description?: string;
+  description?: string | null;
   isActive: boolean;
-  systemPrompt?: string;
+  systemPrompt?: string | null;
   model: string;
   temperature: number;
   maxTokens: number;
-  rules?: Record<string, unknown>;
+  rules?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
-  integrations?: AgentIntegration[];
+  integrations?: ApiAgentIntegration[];
 }
 
-export interface AgentIntegration {
+export interface ApiAgentIntegration {
   id: string;
   agentId: string;
   integrationId: string;
   isEnabled: boolean;
   selectedTools: string[];
-  config?: Record<string, unknown>;
+  config?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
-  integration?: Integration;
+  integration?: ApiIntegration;
 }
 
-// Request/Response Types
+// Request Types
 export interface CreateAgentRequest {
   organizationId: string;
   name: string;
@@ -160,7 +176,20 @@ export interface CreateAgentIntegrationRequest {
   config?: Record<string, unknown>;
 }
 
-export interface AgentFilters {
+export interface CreateOrganizationRequest {
+  name: string;
+  slug: string;
+  description?: string;
+}
+
+export interface UpdateOrganizationRequest {
+  name?: string;
+  slug?: string;
+  description?: string;
+}
+
+// Filter Types
+export interface ApiAgentFilters {
   organizationId?: string;
   search?: string;
   isActive?: boolean;
@@ -168,11 +197,17 @@ export interface AgentFilters {
   limit?: number;
 }
 
-export interface IntegrationFilters {
+export interface ApiIntegrationFilters {
   organizationId?: string;
   type?: string;
   search?: string;
   isActive?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface ApiOrganizationFilters {
+  search?: string;
   page?: number;
   limit?: number;
 }
@@ -183,19 +218,5 @@ export interface IntegrationTool {
   parameters?: Record<string, unknown>;
 }
 
-// HTTP Status Code mappings
-export const ERROR_STATUS_MAPPING: Record<ApiErrorCode, number> = {
-  [API_ERROR_CODES.VALIDATION_ERROR]: 400,
-  [API_ERROR_CODES.AUTHENTICATION_ERROR]: 401,
-  [API_ERROR_CODES.AUTHORIZATION_ERROR]: 403,
-  [API_ERROR_CODES.NOT_FOUND]: 404,
-  [API_ERROR_CODES.CONFLICT]: 409,
-  [API_ERROR_CODES.RATE_LIMITED]: 429,
-  [API_ERROR_CODES.INTERNAL_ERROR]: 500,
-  [API_ERROR_CODES.SERVICE_UNAVAILABLE]: 503,
-  [API_ERROR_CODES.DATABASE_ERROR]: 500,
-  [API_ERROR_CODES.EXTERNAL_API_ERROR]: 502,
-  [API_ERROR_CODES.AGENT_NOT_FOUND]: 404,
-  [API_ERROR_CODES.INTEGRATION_ERROR]: 400,
-  [API_ERROR_CODES.CHAT_ERROR]: 500,
-};
+// This file must be a module
+export {}
