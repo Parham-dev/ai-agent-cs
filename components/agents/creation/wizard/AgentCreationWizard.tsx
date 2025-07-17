@@ -135,7 +135,8 @@ export function AgentCreationWizard({
       return !!(formValues.name?.trim() && formValues.systemPrompt?.trim())
     }
     
-    return true // Other steps are optional for now
+    // All other steps (integrations, tools, advanced, review) are always valid
+    return true
   }
 
   // Handle form submission

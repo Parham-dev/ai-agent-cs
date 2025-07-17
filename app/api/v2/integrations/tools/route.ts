@@ -4,7 +4,7 @@ import { withErrorHandling } from '@/lib/api/error-handling'
 import { createApiLogger } from '@/lib/utils/logger'
 
 // Import available tools for each integration type
-import { ALL_TOOLS as SHOPIFY_TOOLS } from '@/lib/mcp/servers/shopify/tools'
+import { ALL_TOOLS as SHOPIFY_TOOLS } from '@/lib/mcp/servers/shopify/tools/index'
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const methodError = validateMethod(request, ['GET']);
@@ -25,12 +25,11 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   logger.debug('Fetching tools for integration type', { integrationType });
 
-  let tools: Array<{ id: string; name: string; description: string }> = [];
+  let tools: Array<{ name: string; description: string }> = [];
 
   switch (integrationType) {
     case 'shopify':
       tools = SHOPIFY_TOOLS.map(tool => ({
-        id: tool.name,
         name: tool.name.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()), // Convert camelCase to Title Case
         description: tool.description || 'No description available'
       }));
@@ -53,9 +52,5 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   logger.debug('Tools fetched successfully', { integrationType, toolCount: tools.length });
 
-  return Api.success({ 
-    tools,
-    integrationType,
-    totalCount: tools.length
-  });
+  return Api.success(tools);
 });

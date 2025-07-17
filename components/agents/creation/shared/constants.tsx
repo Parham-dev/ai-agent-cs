@@ -1,16 +1,6 @@
-import React from 'react'
 import { Bot, Sparkles, Settings, Brain } from 'lucide-react'
 
-interface InstructionTemplate {
-  title: string
-  description: string
-  icon: React.ReactNode
-  color: string
-  borderColor: string
-  instructions: string
-}
-
-export const INSTRUCTION_TEMPLATES: Record<string, InstructionTemplate> = {
+export const INSTRUCTION_TEMPLATES = {
   'customer-support': {
     title: 'Customer Support Agent',
     description: 'Friendly and helpful customer service agent',
@@ -97,10 +87,10 @@ Core Principles:
 }
 
 export const AI_MODELS = [
-  { value: 'gpt-4o', label: 'GPT-4o' },
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-  { value: 'o1-preview', label: 'o1 Preview' },
-  { value: 'o1-mini', label: 'o1 Mini' }
+  { value: 'gpt-4o', label: 'GPT-4o (Recommended)', description: 'Latest multimodal model, best performance' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini', description: 'Faster and more cost-effective' },
+  { value: 'o1-preview', label: 'o1 Preview', description: 'Advanced reasoning model' },
+  { value: 'o1-mini', label: 'o1 Mini', description: 'Faster reasoning model' }
 ]
 
 export const OUTPUT_TYPE_OPTIONS = [
@@ -114,7 +104,5 @@ export const TOOL_CHOICE_OPTIONS = [
   { value: 'none', label: 'Never Use Tools' }
 ]
 
-export const DEFAULT_BEHAVIOR = {
-  outputType: 'text' as const,
-  toolChoice: 'auto' as const
-}
+// Available integration types for the agent creation process
+export const AVAILABLE_INTEGRATIONS: ('shopify' | 'stripe')[] = ['shopify', 'stripe']

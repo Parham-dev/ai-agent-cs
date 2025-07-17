@@ -156,16 +156,6 @@ export function getShopifyCapabilities() {
       id: 'product-catalog',
       name: 'Product Catalog',
       description: 'Browse and list all products in the store'
-    },
-    {
-      id: 'inventory-check',
-      name: 'Inventory Check',
-      description: 'Check product availability and stock levels'
-    },
-    {
-      id: 'pricing-info',
-      name: 'Pricing Information',
-      description: 'Get product pricing and variant details'
     }
   ];
 } 
