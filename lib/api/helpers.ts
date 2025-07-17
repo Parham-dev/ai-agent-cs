@@ -139,46 +139,6 @@ export class ApiResponseHelper {
 }
 
 /**
- * Error handling wrapper for API routes
- */
-export function withErrorHandling<T extends unknown[], R>(
-  handler: (...args: T) => Promise<R>
-) {
-  return async (...args: T): Promise<NextResponse | R> => {
-    try {
-      return await handler(...args);
-    } catch (error) {
-      console.error('API Error:', error);
-      
-      // Handle specific error types
-      if (error instanceof Error) {
-        // Database connection errors
-        if (error.message.includes('database') || error.message.includes('Prisma')) {
-          return ApiResponseHelper.databaseError('operation', error.message);
-        }
-        
-        // Rate limiting errors
-        if (error.message.includes('rate limit')) {
-          return ApiResponseHelper.error(
-            API_ERROR_CODES.RATE_LIMITED,
-            'Rate limit exceeded. Please try again later.',
-            { retryAfter: 60 }
-          );
-        }
-        
-        // External API errors
-        if (error.message.includes('API key') || error.message.includes('OpenAI')) {
-          return ApiResponseHelper.externalApiError('OpenAI', error.message);
-        }
-      }
-      
-      // Generic internal error
-      return ApiResponseHelper.internalError();
-    }
-  };
-}
-
-/**
  * Request validation helper
  */
 export async function validateRequest<T>(

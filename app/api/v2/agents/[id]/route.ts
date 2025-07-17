@@ -1,71 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { agentsService } from '@/lib/database/services'
-import { Api, withErrorHandling, validateMethod, ErrorCodes } from '@/lib/api'
+import { createGetHandler, createPutHandler, createDeleteHandler } from '@/lib/api/route-utils'
+import type { UpdateAgentData } from '@/lib/types'
 
-export const GET = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse> => {
-  // Validate HTTP method
-  const methodError = validateMethod(request, ['GET']);
-  if (methodError) return methodError;
+// Get single agent - simplified from ~20 lines to 1 line
+export const GET = createGetHandler(agentsService, 'getAgentById', 'Agent')
 
-  const { id } = await params;
-  const agent = await agentsService.getAgentById(id)
-  
-  if (!agent) {
-    return Api.error(ErrorCodes.AGENT_NOT_FOUND, 'Agent not found');
-  }
-  
-  return Api.success({ agent })
-});
+// Update agent - simplified from ~30 lines to 1 line  
+export const PUT = createPutHandler<typeof agentsService, UpdateAgentData>(
+  agentsService,
+  'updateAgent', 
+  'Agent'
+)
 
-export const PUT = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse> => {
-  // Validate HTTP method
-  const methodError = validateMethod(request, ['PUT']);
-  if (methodError) return methodError;
-
-  const { id } = await params;
-  const data = await request.json()
-  
-  // Validation for fields that can be updated
-  const validationErrors: Record<string, string> = {};
-  
-  if (data.name !== undefined && !data.name?.trim()) {
-    validationErrors.name = 'Agent name cannot be empty';
-  }
-
-  if (data.systemPrompt !== undefined && !data.systemPrompt?.trim()) {
-    validationErrors.systemPrompt = 'System prompt cannot be empty';
-  }
-  
-  if (Object.keys(validationErrors).length > 0) {
-    return Api.error(ErrorCodes.VALIDATION_ERROR, 'Validation failed', { errors: validationErrors });
-  }
-
-  const updateData: Record<string, unknown> = {};
-  if (data.name !== undefined) updateData.name = data.name.trim();
-  if (data.description !== undefined) updateData.description = data.description?.trim() || null;
-  if (data.systemPrompt !== undefined) updateData.systemPrompt = data.systemPrompt.trim();
-
-  const agent = await agentsService.updateAgent(id, updateData)
-  
-  return Api.success({ agent })
-});
-
-export const DELETE = withErrorHandling(async (
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-): Promise<NextResponse> => {
-  // Validate HTTP method
-  const methodError = validateMethod(request, ['DELETE']);
-  if (methodError) return methodError;
-
-  const { id } = await params;
-  await agentsService.deleteAgent(id)
-  
-  return Api.success({ message: 'Agent deleted successfully' })
-});
+// Delete agent - simplified from ~15 lines to 1 line
+export const DELETE = createDeleteHandler(agentsService, 'deleteAgent', 'Agent')

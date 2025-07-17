@@ -10,5 +10,5 @@ export { agentsService } from './agents.service'
 export { integrationsService } from './integrations.service'
 export { agentIntegrationsService } from './agent-integrations.service'
 
-// Re-export types for convenience
-export type * from '@/lib/types/database'
+// Note: Import database types directly from '@/lib/types' instead of re-exporting
+// This prevents circular dependencies and makes imports clearer

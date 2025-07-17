@@ -1,19 +1,16 @@
 // Main Library Index
-// Centralized exports for all lib modules
+// Centralized exports for commonly used items only
 
-// Types - export all types
+// Types - export all types (most commonly imported)
 export * from './types'
 
-// API - export client and utilities
-export { apiClient } from './api/client'
-export * from './api/helpers'
+// Utils - export common utilities (frequently used across app)
+export { cn } from './utils/cn'
+export * from './utils/errors'
 
-// Database - export services and utilities
-export * from './database'
-
-// Context - export organization utilities
+// Context - export organization utilities (used by API client)
 export * from './context/organization'
 
-// Utils - export common utilities
-export * from './utils/errors'
-export * from './utils/logger'
+// Note: API client, database services, and specialized modules should be imported directly
+// Example: import { apiClient } from '@/lib/api/client'
+// Example: import { agentsService } from '@/lib/database/services'

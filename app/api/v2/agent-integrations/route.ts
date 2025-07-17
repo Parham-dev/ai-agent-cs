@@ -1,54 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { agentIntegrationsService } from '@/lib/database/services'
-import { Api, withErrorHandling, validateMethod, ErrorCodes } from '@/lib/api'
+import { ApiResponseHelper as Api, validateMethod } from '@/lib/api/helpers'
+import { withErrorHandling } from '@/lib/api/error-handling'
+import type { CreateAgentIntegrationData } from '@/lib/types'
 
-export const GET = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  // Validate HTTP method
+export const GET = withErrorHandling(async (request: NextRequest) => {
   const methodError = validateMethod(request, ['GET']);
   if (methodError) return methodError;
 
   const { searchParams } = new URL(request.url)
-  
-  const filters = {
-    agentId: searchParams.get('agentId') || undefined,
-    integrationId: searchParams.get('integrationId') || undefined,
-  }
+  const agentId = searchParams.get('agentId')
+  const integrationId = searchParams.get('integrationId')
 
   // If agentId is provided, get integrations for that agent
-  if (filters.agentId) {
-    const integrations = await agentIntegrationsService.getAgentIntegrations(filters.agentId)
+  if (agentId) {
+    const integrations = await agentIntegrationsService.getAgentIntegrations(agentId)
     return Api.success(integrations)
   }
 
   // If integrationId is provided, get agents using that integration
-  if (filters.integrationId) {
-    const agents = await agentIntegrationsService.getIntegrationAgents(filters.integrationId)
+  if (integrationId) {
+    const agents = await agentIntegrationsService.getIntegrationAgents(integrationId)
     return Api.success(agents)
   }
 
-  return Api.error(ErrorCodes.VALIDATION_ERROR, 'Must provide agentId or integrationId')
+  return Api.error('VALIDATION_ERROR', 'Must provide agentId or integrationId')
 });
 
-export const POST = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  // Validate HTTP method
-  const methodError = validateMethod(request, ['POST']);
-  if (methodError) return methodError;
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  const methodError = validateMethod(request, ['POST'])
+  if (methodError) return methodError
 
-  const data = await request.json()
+  const data = await request.json() as CreateAgentIntegrationData
   
   // Validation for required fields
-  const validationErrors: Record<string, string> = {};
-  
-  if (!data.agentId) {
-    validationErrors.agentId = 'Agent ID is required';
-  }
-  
-  if (!data.integrationId) {
-    validationErrors.integrationId = 'Integration ID is required';
-  }
-  
-  if (Object.keys(validationErrors).length > 0) {
-    return Api.error(ErrorCodes.VALIDATION_ERROR, 'Validation failed', { errors: validationErrors });
+  if (!data.agentId || !data.integrationId) {
+    return Api.error('VALIDATION_ERROR', 'Both agentId and integrationId are required')
   }
 
   const relationship = await agentIntegrationsService.createAgentIntegration({
@@ -60,22 +47,20 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
   })
   
   return Api.success({ relationship }, undefined, 201)
-});
+})
 
-export const DELETE = withErrorHandling(async (request: NextRequest): Promise<NextResponse> => {
-  // Validate HTTP method
-  const methodError = validateMethod(request, ['DELETE']);
-  if (methodError) return methodError;
+export const DELETE = withErrorHandling(async (request: NextRequest) => {
+  const methodError = validateMethod(request, ['DELETE'])
+  if (methodError) return methodError
 
   const { searchParams } = new URL(request.url)
   const agentId = searchParams.get('agentId')
   const integrationId = searchParams.get('integrationId')
   
   if (!agentId || !integrationId) {
-    return Api.error(ErrorCodes.VALIDATION_ERROR, 'Both agentId and integrationId are required');
+    return Api.error('VALIDATION_ERROR', 'Both agentId and integrationId are required')
   }
 
   await agentIntegrationsService.deleteAgentIntegration(agentId, integrationId)
-  
   return Api.success({ message: 'Agent-integration relationship removed successfully' })
-});
+})
