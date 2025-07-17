@@ -5,6 +5,7 @@ import { agentsService } from '@/lib/database/services';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
 import { verifyWidgetToken, extractBearerToken } from '@/lib/utils/jwt';
+import { getAllTools } from '@/lib/tools';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -140,23 +141,35 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     }
 
     // Add universal tools based on agent configuration
-    // TODO: Add OpenAI hosted tools, custom tools based on agent.tools
+    const agentSelectedTools = agentData.tools || []
+    const { customTools, openaiTools } = getAllTools(agentSelectedTools);
+    
+    // Combine all tools - both function tools and hosted tools can be in the same array
+    const allTools = [...customTools, ...openaiTools];
+    
+    logger.info('Universal tools configured', {
+      customToolsCount: customTools.length,
+      openaiToolsCount: openaiTools.length,
+      totalToolsCount: allTools.length,
+      selectedTools: agentSelectedTools
+    });
 
     logger.info('MCP servers configured for agent', { 
       mcpServersCount: mcpServers.length
     });
 
-    // Create the OpenAI Agent instance with MCP servers
+    // Create the OpenAI Agent instance with MCP servers and universal tools
     const agentConfig = agentData.rules && typeof agentData.rules === 'object' ? agentData.rules : {};
-    // Remove tools from agentConfig to avoid conflict with our MCP servers
+    // Remove tools from agentConfig to avoid conflict with our tools
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { tools: _, ...cleanAgentConfig } = agentConfig;
-    
+
     const openaiAgent = new Agent({
       name: agentData.name,
       instructions: agentData.systemPrompt || `You are ${agentData.name}, an AI assistant.`,
       model: agentData.model,
-      mcpServers: mcpServers.length > 0 ? mcpServers : undefined, // MCP servers
+      mcpServers: mcpServers.length > 0 ? mcpServers : undefined,
+      tools: allTools.length > 0 ? allTools : undefined,
       ...cleanAgentConfig
     });
 

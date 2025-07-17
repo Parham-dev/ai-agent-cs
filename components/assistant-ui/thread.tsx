@@ -1,6 +1,5 @@
 import {
   ActionBarPrimitive,
-  BranchPickerPrimitive,
   ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
@@ -9,18 +8,13 @@ import type { FC } from "react";
 import {
   ArrowDownIcon,
   CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   CopyIcon,
-  PencilIcon,
   RefreshCwIcon,
   SendHorizontalIcon,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
-import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 
 export const Thread: FC = () => {
   return (
@@ -31,7 +25,10 @@ export const Thread: FC = () => {
       }}
     >
       {/* Chat Messages Area */}
-      <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto bg-inherit">
+      <ThreadPrimitive.Viewport 
+        className="flex-1 overflow-y-auto bg-inherit"
+        autoScroll
+      >
         <div className="flex flex-col items-center px-4 py-6 pb-28 min-h-full">
           <ThreadWelcome />
 
@@ -42,6 +39,11 @@ export const Thread: FC = () => {
               AssistantMessage: AssistantMessage,
             }}
           />
+
+          {/* Thinking indicator when AI is processing */}
+          <ThreadPrimitive.If running>
+            <ThinkingIndicator />
+          </ThreadPrimitive.If>
 
           <ThreadPrimitive.If empty={false}>
             <div className="flex-grow min-h-8" />
@@ -55,10 +57,8 @@ export const Thread: FC = () => {
       {/* Fixed Composer at Bottom */}
       <div className="fixed bottom-10 left-0 right-0 z-50 bg-background/98 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700">
         <div className="p-4 lg:ml-[280px]">
-          <div className="w-full max-w-4xl mx-auto">
-            <div className="w-full max-w-[var(--thread-max-width)] mx-auto">
-              <Composer />
-            </div>
+          <div className="w-full max-w-[var(--thread-max-width)] mx-auto">
+            <Composer />
           </div>
         </div>
       </div>
@@ -69,13 +69,13 @@ export const Thread: FC = () => {
 const ThreadScrollToBottom: FC = () => {
   return (
     <ThreadPrimitive.ScrollToBottom asChild>
-      <TooltipIconButton
-        tooltip="Scroll to bottom"
+      <Button
         variant="outline"
-        className="fixed bottom-24 z-40 rounded-full disabled:invisible shadow-lg bg-background border-2 lg:left-[calc(50%+140px)] left-1/2 transform -translate-x-1/2"
+        size="icon"
+        className="fixed bottom-24 z-40 rounded-full disabled:invisible shadow-lg bg-background border-2 lg:left-[calc(50%+140px)] left-1/2 transform -translate-x-1/2 w-10 h-10"
       >
-        <ArrowDownIcon />
-      </TooltipIconButton>
+        <ArrowDownIcon className="h-4 w-4" />
+      </Button>
     </ThreadPrimitive.ScrollToBottom>
   );
 };
@@ -143,24 +143,24 @@ const ComposerAction: FC = () => {
     <>
       <ThreadPrimitive.If running={false}>
         <ComposerPrimitive.Send asChild>
-          <TooltipIconButton
-            tooltip="Send"
+          <Button
             variant="default"
+            size="icon"
             className="size-8 rounded-lg bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200 disabled:opacity-50"
           >
             <SendHorizontalIcon className="size-4" />
-          </TooltipIconButton>
+          </Button>
         </ComposerPrimitive.Send>
       </ThreadPrimitive.If>
       <ThreadPrimitive.If running>
         <ComposerPrimitive.Cancel asChild>
-          <TooltipIconButton
-            tooltip="Cancel"
+          <Button
             variant="default"
+            size="icon"
             className="size-8 rounded-lg bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200"
           >
             <CircleStopIcon />
-          </TooltipIconButton>
+          </Button>
         </ComposerPrimitive.Cancel>
       </ThreadPrimitive.If>
     </>
@@ -170,32 +170,13 @@ const ComposerAction: FC = () => {
 const UserMessage: FC = () => {
   return (
     <MessagePrimitive.Root className="grid w-full max-w-[var(--thread-max-width)] auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 py-4 [&:where(>*)]:col-start-2">
-      <UserActionBar />
-
       <div className="bg-muted text-foreground col-start-2 row-start-2 max-w-[calc(var(--thread-max-width)*0.8)] break-words rounded-3xl px-5 py-2.5">
         <MessagePrimitive.Parts />
       </div>
-
-      <BranchPicker className="col-span-full col-start-1 row-start-3 -mr-1 justify-end" />
     </MessagePrimitive.Root>
   );
 };
 
-const UserActionBar: FC = () => {
-  return (
-    <ActionBarPrimitive.Root
-      hideWhenRunning
-      autohide="not-last"
-      className="col-start-1 row-start-2 mr-3 mt-2.5 flex flex-col items-end"
-    >
-      <ActionBarPrimitive.Edit asChild>
-        <TooltipIconButton tooltip="Edit">
-          <PencilIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Edit>
-    </ActionBarPrimitive.Root>
-  );
-};
 
 const EditComposer: FC = () => {
   return (
@@ -222,8 +203,6 @@ const AssistantMessage: FC = () => {
       </div>
 
       <AssistantActionBar />
-
-      <BranchPicker className="col-start-2 row-start-2 -ml-2 mr-2" />
     </MessagePrimitive.Root>
   );
 };
@@ -232,58 +211,30 @@ const AssistantActionBar: FC = () => {
   return (
     <ActionBarPrimitive.Root
       hideWhenRunning
-      autohide="not-last"
-      autohideFloat="single-branch"
-      className="text-muted-foreground data-[floating]:bg-background col-start-3 row-start-2 -ml-1 flex gap-1 data-[floating]:absolute data-[floating]:rounded-md data-[floating]:border data-[floating]:p-1 data-[floating]:shadow-sm"
+      autohide="never"
+      className="text-muted-foreground col-start-3 row-start-2 -ml-1 flex gap-1"
     >
-      <ActionBarPrimitive.Copy asChild>
-        <TooltipIconButton tooltip="Copy">
-          <MessagePrimitive.If copied>
-            <CheckIcon />
-          </MessagePrimitive.If>
-          <MessagePrimitive.If copied={false}>
-            <CopyIcon />
-          </MessagePrimitive.If>
-        </TooltipIconButton>
-      </ActionBarPrimitive.Copy>
-      <ActionBarPrimitive.Reload asChild>
-        <TooltipIconButton tooltip="Refresh">
-          <RefreshCwIcon />
-        </TooltipIconButton>
-      </ActionBarPrimitive.Reload>
+      <MessagePrimitive.If last>
+        <ActionBarPrimitive.Copy asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MessagePrimitive.If copied>
+              <CheckIcon className="h-4 w-4" />
+            </MessagePrimitive.If>
+            <MessagePrimitive.If copied={false}>
+              <CopyIcon className="h-4 w-4" />
+            </MessagePrimitive.If>
+          </Button>
+        </ActionBarPrimitive.Copy>
+        <ActionBarPrimitive.Reload asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <RefreshCwIcon className="h-4 w-4" />
+          </Button>
+        </ActionBarPrimitive.Reload>
+      </MessagePrimitive.If>
     </ActionBarPrimitive.Root>
   );
 };
 
-const BranchPicker: FC<BranchPickerPrimitive.Root.Props> = ({
-  className,
-  ...rest
-}) => {
-  return (
-    <BranchPickerPrimitive.Root
-      hideWhenSingleBranch
-      className={cn(
-        "text-muted-foreground inline-flex items-center text-xs",
-        className,
-      )}
-      {...rest}
-    >
-      <BranchPickerPrimitive.Previous asChild>
-        <TooltipIconButton tooltip="Previous">
-          <ChevronLeftIcon />
-        </TooltipIconButton>
-      </BranchPickerPrimitive.Previous>
-      <span className="font-medium">
-        <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
-      </span>
-      <BranchPickerPrimitive.Next asChild>
-        <TooltipIconButton tooltip="Next">
-          <ChevronRightIcon />
-        </TooltipIconButton>
-      </BranchPickerPrimitive.Next>
-    </BranchPickerPrimitive.Root>
-  );
-};
 
 const CircleStopIcon = () => {
   return (
@@ -296,5 +247,22 @@ const CircleStopIcon = () => {
     >
       <rect width="10" height="10" x="3" y="3" rx="2" />
     </svg>
+  );
+};
+
+const ThinkingIndicator: FC = () => {
+  return (
+    <div className="w-full max-w-[var(--thread-max-width)] grid grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-4">
+      <div className="col-span-2 col-start-2 row-start-1 my-1.5 max-w-[calc(var(--thread-max-width)*0.8)] break-words leading-7">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <div className="flex gap-1">
+            <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            <div className="w-2 h-2 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+            <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
+          </div>
+          <span className="text-sm">AI is thinking...</span>
+        </div>
+      </div>
+    </div>
   );
 };

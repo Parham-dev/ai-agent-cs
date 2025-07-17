@@ -34,6 +34,7 @@ export interface Agent {
   temperature: number
   maxTokens: number
   rules?: PrismaJson.AgentRules | null
+  tools: string[]
   createdAt: Date
   updatedAt: Date
 }
@@ -97,6 +98,7 @@ export interface CreateAgentData {
   temperature?: number
   maxTokens?: number
   rules?: PrismaJson.AgentRules
+  tools?: string[]
   isActive?: boolean
 }
 
@@ -108,6 +110,7 @@ export interface UpdateAgentData {
   temperature?: number
   maxTokens?: number
   rules?: PrismaJson.AgentRules
+  tools?: string[]
   isActive?: boolean
 }
 

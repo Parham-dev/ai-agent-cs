@@ -114,6 +114,7 @@ export interface ApiAgent {
   temperature: number;
   maxTokens: number;
   rules?: Record<string, unknown> | null;
+  tools: string[];
   createdAt: string;
   updatedAt: string;
   agentIntegrations?: ApiAgentIntegration[];  // Match Prisma schema
@@ -141,6 +142,7 @@ export interface CreateAgentRequest {
   temperature?: number;
   maxTokens?: number;
   rules?: Record<string, unknown>;
+  tools?: string[];
 }
 
 export interface UpdateAgentRequest {
@@ -152,6 +154,7 @@ export interface UpdateAgentRequest {
   temperature?: number;
   maxTokens?: number;
   rules?: Record<string, unknown>;
+  tools?: string[];
 }
 
 export interface CreateIntegrationRequest {

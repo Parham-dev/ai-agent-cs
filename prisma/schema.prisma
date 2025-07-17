@@ -83,6 +83,9 @@ model Agent {
   /// [AgentRules]
   rules          Json?    @default("{}")  // Custom rules and behavior settings
   
+  // Universal tools configuration
+  tools          String[] @default([])    // Array of enabled tool IDs
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

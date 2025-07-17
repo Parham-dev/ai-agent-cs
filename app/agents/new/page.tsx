@@ -27,7 +27,8 @@ export default function NewAgentPage() {
         model: data.model,
         temperature: data.temperature,
         maxTokens: data.maxTokens,
-        rules: data.rules
+        rules: data.rules,
+        tools: data.selectedTools || []
       })
 
       // Create agent-integration relationships if there are any configured integrations

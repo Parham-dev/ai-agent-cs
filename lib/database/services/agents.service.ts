@@ -116,6 +116,7 @@ class AgentsService {
           temperature: data.temperature ?? 0.7,
           maxTokens: data.maxTokens ?? 4000,
           rules: data.rules || undefined,
+          tools: data.tools || [],
           isActive: data.isActive ?? true
         }
       })
@@ -145,6 +146,7 @@ class AgentsService {
       if (data.temperature !== undefined) updateData.temperature = data.temperature
       if (data.maxTokens !== undefined) updateData.maxTokens = data.maxTokens
       if (data.rules !== undefined) updateData.rules = data.rules
+      if (data.tools !== undefined) updateData.tools = data.tools
       if (typeof data.isActive === 'boolean') updateData.isActive = data.isActive
 
       const agent = await prisma.agent.update({

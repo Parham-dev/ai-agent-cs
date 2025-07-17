@@ -101,24 +101,22 @@ How can I help you today?`,
         return
       }
 
+      // Convert and add user message to UI state immediately
+      const userMessage = convertFromAssistantUI(message)
+      const userUIMessage = convertToAssistantUI(userMessage)
+      setMessages((prev) => [...prev, userUIMessage])
+
       console.log('🚀 Setting isRunning to true')
       setIsRunning(true)
 
       try {
-        // Convert message history to your API format
+        // Convert message history to your API format (excluding the user message we just added)
         const conversationHistory = messages.map((msg) => {
           const chatMsg = convertFromAssistantUI(msg)
           return {
             role: chatMsg.role,
             content: chatMsg.content,
           }
-        })
-
-        // Add current user message to history
-        const userMessage = convertFromAssistantUI(message)
-        conversationHistory.push({
-          role: userMessage.role,
-          content: userMessage.content,
         })
 
         // Call your existing API
@@ -130,7 +128,7 @@ How can I help you today?`,
           body: JSON.stringify({
             agentId: agent.id,
             message: userMessage.content,
-            conversationHistory: conversationHistory.slice(0, -1), // Don't include current message
+            conversationHistory: conversationHistory,
           }),
         })
 
@@ -173,12 +171,166 @@ How can I help you today?`,
     [agent, messages]
   )
 
+  // Handle reload of the last assistant message
+  const onReload = useCallback(
+    async (parentId: string | null) => {
+      console.log('🚀 onReload called for parentId:', parentId)
+      console.log('🚀 Current messages:', messages.map(m => ({ id: m.id, role: m.role, content: m.content })))
+      
+      if (!agent || !parentId) {
+        console.log('🚀 No agent or parentId, returning early')
+        return
+      }
+
+      // Find the message being reloaded and get conversation history up to that point
+      const messageIndex = messages.findIndex(msg => msg.id === parentId)
+      console.log('🚀 Message index found:', messageIndex)
+      
+      if (messageIndex === -1) {
+        console.log('🚀 Message not found for reload')
+        return
+      }
+
+      const messageToReload = messages[messageIndex]
+      const messageRole = messageToReload.role
+      console.log('🚀 Reloading message with role:', messageRole)
+
+      let userMessage = null
+      let conversationHistory: Array<{role: string, content: string}> = []
+
+      if (messageRole === 'assistant') {
+        // Reloading an assistant message - find the user message that prompted it
+        conversationHistory = messages.slice(0, messageIndex).map((msg) => {
+          const chatMsg = convertFromAssistantUI(msg)
+          return {
+            role: chatMsg.role,
+            content: chatMsg.content,
+          }
+        })
+        
+        // Find the last user message in the conversation history
+        for (let i = conversationHistory.length - 1; i >= 0; i--) {
+          if (conversationHistory[i].role === 'user') {
+            userMessage = conversationHistory[i]
+            break
+          }
+        }
+      } else if (messageRole === 'user') {
+        // Reloading a user message - use this message as the user message
+        const chatMsg = convertFromAssistantUI(messageToReload)
+        userMessage = {
+          role: chatMsg.role,
+          content: chatMsg.content,
+        }
+        
+        // Get conversation history before this user message
+        conversationHistory = messages.slice(0, messageIndex).map((msg) => {
+          const chatMsg = convertFromAssistantUI(msg)
+          return {
+            role: chatMsg.role,
+            content: chatMsg.content,
+          }
+        })
+      }
+
+      console.log('🚀 Conversation history:', conversationHistory)
+      console.log('🚀 Found user message:', userMessage)
+      
+      if (!userMessage) {
+        console.log('🚀 No user message found for reload')
+        return
+      }
+
+      // Remove the message being reloaded and any messages after it
+      setMessages((prev) => prev.slice(0, messageIndex))
+      setIsRunning(true)
+
+      try {
+        // For user message reload, use the conversation history as-is
+        // For assistant message reload, exclude the user message from history
+        let apiConversationHistory = conversationHistory
+        if (messageRole === 'assistant') {
+          apiConversationHistory = conversationHistory.filter(msg => msg !== userMessage)
+        }
+        
+        console.log('🚀 Sending API request with:', {
+          agentId: agent.id,
+          message: userMessage.content,
+          conversationHistory: apiConversationHistory
+        })
+
+        // Call API with the same user message
+        const response = await fetch('/api/v2/agents/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            agentId: agent.id,
+            message: userMessage.content,
+            conversationHistory: apiConversationHistory,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to reload message')
+        }
+
+        const data = await response.json()
+
+        // Create new assistant response message
+        const assistantMessage: ChatMessage = {
+          id: `msg-${Date.now()}`,
+          role: 'assistant',
+          content: data.success
+            ? data.data.message
+            : 'Sorry, there was an error processing your message.',
+          timestamp: new Date(),
+        }
+
+        // Convert to assistant-ui format and add to messages
+        const assistantUIMessage = convertToAssistantUI(assistantMessage)
+        
+        // If we reloaded a user message, add both the user message and assistant response
+        // If we reloaded an assistant message, just add the new assistant response
+        if (messageRole === 'user') {
+          const userUIMessage = convertToAssistantUI({
+            id: `msg-${Date.now()}-user`,
+            role: 'user',
+            content: userMessage.content,
+            timestamp: new Date(),
+          })
+          setMessages((prev) => [...prev, userUIMessage, assistantUIMessage])
+        } else {
+          setMessages((prev) => [...prev, assistantUIMessage])
+        }
+      } catch (error) {
+        console.error('Reload error:', error)
+        
+        // Add error message
+        const errorMessage: ChatMessage = {
+          id: `msg-error-${Date.now()}`,
+          role: 'assistant',
+          content: '❌ Sorry, there was an error reloading the message. Please try again.',
+          timestamp: new Date(),
+        }
+
+        const errorUIMessage = convertToAssistantUI(errorMessage)
+        setMessages((prev) => [...prev, errorUIMessage])
+      } finally {
+        setIsRunning(false)
+      }
+    },
+    [agent, messages]
+  )
+
   // Create the external store runtime
   console.log('🚀 Creating external store runtime with:', { messagesCount: messages.length, isRunning })
   const runtime = useExternalStoreRuntime({
     messages,
     isRunning,
     onNew,
+    onReload,
   })
   console.log('🚀 External store runtime created:', runtime)
 
