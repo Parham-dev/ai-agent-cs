@@ -27,14 +27,14 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
       </div>
 
       {/* Main layout with sidebar and content */}
-      <div style={{ display: 'flex', flex: 1, paddingTop: '80px', paddingBottom: '80px' }}>
+      <div style={{ display: 'flex', flex: 1, paddingTop: '80px', paddingBottom: '40px' }}>
         {/* Sidebar */}
         <div 
           style={{ 
             width: '280px',
             position: 'fixed',
             top: '80px',
-            bottom: '80px',
+            bottom: '40px',
             left: 0,
             zIndex: 90
           }}
@@ -50,7 +50,7 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
             marginLeft: '280px',
             padding: 'var(--mantine-spacing-lg)',
             paddingBottom: '2rem', // Additional padding for content spacing
-            minHeight: 'calc(100vh - 160px)', // Full height minus header and footer
+            minHeight: 'calc(100vh - 120px)', // Full height minus header (80px) and footer (40px)
             overflowY: 'auto'
           }}
           className="lg:ml-[280px] ml-0"

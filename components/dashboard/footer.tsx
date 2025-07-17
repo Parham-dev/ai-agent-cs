@@ -9,8 +9,8 @@ export function Footer() {
     <Group 
       justify="space-between" 
       px="lg" 
-      py="md"
-      h={80}
+      py="sm"
+      h={40}
       wrap="wrap" 
       style={{ 
         borderTop: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',

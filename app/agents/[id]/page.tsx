@@ -156,37 +156,16 @@ export default function AgentDetailPage() {
           {/* Header */}
           <Paper p="lg" radius="lg" withBorder>
             <Group justify="space-between" wrap="nowrap">
-              <Group>
-                <Button 
-                  variant="subtle" 
-                  size="md" 
-                  component={Link} 
-                  href="/agents"
-                  leftSection={<ArrowLeft size={18} />}
-                  radius="md"
-                >
-                  Back to Agents
-                </Button>
-                
-                <Group gap="sm">
-                  <Badge 
-                    size="lg"
-                    color={agent.isActive ? "green" : "gray"} 
-                    variant="light"
-                    radius="md"
-                  >
-                    {agent.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                  <Badge 
-                    variant="outline" 
-                    ff="monospace" 
-                    size="md"
-                    radius="md"
-                  >
-                    {agent.model}
-                  </Badge>
-                </Group>
-              </Group>
+              <Button 
+                variant="subtle" 
+                size="md" 
+                component={Link} 
+                href="/agents"
+                leftSection={<ArrowLeft size={18} />}
+                radius="md"
+              >
+                Back to Agents
+              </Button>
 
               <Group gap="sm">
                 <Button
@@ -230,38 +209,69 @@ export default function AgentDetailPage() {
           <Grid gutter="xl">
             <Grid.Col span={{ base: 12, lg: 8 }}>
               <Stack gap="xl">
-                {/* Instructions */}
+                {/* Agent Info */}
                 <Paper withBorder radius="lg" p="xl">
                   <Group gap="md" mb="lg">
                     <ThemeIcon size="lg" variant="light" color="blue" radius="md">
-                      <Brain size={22} />
+                      <Bot size={22} />
                     </ThemeIcon>
-                    <Title order={3} fw={600}>Instructions</Title>
+                    <Title order={3} fw={600}>Agent Info</Title>
                   </Group>
-                  <Paper bg="var(--mantine-color-default-hover)" p="lg" radius="md" withBorder>
-                    <Text 
-                      ff="monospace" 
-                      size="sm" 
-                      style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}
-                      c={agent.systemPrompt ? 'var(--mantine-color-text)' : 'dimmed'}
-                    >
-                      {agent.systemPrompt || 'No system prompt configured'}
-                    </Text>
-                  </Paper>
-                </Paper>
+                  <Grid gutter="lg">
+                    <Grid.Col span={6}>
+                      <Box>
+                        <Text size="sm" fw={600} c="dimmed" mb="xs">Agent ID</Text>
+                        <Group gap="sm">
+                          <Code 
+                            flex={1} 
+                            p="sm"
+                            style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+                          >
+                            {agent.id}
+                          </Code>
+                          <Tooltip label="Copy ID">
+                            <ActionIcon variant="light" onClick={copyAgentId} radius="md">
+                              <Copy size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Group>
+                      </Box>
+                    </Grid.Col>
+                    
+                    <Grid.Col span={6}>
+                      <Box>
+                        <Text size="sm" fw={600} c="dimmed" mb="xs">Model</Text>
+                        <Paper bg="var(--mantine-color-default-hover)" p="sm" radius="md" withBorder>
+                          <Text ff="monospace" size="sm" fw={500}>{agent.model}</Text>
+                        </Paper>
+                      </Box>
+                    </Grid.Col>
 
-                {/* Tools */}
-                <Paper withBorder radius="lg" p="xl">
-                  <Group gap="md" mb="lg">
-                    <ThemeIcon size="lg" variant="light" color="orange" radius="md">
-                      <Wrench size={22} />
-                    </ThemeIcon>
-                    <Title order={3} fw={600}>Tools</Title>
-                    <Badge variant="outline" size="md" radius="md">
-                      {agent.agentIntegrations?.reduce((total, ai) => total + (ai.selectedTools?.length || 0), 0) || 0}
-                    </Badge>
-                  </Group>
-                  <Text c="dimmed" size="sm">Tools are now managed through integrations</Text>
+                    <Grid.Col span={6}>
+                      <Box>
+                        <Text size="sm" fw={600} c="dimmed" mb="xs">Status</Text>
+                        <Badge 
+                          size="lg"
+                          color={agent.isActive ? "green" : "gray"} 
+                          variant="light"
+                          radius="md"
+                        >
+                          {agent.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </Box>
+                    </Grid.Col>
+
+                    <Grid.Col span={6}>
+                      <Box>
+                        <Text size="sm" fw={600} c="dimmed" mb="xs">Integrations</Text>
+                        <Paper bg="var(--mantine-color-default-hover)" p="sm" radius="md" withBorder>
+                          <Text size="sm" fw={500}>
+                            {agent.agentIntegrations?.length || 0}
+                          </Text>
+                        </Paper>
+                      </Box>
+                    </Grid.Col>
+                  </Grid>
                 </Paper>
 
                 {/* Integrations */}
@@ -274,97 +284,26 @@ export default function AgentDetailPage() {
                   </Group>
                   {agent && <AgentIntegrationsManager agentId={agent.id} agentName={agent.name || 'Unknown Agent'} />}
                 </Paper>
+
+                {/* Tools */}
+                <Paper withBorder radius="lg" p="xl">
+                  <Group gap="md" mb="lg">
+                    <ThemeIcon size="lg" variant="light" color="orange" radius="md">
+                      <Wrench size={22} />
+                    </ThemeIcon>
+                    <Title order={3} fw={600}>Tools</Title>
+                    <Badge variant="outline" size="md" radius="md">
+                      0
+                    </Badge>
+                  </Group>
+                  <Text c="dimmed" size="sm">Tools are now managed through integrations</Text>
+                </Paper>
               </Stack>
             </Grid.Col>
 
             {/* Sidebar */}
             <Grid.Col span={{ base: 12, lg: 4 }}>
               <Stack gap="xl">
-                {/* Agent Info */}
-                <Paper withBorder radius="lg" p="xl">
-                  <Group gap="md" mb="lg">
-                    <ThemeIcon size="lg" variant="light" color="blue" radius="md">
-                      <Bot size={22} />
-                    </ThemeIcon>
-                    <Title order={3} fw={600}>Agent Info</Title>
-                  </Group>
-                  <Stack gap="lg">
-                    <Box>
-                      <Text size="sm" fw={600} c="dimmed" mb="xs">Agent ID</Text>
-                      <Group gap="sm">
-                        <Code 
-                          flex={1} 
-                          p="sm"
-                          style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
-                        >
-                          {agent.id}
-                        </Code>
-                        <Tooltip label="Copy ID">
-                          <ActionIcon variant="light" onClick={copyAgentId} radius="md">
-                            <Copy size={16} />
-                          </ActionIcon>
-                        </Tooltip>
-                      </Group>
-                    </Box>
-
-                    <Box>
-                      <Text size="sm" fw={600} c="dimmed" mb="xs">Model</Text>
-                      <Paper bg="var(--mantine-color-default-hover)" p="sm" radius="md" withBorder>
-                        <Text ff="monospace" size="sm" fw={500}>{agent.model}</Text>
-                      </Paper>
-                    </Box>
-
-                    <Box>
-                      <Text size="sm" fw={600} c="dimmed" mb="xs">Status</Text>
-                      <Badge 
-                        size="lg"
-                        color={agent.isActive ? "green" : "gray"} 
-                        variant="light"
-                        radius="md"
-                      >
-                        {agent.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </Box>
-
-                    <Box>
-                      <Text size="sm" fw={600} c="dimmed" mb="xs">Integrations</Text>
-                      <Paper bg="var(--mantine-color-default-hover)" p="sm" radius="md" withBorder>
-                        <Text size="sm" fw={500}>
-                          {agent.agentIntegrations?.length || 0}
-                        </Text>
-                      </Paper>
-                    </Box>
-                  </Stack>
-                </Paper>
-
-                {/* Timestamps */}
-                <Paper withBorder radius="lg" p="xl">
-                  <Group gap="md" mb="lg">
-                    <ThemeIcon size="lg" variant="light" color="violet" radius="md">
-                      <Calendar size={22} />
-                    </ThemeIcon>
-                    <Title order={3} fw={600}>Timestamps</Title>
-                  </Group>
-                  <Stack gap="lg">
-                    <Box>
-                      <Text size="sm" fw={600} c="dimmed" mb="xs">Created</Text>
-                      <Paper bg="var(--mantine-color-default-hover)" p="sm" radius="md" withBorder>
-                        <Text size="sm" fw={500}>
-                          {new Date(agent.createdAt).toLocaleString()}
-                        </Text>
-                      </Paper>
-                    </Box>
-                    <Box>
-                      <Text size="sm" fw={600} c="dimmed" mb="xs">Last Updated</Text>
-                      <Paper bg="var(--mantine-color-default-hover)" p="sm" radius="md" withBorder>
-                        <Text size="sm" fw={500}>
-                          {new Date(agent.updatedAt).toLocaleString()}
-                        </Text>
-                      </Paper>
-                    </Box>
-                  </Stack>
-                </Paper>
-
                 {/* Quick Actions */}
                 <Paper withBorder radius="lg" p="xl">
                   <Title order={3} fw={600} mb="lg">Quick Actions</Title>
@@ -394,6 +333,54 @@ export default function AgentDetailPage() {
                     >
                       Settings
                     </Button>
+                  </Stack>
+                </Paper>
+
+                {/* Instructions */}
+                <Paper withBorder radius="lg" p="xl">
+                  <Group gap="md" mb="lg">
+                    <ThemeIcon size="lg" variant="light" color="blue" radius="md">
+                      <Brain size={22} />
+                    </ThemeIcon>
+                    <Title order={3} fw={600}>Instructions</Title>
+                  </Group>
+                  <Paper bg="var(--mantine-color-default-hover)" p="lg" radius="md" withBorder>
+                    <Text 
+                      ff="monospace" 
+                      size="sm" 
+                      style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}
+                      c={agent.systemPrompt ? 'var(--mantine-color-text)' : 'dimmed'}
+                    >
+                      {agent.systemPrompt || 'No system prompt configured'}
+                    </Text>
+                  </Paper>
+                </Paper>
+
+                {/* Timestamps */}
+                <Paper withBorder radius="lg" p="xl">
+                  <Group gap="md" mb="lg">
+                    <ThemeIcon size="lg" variant="light" color="violet" radius="md">
+                      <Calendar size={22} />
+                    </ThemeIcon>
+                    <Title order={3} fw={600}>Timestamps</Title>
+                  </Group>
+                  <Stack gap="lg">
+                    <Box>
+                      <Text size="sm" fw={600} c="dimmed" mb="xs">Created</Text>
+                      <Paper bg="var(--mantine-color-default-hover)" p="sm" radius="md" withBorder>
+                        <Text size="sm" fw={500}>
+                          {new Date(agent.createdAt).toLocaleString()}
+                        </Text>
+                      </Paper>
+                    </Box>
+                    <Box>
+                      <Text size="sm" fw={600} c="dimmed" mb="xs">Last Updated</Text>
+                      <Paper bg="var(--mantine-color-default-hover)" p="sm" radius="md" withBorder>
+                        <Text size="sm" fw={500}>
+                          {new Date(agent.updatedAt).toLocaleString()}
+                        </Text>
+                      </Paper>
+                    </Box>
                   </Stack>
                 </Paper>
               </Stack>

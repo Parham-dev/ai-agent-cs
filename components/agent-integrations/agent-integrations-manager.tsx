@@ -130,57 +130,14 @@ export function AgentIntegrationsManager({ agentId, agentName }: AgentIntegratio
 
   if (loading) {
     return (
-      <Paper withBorder radius="lg" p="xl">
-        <Group gap="md" mb="lg">
-          <Title order={4} fw={600}>Agent Integrations</Title>
-        </Group>
-        <Center py="xl">
-          <Loader size="lg" />
-        </Center>
-      </Paper>
+      <Center py="xl">
+        <Loader size="lg" />
+      </Center>
     )
   }
 
   return (
     <Stack gap="xl">
-      <Paper withBorder radius="lg" p="xl">
-        <Group justify="space-between" mb="lg">
-          <Box>
-            <Title order={4} fw={600}>Agent Integrations</Title>
-            <Text size="sm" c="dimmed" mt="xs">
-              Manage integrations for {agentName}
-            </Text>
-          </Box>
-          <Button
-            variant="light"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing}
-            leftSection={<RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />}
-            radius="md"
-          >
-            Refresh
-          </Button>
-        </Group>
-        
-        <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
-          <Paper bg="var(--mantine-color-blue-light-hover)" p="md" radius="md" withBorder>
-            <Text ta="center" size="xl" fw={700} c="blue.6">{connectedCount}</Text>
-            <Text ta="center" size="sm" c="dimmed">Connected</Text>
-          </Paper>
-          <Paper bg="var(--mantine-color-default-hover)" p="md" radius="md" withBorder>
-            <Text ta="center" size="xl" fw={700} c="var(--mantine-color-text)">{availableCount}</Text>
-            <Text ta="center" size="sm" c="dimmed">Available</Text>
-          </Paper>
-          <Paper bg="var(--mantine-color-green-light-hover)" p="md" radius="md" withBorder>
-            <Text ta="center" size="xl" fw={700} c="green.6">
-              {agentIntegrations.reduce((sum, ai) => sum + (ai.selectedTools?.length || 0), 0)}
-            </Text>
-            <Text ta="center" size="sm" c="dimmed">Total Tools</Text>
-          </Paper>
-        </SimpleGrid>
-      </Paper>
-
       <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
         {integrations.map((integration) => (
           <AgentIntegrationCard
