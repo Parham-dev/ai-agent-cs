@@ -271,7 +271,6 @@ export function AgentCreationWizard({
             </Button>
 
             <Button
-              variant="subtle"
               rightSection={
                 activeStep === WIZARD_STEPS.length - 1 ? 
                   undefined : 
@@ -281,7 +280,6 @@ export function AgentCreationWizard({
               loading={isSubmitting}
               disabled={isSubmitting || !isCurrentStepValid()}
               size="xs"
-              c="dimmed"
             >
               {activeStep === WIZARD_STEPS.length - 1 
                 ? (mode === 'edit' ? 'Update Agent' : 'Create Agent')

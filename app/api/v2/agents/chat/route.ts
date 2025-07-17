@@ -171,9 +171,9 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
               continue; // Skip this integration
             }
             
-            // Convert shopUrl to storeName for legacy tools and cast to ShopifyCredentials
+            // Use standardized shopUrl field for ShopifyCredentials
             const shopifyCredentials = {
-              storeName: integration.credentials.shopUrl as string,
+              shopUrl: integration.credentials.shopUrl as string,
               accessToken: integration.credentials.accessToken as string
             };
             tools.push(...createShopifyTools(shopifyCredentials));

@@ -1,13 +1,26 @@
 /**
  * Agent Integrations Manager Component
  * Manages the integrations connected to a specific agent
+ * 
+ * Updated to use Mantine components for consistency with the new design system
  */
 
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { 
+  Paper, 
+  Title, 
+  Text, 
+  Button, 
+  Group, 
+  Stack, 
+  Center, 
+  Loader,
+  ThemeIcon,
+  Box,
+  SimpleGrid
+} from '@mantine/core'
 import { Plus, RefreshCw } from 'lucide-react'
 import { AgentIntegrationCard } from './agent-integration-card'
 import { ToolSelectionDialog } from './tool-selection-dialog'
@@ -117,62 +130,58 @@ export function AgentIntegrationsManager({ agentId, agentName }: AgentIntegratio
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Agent Integrations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <Paper withBorder radius="lg" p="xl">
+        <Group gap="md" mb="lg">
+          <Title order={4} fw={600}>Agent Integrations</Title>
+        </Group>
+        <Center py="xl">
+          <Loader size="lg" />
+        </Center>
+      </Paper>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Agent Integrations</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Manage integrations for {agentName}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{connectedCount}</div>
-              <div className="text-sm text-muted-foreground">Connected</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-muted-foreground">{availableCount}</div>
-              <div className="text-sm text-muted-foreground">Available</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {agentIntegrations.reduce((sum, ai) => sum + (ai.selectedTools?.length || 0), 0)}
-              </div>
-              <div className="text-sm text-muted-foreground">Total Tools</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <Stack gap="xl">
+      <Paper withBorder radius="lg" p="xl">
+        <Group justify="space-between" mb="lg">
+          <Box>
+            <Title order={4} fw={600}>Agent Integrations</Title>
+            <Text size="sm" c="dimmed" mt="xs">
+              Manage integrations for {agentName}
+            </Text>
+          </Box>
+          <Button
+            variant="light"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            leftSection={<RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />}
+            radius="md"
+          >
+            Refresh
+          </Button>
+        </Group>
+        
+        <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
+          <Paper bg="var(--mantine-color-blue-light-hover)" p="md" radius="md" withBorder>
+            <Text ta="center" size="xl" fw={700} c="blue.6">{connectedCount}</Text>
+            <Text ta="center" size="sm" c="dimmed">Connected</Text>
+          </Paper>
+          <Paper bg="var(--mantine-color-default-hover)" p="md" radius="md" withBorder>
+            <Text ta="center" size="xl" fw={700} c="var(--mantine-color-text)">{availableCount}</Text>
+            <Text ta="center" size="sm" c="dimmed">Available</Text>
+          </Paper>
+          <Paper bg="var(--mantine-color-green-light-hover)" p="md" radius="md" withBorder>
+            <Text ta="center" size="xl" fw={700} c="green.6">
+              {agentIntegrations.reduce((sum, ai) => sum + (ai.selectedTools?.length || 0), 0)}
+            </Text>
+            <Text ta="center" size="sm" c="dimmed">Total Tools</Text>
+          </Paper>
+        </SimpleGrid>
+      </Paper>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
         {integrations.map((integration) => (
           <AgentIntegrationCard
             key={integration.id}
@@ -184,18 +193,22 @@ export function AgentIntegrationsManager({ agentId, agentName }: AgentIntegratio
             loading={loading}
           />
         ))}
-      </div>
+      </SimpleGrid>
 
       {integrations.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Plus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No integrations available</h3>
-            <p className="text-muted-foreground">
-              Create integrations at the organization level to connect them to agents.
-            </p>
-          </CardContent>
-        </Card>
+        <Paper withBorder radius="lg" p="xl">
+          <Center py="xl">
+            <Stack align="center" gap="md">
+              <ThemeIcon size="xl" variant="light" color="gray">
+                <Plus size={24} />
+              </ThemeIcon>
+              <Title order={4} ta="center">No integrations available</Title>
+              <Text ta="center" c="dimmed">
+                Create integrations at the organization level to connect them to agents.
+              </Text>
+            </Stack>
+          </Center>
+        </Paper>
       )}
 
       {selectedIntegrationId && (
@@ -206,6 +219,6 @@ export function AgentIntegrationsManager({ agentId, agentName }: AgentIntegratio
           onClose={() => setSelectedIntegrationId(null)}
         />
       )}
-    </div>
+    </Stack>
   )
 }

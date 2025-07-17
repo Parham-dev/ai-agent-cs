@@ -227,10 +227,10 @@ How can I help you today?`,
                 <div className="flex items-center space-x-2 text-sm opacity-90">
                   <Activity className="w-4 h-4" />
                   <span>Ready to chat</span>
-                  {agent.integrations && agent.integrations.length > 0 && (
+                  {agent.agentIntegrations && agent.agentIntegrations.length > 0 && (
                     <>
                       <span>•</span>
-                      <span>{agent.integrations.length} integrations connected</span>
+                      <span>{agent.agentIntegrations.length} integrations connected</span>
                     </>
                   )}
                 </div>

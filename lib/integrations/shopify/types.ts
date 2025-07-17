@@ -1,7 +1,7 @@
 // Shopify Integration Type Definitions
 
 export interface ShopifyCredentials {
-  storeName: string;
+  shopUrl: string;
   accessToken: string;
 }
 

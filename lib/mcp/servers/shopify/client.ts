@@ -16,7 +16,7 @@ export class ShopifyMCPClient {
     
     // Initialize the base Shopify client
     this.client = new BaseShopifyClient({
-      storeName: credentials.shopUrl as string,
+      shopUrl: credentials.shopUrl as string,
       accessToken: credentials.accessToken as string
     });
   }

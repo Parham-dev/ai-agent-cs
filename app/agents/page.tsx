@@ -199,7 +199,7 @@ export default function AgentsPage() {
                 <Stack gap="xs">
                   <Text size="sm" c="dimmed">Total Integrations</Text>
                   <Text size="xl" fw={700}>
-                    {agents.reduce((sum, agent) => sum + (agent.integrations?.length || 0), 0)}
+                    {agents.reduce((sum, agent) => sum + (agent.agentIntegrations?.length || 0), 0)}
                   </Text>
                 </Stack>
                 <ThemeIcon size="xl" variant="light" color="grape">
@@ -290,7 +290,7 @@ export default function AgentsPage() {
                       
                       <Group justify="space-between">
                         <Text size="sm" c="dimmed">Integrations:</Text>
-                        <Text size="sm">{agent.integrations?.length || 0} connected</Text>
+                        <Text size="sm">{agent.agentIntegrations?.length || 0} connected</Text>
                       </Group>
                     </Stack>
 

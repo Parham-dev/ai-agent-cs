@@ -11,11 +11,11 @@ import { createIntegrationLogger } from '@/lib/utils/logger';
  */
 export function createShopifyTools(credentials: ShopifyCredentials) {
   const logger = createIntegrationLogger('shopify', {
-    storeName: credentials.storeName
+    shopUrl: credentials.shopUrl
   });
   
   logger.debug('Creating Shopify tools', { 
-    storeName: credentials.storeName, 
+    shopUrl: credentials.shopUrl, 
     hasAccessToken: !!credentials.accessToken 
   });
   

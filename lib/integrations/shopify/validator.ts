@@ -9,17 +9,17 @@ export async function validateShopifyCredentials(
   credentials: ShopifyCredentials
 ): Promise<ValidationResponse> {
   try {
-    const { storeName, accessToken } = credentials;
+    const { shopUrl, accessToken } = credentials;
 
-    if (!storeName || !accessToken) {
+    if (!shopUrl || !accessToken) {
       return {
         isValid: false,
-        message: 'Store name and access token are required'
+        message: 'Shop URL and access token are required'
       };
     }
 
-    // Validate store name format
-    const cleanStoreName = storeName.replace('.myshopify.com', '').trim();
+    // Validate shop URL format  
+    const cleanStoreName = shopUrl.replace('.myshopify.com', '').trim();
     if (!cleanStoreName.match(/^[a-zA-Z0-9-]+$/)) {
       return {
         isValid: false,

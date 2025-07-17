@@ -16,7 +16,7 @@ export class ShopifyClient {
 
   constructor(credentials: ShopifyCredentials) {
     this.credentials = credentials;
-    this.baseUrl = `https://${cleanStoreName(credentials.storeName)}.myshopify.com/admin/api/2024-01`;
+    this.baseUrl = `https://${cleanStoreName(credentials.shopUrl)}.myshopify.com/admin/api/2024-01`;
   }
 
   /**

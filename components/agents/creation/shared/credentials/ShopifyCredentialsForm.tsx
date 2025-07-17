@@ -25,11 +25,11 @@ interface ShopifyCredentialsFormProps {
 }
 
 interface ShopifyCredentials {
-  storeUrl: string
-  adminApiToken: string
+  shopUrl: string
+  accessToken: string
 }
 
-// Database credentials interface (different field names)
+// Database credentials interface - now same as form
 interface ShopifyDatabaseCredentials {
   shopUrl: string
   accessToken: string
@@ -46,18 +46,18 @@ export function ShopifyCredentialsForm({
 
   const form = useForm<ShopifyCredentials>({
     initialValues: {
-      storeUrl: '',
-      adminApiToken: ''
+      shopUrl: '',
+      accessToken: ''
     },
     validate: {
-      storeUrl: (value) => {
+      shopUrl: (value) => {
         if (!value.trim()) return 'Store URL is required'
         if (!value.includes('.myshopify.com') && !value.includes('.shopify.com')) {
           return 'Please enter a valid Shopify store URL'
         }
         return null
       },
-      adminApiToken: (value) => value.trim() ? null : 'Admin API Token is required'
+      accessToken: (value) => value.trim() ? null : 'Admin API Token is required'
     }
   })
 
@@ -66,8 +66,8 @@ export function ShopifyCredentialsForm({
     if (integration?.credentials) {
       const dbCreds = integration.credentials as unknown as ShopifyDatabaseCredentials
       form.setValues({
-        storeUrl: dbCreds.shopUrl || '',
-        adminApiToken: dbCreds.accessToken || ''
+        shopUrl: dbCreds.shopUrl || '',
+        accessToken: dbCreds.accessToken || ''
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,7 +95,7 @@ export function ShopifyCredentialsForm({
       setTestResult(null)
       
       const values = form.getValues()
-      formatStoreUrl(values.storeUrl)
+      formatStoreUrl(values.shopUrl)
       
       // Test the connection (this would be your actual test endpoint)
       // For now, just simulate a test
@@ -116,10 +116,10 @@ export function ShopifyCredentialsForm({
     try {
       setLoading(true)
       
-      const formattedUrl = formatStoreUrl(values.storeUrl)
+      const formattedUrl = formatStoreUrl(values.shopUrl)
       const credentials = {
-        shopUrl: formattedUrl,  // Map to database field name
-        accessToken: values.adminApiToken.trim()  // Map to database field name
+        shopUrl: formattedUrl,
+        accessToken: values.accessToken.trim()
       }
 
       let savedIntegration: ApiIntegration
@@ -169,7 +169,7 @@ export function ShopifyCredentialsForm({
                 placeholder="your-store-name.myshopify.com"
                 description="Your Shopify store URL or domain"
                 required
-                {...form.getInputProps('storeUrl')}
+                {...form.getInputProps('shopUrl')}
               />
 
               <TextInput
@@ -178,7 +178,7 @@ export function ShopifyCredentialsForm({
                 description="Private app access token with required permissions"
                 required
                 type="password"
-                {...form.getInputProps('adminApiToken')}
+                {...form.getInputProps('accessToken')}
               />
 
               {testResult === 'success' && (

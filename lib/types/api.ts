@@ -116,7 +116,7 @@ export interface ApiAgent {
   rules?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
-  integrations?: ApiAgentIntegration[];
+  agentIntegrations?: ApiAgentIntegration[];  // Match Prisma schema
 }
 
 export interface ApiAgentIntegration {
