@@ -1,9 +1,10 @@
 "use client"
 
-import { Bell, Search, User, ChevronDown, Zap } from 'lucide-react'
+import { Bell, Search, User, ChevronDown, Zap, LogOut, Settings, UserIcon } from 'lucide-react'
 import { Group, TextInput, ActionIcon, Badge, Avatar, Menu, Title, Text } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { MantineThemeToggle } from '@/components/providers'
+import { notifications } from '@mantine/notifications'
+import { MantineThemeToggle, useAuthContext } from '@/components/providers'
 import Link from 'next/link'
 
 interface HeaderProps {
@@ -13,6 +14,18 @@ interface HeaderProps {
 
 export function Header({ title = "Dashboard", subtitle }: HeaderProps) {
   const [menuOpened, { toggle: toggleMenu }] = useDisclosure(false)
+  const { user, logout } = useAuthContext()
+
+  const handleLogout = async () => {
+    const result = await logout()
+    if (result.success) {
+      notifications.show({
+        title: 'Logged out',
+        message: 'You have been successfully logged out.',
+        color: 'blue',
+      })
+    }
+  }
 
   return (
     <div style={{ display: 'flex', width: '100%', height: 80, position: 'relative' }}>
@@ -127,16 +140,28 @@ export function Header({ title = "Dashboard", subtitle }: HeaderProps) {
                 >
                   <User size={16} />
                 </Avatar>
-                <Text size="sm" visibleFrom="md">Demo User</Text>
+                <Text size="sm" visibleFrom="md">
+                  {user?.name || user?.email || 'User'}
+                </Text>
                 <ChevronDown size={16} />
               </Group>
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Item>Profile</Menu.Item>
-              <Menu.Item>Settings</Menu.Item>
+              <Menu.Item leftSection={<UserIcon size={16} />}>
+                Profile
+              </Menu.Item>
+              <Menu.Item leftSection={<Settings size={16} />}>
+                Settings
+              </Menu.Item>
               <Menu.Divider />
-              <Menu.Item color="red">Logout</Menu.Item>
+              <Menu.Item 
+                color="red" 
+                leftSection={<LogOut size={16} />}
+                onClick={handleLogout}
+              >
+                Logout
+              </Menu.Item>
             </Menu.Dropdown>
           </Menu>
         </Group>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClientSupabaseClient } from '@/lib/database/clients';
+import { createServerSupabaseClient } from '@/lib/database/clients';
 import { usersService } from '@/lib/database/services';
 import { Api, validateMethod } from '@/lib/api';
 import type { ApiUser } from '@/lib/types';
@@ -21,8 +21,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-    // Create Supabase client
-    const supabase = createClientSupabaseClient();
+    // Create Supabase client for server-side auth operations
+    const supabase = createServerSupabaseClient();
 
     // Get user from token
     const { data: { user: supabaseUser }, error: authError } = await supabase.auth.getUser(token);
@@ -36,6 +36,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     // Get user from our database
     const user = await usersService.getUserBySupabaseId(supabaseUser.id);
+    
     if (!user) {
       return Api.error(
         'NOT_FOUND',

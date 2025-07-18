@@ -25,8 +25,15 @@ export function createServerSupabaseClient() {
   })
 }
 
-// Client-side Supabase client factory (lazy initialization)
+// Singleton client-side Supabase client
+let supabaseClient: ReturnType<typeof createClient> | null = null
+
 export function createClientSupabaseClient() {
+  // Return existing client if already created
+  if (supabaseClient) {
+    return supabaseClient
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
@@ -34,5 +41,14 @@ export function createClientSupabaseClient() {
     throw new Error('Missing Supabase environment variables for client')
   }
 
-  return createClient(supabaseUrl, anonKey)
+  // Create and cache the client
+  supabaseClient = createClient(supabaseUrl, anonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  })
+
+  return supabaseClient
 }

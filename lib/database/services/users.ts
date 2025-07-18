@@ -3,7 +3,7 @@
  * Handles all user-related database operations
  */
 
-import { prisma } from '../database';
+import { prisma } from '@/lib/database/database'
 import type { 
   DbUser, 
   CreateUserData, 
@@ -100,7 +100,7 @@ export class UsersService {
     page: number = 1,
     limit: number = 20
   ): Promise<{ users: DbUser[]; total: number }> {
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     // Apply filters
     if (filters.organizationId) {
@@ -177,8 +177,7 @@ export class UsersService {
     if (existingUser) {
       // Update existing user
       return this.updateUser(existingUser.id, {
-        email: supabaseUser.email,
-        name: supabaseUser.user_metadata?.name || existingUser.name
+        name: supabaseUser.user_metadata?.name ?? existingUser.name ?? undefined
       });
     } else {
       // Create new user

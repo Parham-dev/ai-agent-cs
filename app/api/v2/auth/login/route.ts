@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClientSupabaseClient } from '@/lib/database/clients';
+import { createServerSupabaseClient } from '@/lib/database/clients';
 import { usersService } from '@/lib/database/services';
 import { Api, validateRequest, validateMethod } from '@/lib/api';
 import { z } from 'zod';
@@ -22,8 +22,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     
     const { email, password }: LoginRequest = validation.data;
 
-    // Create Supabase client
-    const supabase = createClientSupabaseClient();
+    // Create Supabase client for server-side auth operations
+    const supabase = createServerSupabaseClient();
 
     // Authenticate with Supabase
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -46,15 +46,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Sync user with our database
+    // Get or sync user with our database
     let user;
     try {
-      user = await usersService.syncUserFromSupabase(authData.user);
+      user = await usersService.getUserBySupabaseId(authData.user.id);
+      
+      if (!user) {
+        // User exists in Supabase but not in our database
+        // This shouldn't happen with the new flow, but handle it gracefully
+        return Api.error(
+          'NOT_FOUND',
+          'User account not found. Please contact support.'
+        );
+      }
     } catch (error) {
-      console.error('Failed to sync user:', error);
+      console.error('Failed to get user:', error);
       return Api.error(
         'DATABASE_ERROR',
-        'Failed to sync user data'
+        'Failed to retrieve user data'
       );
     }
 

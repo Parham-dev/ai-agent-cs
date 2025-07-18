@@ -1,16 +1,18 @@
 'use client';
 
 import { DashboardLayout } from '@/components/dashboard/layout'
+import { ProtectedRoute } from '@/components/auth/protected-route'
 import { Card, Grid, Text, Button, Group, Stack, ThemeIcon, Anchor, Badge } from '@mantine/core'
 import Link from 'next/link'
 import { Bot, Plug, Building2, Plus } from 'lucide-react'
 
 export default function HomePage() {
   return (
-    <DashboardLayout 
-      title="Dashboard" 
-      subtitle="Manage your AI agents and integrations"
-    >
+    <ProtectedRoute>
+      <DashboardLayout 
+        title="Dashboard" 
+        subtitle="Manage your AI agents and integrations"
+      >
       <Stack gap="xl">
         {/* Quick Stats */}
         <Grid>
@@ -111,6 +113,7 @@ export default function HomePage() {
           </Grid.Col>
         </Grid>
       </Stack>
-    </DashboardLayout>
+      </DashboardLayout>
+    </ProtectedRoute>
   );
 }

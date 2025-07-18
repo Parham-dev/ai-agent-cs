@@ -6,7 +6,8 @@
 import { NextRequest } from 'next/server';
 import { createClientSupabaseClient } from '@/lib/database/clients';
 import { usersService } from '@/lib/database/services';
-import type { ApiUser, UserRole, Permission, USER_PERMISSIONS } from '@/lib/types';
+import type { ApiUser, UserRole, Permission } from '@/lib/types';
+import { USER_PERMISSIONS } from '@/lib/types';
 
 export interface AuthContext {
   user: ApiUser;
@@ -83,7 +84,7 @@ export async function getAuthContext(request: NextRequest): Promise<AuthContext 
  */
 export function hasPermission(userRole: UserRole, permission: Permission): boolean {
   const rolePermissions = USER_PERMISSIONS[userRole];
-  return rolePermissions.includes(permission);
+  return (rolePermissions as readonly Permission[]).includes(permission);
 }
 
 /**

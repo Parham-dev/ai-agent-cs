@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClientSupabaseClient } from '@/lib/database/clients';
-import { usersService } from '@/lib/database/services';
+import { usersService, organizationsService } from '@/lib/database/services';
 import { Api, validateRequest, validateMethod } from '@/lib/api';
 import { z } from 'zod';
-import type { SignupRequest, AuthResponse } from '@/lib/types';
+import type { SignupRequest } from '@/lib/types';
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -21,7 +20,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const validation = await validateRequest(request, signupSchema);
     if (validation.error) return validation.error;
     
-    const { email, password, name }: SignupRequest = validation.data;
+    const { email, name }: SignupRequest = validation.data;
 
     // Check if user already exists in our database
     const existingUser = await usersService.getUserByEmail(email);
@@ -32,113 +31,42 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Create Supabase client
-    const supabase = createClientSupabaseClient();
-
-    // Create user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: name || email.split('@')[0] // Fallback to email prefix
-        }
-      }
-    });
-
-    if (authError) {
-      return Api.error(
-        'AUTHENTICATION_ERROR',
-        'Failed to create account',
-        authError.message
-      );
-    }
-
-    if (!authData.user) {
-      return Api.error(
-        'AUTHENTICATION_ERROR',
-        'Failed to create user account'
-      );
-    }
-
-    // Create user in our database
-    let user;
+    // For local development, we'll use a simpler approach
+    // Create the user record first, then handle auth on the client side
+    
+    // Generate a unique slug for the organization
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 8); // 6 random chars
+    const emailPrefix = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''); // Clean email prefix
+    const uniqueSlug = `${emailPrefix}-${timestamp}-${randomString}`;
+    
     try {
-      user = await usersService.createUser({
-        supabaseId: authData.user.id,
-        email: authData.user.email || email,
-        name: name || authData.user.user_metadata?.name,
-        role: 'USER' // Default role
+      // Create a default organization for the user
+      const organizationName = name ? `${name}'s Organization` : `${email.split('@')[0]}'s Organization`;
+      const organization = await organizationsService.createOrganization({
+        name: organizationName,
+        slug: uniqueSlug,
+        description: 'Default organization'
       });
+
+      // Return success - the client will handle Supabase auth and then sync the user
+      return Api.success({
+        message: 'Ready to create account',
+        email,
+        name,
+        organizationId: organization.id,
+        organizationName: organization.name
+      }, {
+        message: 'Account setup prepared successfully'
+      });
+
     } catch (error) {
-      console.error('Failed to create user in database:', error);
-      
-      // If database creation fails, we should clean up the Supabase user
-      // In production, you might want to handle this differently
+      console.error('Failed to prepare user setup:', error);
       return Api.error(
         'DATABASE_ERROR',
-        'Failed to complete user registration'
+        'Failed to prepare user registration'
       );
     }
-
-    // If there's a session (auto-login after signup)
-    let response: AuthResponse;
-    if (authData.session) {
-      response = {
-        user: {
-          id: user.id,
-          supabaseId: user.supabaseId,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          organizationId: user.organizationId,
-          isActive: user.isActive,
-          createdAt: user.createdAt.toISOString(),
-          updatedAt: user.updatedAt.toISOString()
-        },
-        session: {
-          user: {
-            id: authData.user.id,
-            email: authData.user.email || '',
-            name: authData.user.user_metadata?.name
-          },
-          accessToken: authData.session.access_token,
-          refreshToken: authData.session.refresh_token,
-          expiresAt: authData.session.expires_at || 0
-        }
-      };
-    } else {
-      // Email confirmation required
-      response = {
-        user: {
-          id: user.id,
-          supabaseId: user.supabaseId,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          organizationId: user.organizationId,
-          isActive: user.isActive,
-          createdAt: user.createdAt.toISOString(),
-          updatedAt: user.updatedAt.toISOString()
-        },
-        session: {
-          user: {
-            id: authData.user.id,
-            email: authData.user.email || '',
-            name: authData.user.user_metadata?.name
-          },
-          accessToken: '',
-          refreshToken: '',
-          expiresAt: 0
-        }
-      };
-    }
-
-    return Api.success(response, {
-      message: authData.session 
-        ? 'Account created successfully' 
-        : 'Account created. Please check your email to confirm your account.'
-    });
 
   } catch (error) {
     console.error('Signup error:', error);

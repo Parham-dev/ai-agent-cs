@@ -27,18 +27,18 @@ model User {
 }
 
 model Organization {
-  id            String         @id @default(cuid())
-  name          String
-  slug          String         @unique
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  description   String?
-  agents          Agent[]
-  conversations   Conversation[]
-  integrations    Integration[]
-  users           User[]
+  id               String           @id @default(cuid())
+  name             String
+  slug             String           @unique
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  description      String?
+  agents           Agent[]
+  conversations    Conversation[]
   customerMemories CustomerMemory[]
+  integrations     Integration[]
   knowledgeEntries KnowledgeEntry[]
+  users            User[]
 
   @@map("organizations")
 }
@@ -120,50 +120,42 @@ model Conversation {
   @@map("conversations")
 }
 
-enum UserRole {
-  SUPER_ADMIN
-  ADMIN
-  USER
-}
-
-// ============================================================================
-// VECTOR/MEMORY SYSTEM 
-// ============================================================================
-
 model CustomerMemory {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customerId     String       @map("customer_id")
-  organizationId String       @map("organization_id")
+  id             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId     String                 @map("customer_id")
+  organizationId String                 @map("organization_id")
   content        String
-  memoryType     String       @default("context") @map("memory_type")
-  embedding      Unsupported("vector(1536)")?
-  metadata       Json         @default("{}")
-  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  
-  // Relations
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+  memoryType     String                 @default("context") @map("memory_type")
+  embedding      Unsupported("vector")?
+  metadata       Json                   @default("{}")
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([customerId, organizationId])
   @@index([createdAt(sort: Desc)])
   @@map("customer_memories")
 }
 
 model KnowledgeEntry {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String       @map("organization_id")
+  id             String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String                 @map("organization_id")
   title          String
   content        String
   category       String?
-  tags           String[]     @default([])
-  embedding      Unsupported("vector(1536)")?
-  metadata       Json         @default("{}")
-  isActive       Boolean      @default(true) @map("is_active")
-  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
-  
-  // Relations
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
+  tags           String[]               @default([])
+  embedding      Unsupported("vector")?
+  metadata       Json                   @default("{}")
+  isActive       Boolean                @default(true) @map("is_active")
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([organizationId])
   @@map("knowledge_entries")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  USER
 }

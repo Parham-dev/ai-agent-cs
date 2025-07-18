@@ -3,7 +3,7 @@ import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import "@mantine/notifications/styles.css";
 import "./globals.css";
-import { MantineThemeProvider } from "@/components/providers";
+import { MantineThemeProvider, AuthProvider } from "@/components/providers";
 import { ColorSchemeScript } from "@mantine/core";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,8 +26,10 @@ export default function RootLayout({
       <body className="antialiased">
         <TooltipProvider>
           <MantineThemeProvider>
-            {children}
-            <Toaster richColors />
+            <AuthProvider>
+              {children}
+              <Toaster richColors />
+            </AuthProvider>
           </MantineThemeProvider>
         </TooltipProvider>
       </body>

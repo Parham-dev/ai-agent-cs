@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClientSupabaseClient } from '@/lib/database/clients';
+import { createServerSupabaseClient } from '@/lib/database/clients';
 import { Api, validateMethod } from '@/lib/api';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -8,8 +8,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (methodError) return methodError;
 
   try {
-    // Create Supabase client
-    const supabase = createClientSupabaseClient();
+    // Create Supabase client for server-side auth operations
+    const supabase = createServerSupabaseClient();
 
     // Sign out from Supabase
     const { error } = await supabase.auth.signOut();
