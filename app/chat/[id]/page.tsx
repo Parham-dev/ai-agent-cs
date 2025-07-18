@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Bot, Activity } from 'lucide-react'
+import { ArrowLeft, Bot, Activity, Shield, ShieldCheck } from 'lucide-react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { Thread } from '@/components/assistant-ui/thread'
 import { apiClient } from '@/lib/api/client'
@@ -155,6 +155,21 @@ export default function AgentChatPage() {
                             </span>
                           </div>
                         )}
+                        
+{(() => {
+                          const guardrails = agent.rules?.guardrails as { input?: string[], output?: string[] } | undefined;
+                          const totalGuardrails = (guardrails?.input?.length || 0) + (guardrails?.output?.length || 0);
+                          
+                          return guardrails && totalGuardrails > 0 ? (
+                            <div className="flex items-center gap-1">
+                              <ShieldCheck className="h-3 w-3 text-green-600 dark:text-green-400" />
+                              <span className="font-medium">Guardrails:</span>
+                              <span className="px-1.5 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded text-xs font-medium">
+                                {totalGuardrails} active
+                              </span>
+                            </div>
+                          ) : null;
+                        })()}
                         
                         <div className="flex items-center gap-1">
                           <Activity className="h-3 w-3" />

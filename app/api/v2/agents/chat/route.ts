@@ -6,6 +6,7 @@ import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
 import { verifyWidgetToken, extractBearerToken } from '@/lib/utils/jwt';
 import { getAllTools } from '@/lib/tools';
+import { getInputGuardrails, getOutputGuardrails } from '@/lib/guardrails';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -160,9 +161,21 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
     // Create the OpenAI Agent instance with MCP servers and universal tools
     const agentConfig = agentData.rules && typeof agentData.rules === 'object' ? agentData.rules : {};
-    // Remove tools from agentConfig to avoid conflict with our tools
+    // Remove tools and guardrails from agentConfig to avoid conflict with our separate handling
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { tools: _, ...cleanAgentConfig } = agentConfig;
+    const { tools: _, guardrails: guardrailsConfig, ...cleanAgentConfig } = agentConfig;
+
+    // Configure guardrails if they exist
+    const typedGuardrailsConfig = guardrailsConfig as { input?: string[], output?: string[] } | undefined;
+    const inputGuardrails = typedGuardrailsConfig?.input ? getInputGuardrails(typedGuardrailsConfig.input) : [];
+    const outputGuardrails = typedGuardrailsConfig?.output ? getOutputGuardrails(typedGuardrailsConfig.output) : [];
+    
+    logger.info('Guardrails configured', {
+      inputGuardrailsCount: inputGuardrails.length,
+      outputGuardrailsCount: outputGuardrails.length,
+      inputGuardrails: typedGuardrailsConfig?.input || [],
+      outputGuardrails: typedGuardrailsConfig?.output || []
+    });
 
     const openaiAgent = new Agent({
       name: agentData.name,
@@ -170,6 +183,8 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       model: agentData.model,
       mcpServers: mcpServers.length > 0 ? mcpServers : undefined,
       tools: allTools.length > 0 ? allTools : undefined,
+      inputGuardrails: inputGuardrails.length > 0 ? inputGuardrails : undefined,
+      outputGuardrails: outputGuardrails.length > 0 ? outputGuardrails : undefined,
       ...cleanAgentConfig
     });
 
@@ -200,6 +215,34 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
           },
         });
       });
+    } catch (agentError) {
+      // Handle guardrail errors specifically
+      const errorMessage = agentError instanceof Error ? agentError.message : 'Unknown error';
+      
+      if (errorMessage.includes('Input guardrail triggered')) {
+        logger.info('Request blocked by input guardrail - returning user-friendly message');
+        return Api.success({
+          message: 'I\'m sorry, but I can\'t process that message as it may contain inappropriate content. Please rephrase your message in a respectful way and I\'ll be happy to help.',
+          agentId,
+          timestamp: new Date().toISOString(),
+          blocked: true,
+          reason: 'input_guardrail'
+        });
+      }
+      
+      if (errorMessage.includes('Output guardrail triggered')) {
+        logger.info('Response blocked by output guardrail - returning user-friendly message');
+        return Api.success({
+          message: 'I apologize, but I need to revise my response to ensure it meets our quality standards. Please try asking your question again.',
+          agentId,
+          timestamp: new Date().toISOString(),
+          blocked: true,
+          reason: 'output_guardrail'
+        });
+      }
+      
+      // Re-throw if it's not a guardrail error
+      throw agentError;
     } finally {
       // Clean up MCP client connections
       if (mcpClient) {
