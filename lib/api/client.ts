@@ -197,8 +197,3 @@ export class ApiClient {
     });
   }
 }
-
-import { getOrganizationId } from '@/lib/context/organization';
-
-// Default client instance with parham organization context
-export const apiClient = new ApiClient(getOrganizationId());

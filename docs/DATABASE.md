@@ -630,9 +630,6 @@ npx prisma generate
 
 # Create and apply migrations
 npx prisma migrate dev --name init
-
-# Seed the database (optional)
-npx prisma db seed
 ```
 
 ## 📋 Key Design Updates

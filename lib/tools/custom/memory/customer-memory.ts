@@ -11,17 +11,17 @@ export const customerMemory = tool({
     query: z.string().nullable().optional().describe('Search query for finding memories (e.g., "contact", "preference", "email"). Required when action=search.'),
     limit: z.number().default(10).describe('Maximum number of memories to return')
   }),
-  execute: async ({ action, content, memoryType, query, limit }) => {
+  execute: async ({ action, content, memoryType, query, limit }, context) => {
     try {
       // Import server-only service dynamically
       const { vectorService } = await import('../../../services/vector.server')
       
-      // For now, use hardcoded values for testing (override any provided values)
-      // TODO: Get context from agent execution environment
-      const actualCustomerId = 'test-customer-john-doe' // Force our test customer
-      const actualOrganizationId = 'cmd97wv8x0001jgulv6p9rxbj' // Use your existing organization
-      const customerName = 'John Doe'
-      const customerEmail = 'john.doe@example.com'
+      // Get context from agent execution environment - required for proper operation
+      const runContext = context?.context as Record<string, unknown> | undefined
+      const actualCustomerId = (runContext?.customerId as string) || 'anonymous-customer'
+      const actualOrganizationId = (runContext?.organizationId as string) || 'default-org'
+      const customerName = (runContext?.customerName as string) || 'Anonymous User'
+      const customerEmail = (runContext?.customerEmail as string) || 'user@example.com'
       
       console.log('🧠 Memory tool called:', { 
         action, 

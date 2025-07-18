@@ -81,7 +81,6 @@ cp .env.example .env.local
 
 # Set up database
 npx prisma migrate dev
-npx prisma db seed
 
 # Start development server
 npm run dev

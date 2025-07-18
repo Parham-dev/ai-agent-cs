@@ -116,7 +116,6 @@ cp .env.example .env.local
 
 # Set up database
 npx prisma migrate dev
-npx prisma db seed
 
 # Start development server
 npm run dev
@@ -128,8 +127,8 @@ npm run dev
 # After setup, visit the widget demo:
 # http://localhost:3000/widget/demo/[AGENT_ID]
 
-# Get agent ID from seeded data or create one via:
-# http://localhost:3000/setup/shopify
+# Get agent ID by creating one via the web interface:
+# http://localhost:3000/agents/new
 ```
 
 ### Create Your First Agent

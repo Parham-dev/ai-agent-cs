@@ -13,8 +13,8 @@ Client-side API utilities for communicating with the backend services.
 ## Usage
 
 ```typescript
-// Import the API client
-import { apiClient } from '@/lib/api/client'
+// Import the authenticated API client
+import { apiClient } from '@/lib/api/authenticated-client'
 
 // Use API helpers
 import { ApiResponseHelper as Api } from '@/lib/api/helpers'
@@ -25,7 +25,7 @@ import { withErrorHandling } from '@/lib/api/error-handling'
 // Simplified route creation
 import { createRouteHandler } from '@/lib/api/route-utils'
 
-// Get data
+// Get data (automatically filtered by user's organization)
 const agents = await apiClient.getAgents()
 const response = Api.success(data)
 

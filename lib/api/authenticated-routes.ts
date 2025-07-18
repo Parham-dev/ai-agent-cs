@@ -6,12 +6,14 @@
 import { withAuth, withRoles, withOrganization } from '@/lib/auth/api-middleware'
 import { withRateLimit } from '@/lib/auth/rate-limiting'
 import { 
-  createListHandler, 
   createGetHandler, 
   createPostHandler, 
   createPutHandler, 
-  createDeleteHandler 
+  createDeleteHandler,
+  extractFilters
 } from '@/lib/api/route-utils'
+import { ApiResponseHelper as Api, validateMethod } from '@/lib/api/helpers'
+import { withErrorHandling } from '@/lib/api/error-handling'
 import type { UserRole } from '@/lib/types'
 
 // Type-safe middleware configurations
@@ -42,15 +44,31 @@ export function authenticatedList<TService, TFilters>(
   methodName: keyof TService,
   config: AuthConfig = {}
 ) {
-  let handler = createListHandler<TService, TFilters>(service, methodName)
+  // Create a custom handler that injects organization context
+  const orgAwareHandler = withAuth(withErrorHandling(async (request, context) => {
+    const methodError = validateMethod(request, ['GET'])
+    if (methodError) return methodError
 
-  // Apply authentication layers
-  if (config.requireOrganization) {
-    handler = withOrganization(handler as never)
-  } else if (config.roles && config.roles.length > 0) {
-    handler = withRoles(config.roles, handler as never)
-  } else if (config.requireAuth) {
-    handler = withAuth(handler as never)
+    const { searchParams } = new URL(request.url)
+    const baseFilters = extractFilters(searchParams)
+    
+    // Cast to expected type and inject organization context
+    const filters = baseFilters as unknown as TFilters & { organizationId?: string }
+    
+    // Inject user's organization ID for non-super-admin users
+    if (context.user.role !== 'SUPER_ADMIN' && context.user.organizationId) {
+      filters.organizationId = context.user.organizationId
+    }
+    
+    const serviceMethod = service[methodName] as (filters: TFilters & { organizationId?: string }) => Promise<unknown>
+    const results = await serviceMethod.call(service, filters)
+    return Api.success(results)
+  }))
+
+  // Apply role restrictions if configured
+  let handler = orgAwareHandler
+  if (config.roles && config.roles.length > 0) {
+    handler = withRoles(config.roles, orgAwareHandler)
   }
 
   // Apply rate limiting if configured

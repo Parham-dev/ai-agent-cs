@@ -173,8 +173,14 @@ export function withRoles(allowedRoles: UserRole[], handler: RoleBasedHandler) {
  */
 export function withOrganization(handler: RoleBasedHandler) {
   return withAuth(async (request: NextRequest, context: AuthContext) => {
-    // Extract organization ID from URL params or request body
     const url = new URL(request.url);
+    
+    // For GET requests without resource IDs, allow access (org filtering handled by service)
+    if (request.method === 'GET' && !url.pathname.match(/\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+$/)) {
+      return await handler(request, context);
+    }
+
+    // Extract organization ID from URL params or request body for specific resource access
     const orgIdFromPath = url.pathname.split('/').find(segment => 
       segment.match(/^[a-zA-Z0-9_-]+$/) && segment.length > 10
     );
@@ -196,7 +202,7 @@ export function withOrganization(handler: RoleBasedHandler) {
       return await handler(request, context);
     }
 
-    // Regular users can only access their own organization
+    // Regular users can only access their own organization's specific resources
     if (requestedOrgId && context.user.organizationId !== requestedOrgId) {
       return Api.error(
         'AUTHORIZATION_ERROR',

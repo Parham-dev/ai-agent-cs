@@ -8,9 +8,6 @@ export * from './types'
 export { cn } from './utils/cn'
 export * from './utils/errors'
 
-// Context - export organization utilities (used by API client)
-export * from './context/organization'
-
 // Note: API client, database services, and specialized modules should be imported directly
 // Example: import { apiClient } from '@/lib/api/authenticated-client'
 // Example: import { agentsService } from '@/lib/database/services'
