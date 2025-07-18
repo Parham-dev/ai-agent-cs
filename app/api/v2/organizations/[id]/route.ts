@@ -1,21 +1,36 @@
-import { createGetHandler, createPutHandler, createDeleteHandler } from '@/lib/api/route-utils'
 import { organizationsService } from '@/lib/database/services'
+import { authenticatedGet, authenticatedPut, authenticatedDelete } from '@/lib/api/authenticated-routes'
 import type { UpdateOrganizationData } from '@/lib/types'
 
-export const GET = createGetHandler(
-  organizationsService,
-  'getOrganizationById',
-  'organization'
+// Get organization - authenticated, super admin only
+export const GET = authenticatedGet(
+  organizationsService, 
+  'getOrganizationById', 
+  'Organization',
+  { 
+    requireAuth: true, 
+    roles: ['SUPER_ADMIN'] 
+  }
 )
 
-export const PUT = createPutHandler<typeof organizationsService, UpdateOrganizationData>(
+// Update organization - authenticated, super admin only
+export const PUT = authenticatedPut<typeof organizationsService, UpdateOrganizationData>(
   organizationsService,
   'updateOrganization',
-  'Organization'
+  'Organization',
+  { 
+    requireAuth: true, 
+    roles: ['SUPER_ADMIN'] 
+  }
 )
 
-export const DELETE = createDeleteHandler(
+// Delete organization - authenticated, super admin only
+export const DELETE = authenticatedDelete(
   organizationsService,
   'deleteOrganization',
-  'Organization deleted successfully'
+  'Organization',
+  { 
+    requireAuth: true, 
+    roles: ['SUPER_ADMIN'] 
+  }
 )

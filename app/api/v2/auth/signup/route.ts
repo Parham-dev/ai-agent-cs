@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { usersService, organizationsService } from '@/lib/database/services';
+import { usersService } from '@/lib/database/services';
 import { Api, validateRequest, validateMethod } from '@/lib/api';
+import { withRateLimit, RateLimits } from '@/lib/auth/rate-limiting';
+import { createServerSupabaseClient } from '@/lib/database/clients';
+import { prisma } from '@/lib/database';
 import { z } from 'zod';
 import type { SignupRequest } from '@/lib/types';
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  name: z.string().min(1, 'Name is required').optional()
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/(?=.*[a-z])/, 'Password must contain at least one lowercase letter')
+    .regex(/(?=.*[A-Z])/, 'Password must contain at least one uppercase letter')
+    .regex(/(?=.*\d)/, 'Password must contain at least one number'),
+  name: z.string().min(2, 'Name must be at least 2 characters')
 });
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+// Apply rate limiting to signup endpoint
+const rateLimitedHandler = withRateLimit(RateLimits.auth);
+
+export const POST = rateLimitedHandler(async function(request: NextRequest): Promise<NextResponse> {
   // Validate HTTP method
   const methodError = validateMethod(request, ['POST']);
   if (methodError) return methodError;
@@ -20,7 +30,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const validation = await validateRequest(request, signupSchema);
     if (validation.error) return validation.error;
     
-    const { email, name }: SignupRequest = validation.data;
+    const { email, password, name }: SignupRequest = validation.data;
 
     // Check if user already exists in our database
     const existingUser = await usersService.getUserByEmail(email);
@@ -31,45 +41,92 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // For local development, we'll use a simpler approach
-    // Create the user record first, then handle auth on the client side
-    
-    // Generate a unique slug for the organization
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 8); // 6 random chars
-    const emailPrefix = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, ''); // Clean email prefix
-    const uniqueSlug = `${emailPrefix}-${timestamp}-${randomString}`;
-    
-    try {
-      // Create a default organization for the user
-      const organizationName = name ? `${name}'s Organization` : `${email.split('@')[0]}'s Organization`;
-      const organization = await organizationsService.createOrganization({
-        name: organizationName,
-        slug: uniqueSlug,
-        description: 'Default organization'
+    // Use database transaction to ensure atomicity
+    const result = await prisma.$transaction(async (tx) => {
+      // Generate a unique slug for the organization
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(2, 8);
+      const emailPrefix = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+      const uniqueSlug = `${emailPrefix}-${timestamp}-${randomString}`;
+      
+      // Create organization first
+      const organizationName = `${name}'s Organization`;
+      const organization = await tx.organization.create({
+        data: {
+          name: organizationName,
+          slug: uniqueSlug,
+          description: 'Default organization'
+        }
       });
 
-      // Return success - the client will handle Supabase auth and then sync the user
-      return Api.success({
-        message: 'Ready to create account',
+      // Create Supabase user
+      const supabase = createServerSupabaseClient();
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email,
-        name,
-        organizationId: organization.id,
-        organizationName: organization.name
-      }, {
-        message: 'Account setup prepared successfully'
+        password,
+        user_metadata: { name },
+        email_confirm: false // Auto-confirm for development
       });
 
-    } catch (error) {
-      console.error('Failed to prepare user setup:', error);
-      return Api.error(
-        'DATABASE_ERROR',
-        'Failed to prepare user registration'
-      );
-    }
+      if (authError || !authData.user) {
+        throw new Error(`Supabase user creation failed: ${authError?.message || 'Unknown error'}`);
+      }
+
+      // Create user in our database  
+      const user = await tx.user.create({
+        data: {
+          supabaseId: authData.user.id,
+          email,
+          name,
+          organizationId: organization.id,
+          role: 'ADMIN', // First user in organization is admin
+          isActive: true
+        }
+      });
+
+      return {
+        user,
+        organization,
+        supabaseUser: authData.user
+      };
+    });
+
+    return Api.success({
+      message: 'Account created successfully',
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        organizationId: result.user.organizationId
+      },
+      organization: {
+        id: result.organization.id,
+        name: result.organization.name,
+        slug: result.organization.slug
+      }
+    }, {
+      message: 'Account created successfully'
+    });
 
   } catch (error) {
     console.error('Signup error:', error);
+    
+    // Handle specific error types
+    if (error instanceof Error) {
+      if (error.message.includes('Supabase')) {
+        return Api.error(
+          'AUTHENTICATION_ERROR',
+          'Failed to create authentication account'
+        );
+      }
+      if (error.message.includes('Unique constraint')) {
+        return Api.error(
+          'VALIDATION_ERROR',
+          'User with this email already exists'
+        );
+      }
+    }
+
     return Api.internalError('Registration failed');
   }
-}
+});

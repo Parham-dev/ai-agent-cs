@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/database/clients';
 import { usersService } from '@/lib/database/services';
 import { Api, validateRequest, validateMethod } from '@/lib/api';
+import { withRateLimit, RateLimits } from '@/lib/auth/rate-limiting';
 import { z } from 'zod';
 
 const syncUserSchema = z.object({
@@ -12,7 +13,10 @@ const syncUserSchema = z.object({
   accessToken: z.string()
 });
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+// Apply rate limiting to sync-user endpoint
+const rateLimitedHandler = withRateLimit(RateLimits.auth);
+
+export const POST = rateLimitedHandler(async function(request: NextRequest): Promise<NextResponse> {
   // Validate HTTP method
   const methodError = validateMethod(request, ['POST']);
   if (methodError) return methodError;
@@ -70,4 +74,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     console.error('Sync user error:', error);
     return Api.internalError('Failed to sync user');
   }
-}
+});

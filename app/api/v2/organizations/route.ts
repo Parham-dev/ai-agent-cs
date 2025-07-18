@@ -1,13 +1,25 @@
-import { createListHandler, createPostHandler } from '@/lib/api/route-utils'
 import { organizationsService } from '@/lib/database/services'
+import { authenticatedList, authenticatedPost } from '@/lib/api/authenticated-routes'
 import type { CreateOrganizationData, OrganizationFilters } from '@/lib/types'
 
-export const GET = createListHandler<typeof organizationsService, OrganizationFilters>(
-  organizationsService,
-  'getOrganizations'
+// List organizations - authenticated, super admin only, rate-limited
+export const GET = authenticatedList<typeof organizationsService, OrganizationFilters>(
+  organizationsService, 
+  'getOrganizations',
+  { 
+    requireAuth: true, 
+    roles: ['SUPER_ADMIN'], 
+    rateLimit: 'api' 
+  }
 )
 
-export const POST = createPostHandler<typeof organizationsService, CreateOrganizationData>(
+// Create organization - authenticated, super admin only, rate-limited
+export const POST = authenticatedPost<typeof organizationsService, CreateOrganizationData>(
   organizationsService,
-  'createOrganization'
+  'createOrganization',
+  { 
+    requireAuth: true, 
+    roles: ['SUPER_ADMIN'], 
+    rateLimit: 'api' 
+  }
 )

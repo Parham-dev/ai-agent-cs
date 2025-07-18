@@ -1,57 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/database/clients';
-import { usersService } from '@/lib/database/services';
-import { Api, validateMethod } from '@/lib/api';
+import { withAuth } from '@/lib/auth/api-middleware';
+import { Api } from '@/lib/api';
 import type { ApiUser } from '@/lib/types';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  // Validate HTTP method
-  const methodError = validateMethod(request, ['GET']);
-  if (methodError) return methodError;
-
+export const GET = withAuth(async function(request: NextRequest, { user }): Promise<NextResponse> {
   try {
-    // Get authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return Api.error(
-        'AUTHENTICATION_ERROR',
-        'Missing or invalid authorization header'
-      );
-    }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
-    // Create Supabase client for server-side auth operations
-    const supabase = createServerSupabaseClient();
-
-    // Get user from token
-    const { data: { user: supabaseUser }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !supabaseUser) {
-      return Api.error(
-        'AUTHENTICATION_ERROR',
-        'Invalid or expired token'
-      );
-    }
-
-    // Get user from our database
-    const user = await usersService.getUserBySupabaseId(supabaseUser.id);
-    
-    if (!user) {
-      return Api.error(
-        'NOT_FOUND',
-        'User not found in database'
-      );
-    }
-
-    if (!user.isActive) {
-      return Api.error(
-        'AUTHENTICATION_ERROR',
-        'User account is deactivated'
-      );
-    }
-
-    // Return user data
+    // Return user data directly from auth context
     const apiUser: ApiUser = {
       id: user.id,
       supabaseId: user.supabaseId,
@@ -60,8 +14,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       role: user.role,
       organizationId: user.organizationId,
       isActive: user.isActive,
-      createdAt: user.createdAt.toISOString(),
-      updatedAt: user.updatedAt.toISOString()
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
     };
 
     return Api.success(apiUser, {
@@ -72,4 +26,4 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     console.error('Get user error:', error);
     return Api.internalError('Failed to get user information');
   }
-}
+});

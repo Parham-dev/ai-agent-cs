@@ -1,15 +1,25 @@
 import { integrationsService } from '@/lib/database/services'
-import { createListHandler, createPostHandler } from '@/lib/api/route-utils'
+import { authenticatedList, authenticatedPost } from '@/lib/api/authenticated-routes'
 import type { CreateIntegrationData, IntegrationFilters } from '@/lib/types'
 
-// List integrations - simplified from ~24 lines to 1 line
-export const GET = createListHandler<typeof integrationsService, IntegrationFilters>(
+// List integrations - authenticated, organization-scoped, rate-limited
+export const GET = authenticatedList<typeof integrationsService, IntegrationFilters>(
   integrationsService, 
-  'getIntegrations'
+  'getIntegrations',
+  { 
+    requireAuth: true, 
+    requireOrganization: true, 
+    rateLimit: 'api' 
+  }
 )
 
-// Create integration - simplified from ~41 lines to 1 line  
-export const POST = createPostHandler<typeof integrationsService, CreateIntegrationData>(
+// Create integration - authenticated, organization-scoped, rate-limited
+export const POST = authenticatedPost<typeof integrationsService, CreateIntegrationData>(
   integrationsService,
-  'createIntegration'
+  'createIntegration',
+  { 
+    requireAuth: true, 
+    requireOrganization: true, 
+    rateLimit: 'api' 
+  }
 )

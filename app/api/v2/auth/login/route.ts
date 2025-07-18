@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/database/clients';
 import { usersService } from '@/lib/database/services';
 import { Api, validateRequest, validateMethod } from '@/lib/api';
+import { withRateLimit, RateLimits } from '@/lib/auth/rate-limiting';
 import { z } from 'zod';
 import type { LoginRequest, AuthResponse } from '@/lib/types';
 
@@ -10,7 +11,10 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters')
 });
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+// Apply rate limiting to login endpoint
+const rateLimitedHandler = withRateLimit(RateLimits.auth);
+
+export const POST = rateLimitedHandler(async function(request: NextRequest): Promise<NextResponse> {
   // Validate HTTP method
   const methodError = validateMethod(request, ['POST']);
   if (methodError) return methodError;
@@ -100,4 +104,4 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     console.error('Login error:', error);
     return Api.internalError('Login failed');
   }
-}
+});
