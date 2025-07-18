@@ -12,5 +12,5 @@ export * from './utils/errors'
 export * from './context/organization'
 
 // Note: API client, database services, and specialized modules should be imported directly
-// Example: import { apiClient } from '@/lib/api/client'
+// Example: import { apiClient } from '@/lib/api/authenticated-client'
 // Example: import { agentsService } from '@/lib/database/services'

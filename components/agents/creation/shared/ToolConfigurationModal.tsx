@@ -15,7 +15,7 @@ import {
   ScrollArea,
 } from '@mantine/core'
 import { toast } from 'sonner'
-import { apiClient } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/authenticated-client'
 import type { ApiIntegration, IntegrationTool } from '@/lib/types'
 
 interface ToolConfigurationModalProps {
@@ -41,7 +41,7 @@ export function ToolConfigurationModal({
   const loadAvailableTools = async () => {
     try {
       setLoading(true)
-      const tools = await apiClient.getIntegrationTools(integration.type)
+      const tools = await apiClient.getIntegrationTools()
       setAvailableTools(tools)
     } catch (error) {
       console.error('Failed to load tools:', error)
@@ -56,7 +56,6 @@ export function ToolConfigurationModal({
       loadAvailableTools()
       setLocalSelection(selectedTools)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened, selectedTools])
 
   const handleToolToggle = (toolName: string) => {

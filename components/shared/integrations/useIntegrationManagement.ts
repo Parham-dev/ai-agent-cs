@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { apiClient } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/authenticated-client'
 import { getIntegrationDisplayName } from './integration-utils'
 import type { ApiIntegration } from '@/lib/types'
 

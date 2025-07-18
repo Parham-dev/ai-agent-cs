@@ -29,7 +29,7 @@ import {
   Eye,
   AlertCircle
 } from 'lucide-react'
-import { apiClient } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/authenticated-client'
 import { toast } from 'sonner'
 import type { ApiAgent } from '@/lib/types'
 

@@ -15,7 +15,7 @@ import {
 import { useForm } from '@mantine/form'
 import { ExternalLink, AlertCircle, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { apiClient } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/authenticated-client'
 import type { ApiIntegration } from '@/lib/types'
 
 interface ShopifyCredentialsFormProps {

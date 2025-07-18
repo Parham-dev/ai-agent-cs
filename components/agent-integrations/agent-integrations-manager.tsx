@@ -20,7 +20,7 @@ import {
 } from '@mantine/core'
 import { Plus } from 'lucide-react'
 import { AgentIntegrationCard } from './agent-integration-card'
-import { apiClient } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/authenticated-client'
 import { toast } from 'sonner'
 import type { ApiIntegration, ApiAgentIntegration } from '@/lib/types'
 

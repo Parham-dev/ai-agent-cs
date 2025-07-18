@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { AgentCreationWizard, type AgentFormData } from '@/components/agents/creation'
-import { apiClient } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/authenticated-client'
 import { toast } from 'sonner'
 import { createClientLogger } from '@/lib/utils/client-logger'
 
