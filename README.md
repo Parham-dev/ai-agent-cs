@@ -74,7 +74,7 @@ Get instant, intelligent, and **safe** support:
 - **🧙‍♂️ Agent Creation Wizard** - 5-step guided setup process
 - **🛡️ Comprehensive Guardrails System** - Input/output safety and quality protection
 - **🔧 Universal Tools System** - OpenAI hosted, custom functions, and MCP integrations
-- **🛒 Shopify Integration** - Complete MCP server with product catalog and inventory
+- **🛒 Shopify Integration** - Comprehensive MCP server with 12 tools covering products, inventory, policies, shipping, and store management
 - **💬 Protected Chat Interface** - Real-time guardrail monitoring and user-friendly blocking
 - **🔐 JWT Security** - Cross-domain widget authentication with domain validation
 - **📊 Advanced Logging** - Comprehensive monitoring and performance tracking
@@ -144,17 +144,31 @@ npm run dev
 ## 💻 Available Integrations
 
 ### E-commerce Platforms
-- **Shopify** ✅
-  - Product catalog browsing
-  - Inventory level checking  
-  - Price and variant information
-  - Product search and filtering
 
-- **Stripe** (Coming Soon) 🔄
-  - Payment status lookup
-  - Refund processing
-  - Subscription management
-  - Invoice generation
+#### **Shopify** ✅ (12 Tools Available)
+**Product Management:**
+- `searchProducts` - Search products by name, category, tags, and criteria
+- `getProductDetails` - Detailed product information with variants and pricing
+- `listProducts` - Browse entire catalog with filtering options
+- `getProductListings` - Published products available in online store
+
+**Inventory & Operations:**
+- `getInventoryLevels` - Real-time stock levels at specific locations
+- `getLocations` - Store locations with addresses and contact information
+- `getShippingZones` - Shipping zones, rates, and delivery options
+
+**Store Information:**
+- `getPolicies` - Legal policies (privacy, terms, refund, shipping)
+- `getPages` - Online store pages (about, contact, custom pages)
+- `getPaymentTerms` - Payment terms and configurations
+- `getMarketingEvents` - Marketing campaigns and promotional events
+- `getLocales` - Available languages and store localization
+
+#### **Stripe** (Coming Soon) 🔄
+- Payment status lookup and transaction details
+- Refund processing and dispute management
+- Subscription and billing management
+- Invoice generation and payment tracking
 
 ### Universal Tools System
 
@@ -167,8 +181,12 @@ npm run dev
 - *More custom tools can be easily added to the registry*
 
 #### MCP Integration Tools ✅
-- **Shopify Tools** - Product catalog, inventory, pricing, search
-- *Stripe and other platform tools coming soon*
+- **Shopify MCP Server** - Complete e-commerce toolkit (12 tools)
+  - Product management and search capabilities
+  - Inventory tracking and location management  
+  - Store policies, pages, and marketing information
+  - Shipping, payment terms, and localization support
+- *Stripe MCP Server and other platform integrations coming soon*
 
 ### Guardrails System ✅
 
@@ -201,9 +219,19 @@ const basicConfig = {
 const integrations = [
   {
     type: "shopify",
-    name: "MyStore Shopify",
+    name: "MyStore Shopify", 
     credentials: { /* encrypted */ },
-    selectedTools: ["searchProducts", "getProductDetails", "listProducts"]
+    selectedTools: [
+      "searchProducts",      // Product search and filtering
+      "getProductDetails",   // Detailed product information
+      "listProducts",        // Catalog browsing
+      "getInventoryLevels",  // Stock level checking
+      "getLocations",        // Store locations
+      "getPolicies",         // Store policies
+      "getShippingZones",    // Shipping information
+      "getPages"             // Store pages and content
+      // ... and 4 more tools available
+    ]
   }
   // Stripe and other integrations coming soon
 ];
@@ -339,31 +367,6 @@ npm run build
 - [API Reference](docs/api-reference.md)
 - [Deployment Guide](docs/deployment.md)
 
-## 💰 Pricing (Planned)
-
-### Open Source (Free)
-- Full source code access
-- Self-hosted deployment
-- Community support
-- Basic integrations
-
-### Cloud Starter ($99/month)
-- Hosted platform
-- 10,000 conversations/month
-- Email support
-- All integrations
-
-### Cloud Pro ($299/month)  
-- 100,000 conversations/month
-- Priority support
-- Custom integrations
-- Advanced analytics
-
-### Enterprise (Custom)
-- Unlimited usage
-- Dedicated support
-- Custom development
-- SLA guarantees
 
 ## 🙏 Acknowledgments
 
