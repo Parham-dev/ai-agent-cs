@@ -11,7 +11,7 @@ import {
   Button
 } from '@mantine/core'
 import { Settings, Wrench } from 'lucide-react'
-import { getIntegrationIcon, getIntegrationColors, getIntegrationDisplayName } from '../integration-utils'
+import { getIntegrationIcon, getIntegrationColors, getIntegrationDisplayName } from './integration-utils'
 import type { ApiIntegration } from '@/lib/types'
 
 interface IntegrationCardProps {
@@ -21,6 +21,11 @@ interface IntegrationCardProps {
   onToggle: (integration: ApiIntegration) => void
   onConfigureCredentials: (integration: ApiIntegration) => void
   onConfigureTools: (integration: ApiIntegration) => void
+  // Context-specific props
+  showToolsButton?: boolean
+  showToolsCount?: boolean
+  mode?: 'wizard' | 'management'
+  isCredentialsFormOpen?: boolean
 }
 
 export function IntegrationCard({
@@ -29,7 +34,10 @@ export function IntegrationCard({
   selectedToolsCount,
   onToggle,
   onConfigureCredentials,
-  onConfigureTools
+  onConfigureTools,
+  showToolsButton = true,
+  showToolsCount = true,
+  isCredentialsFormOpen = false
 }: IntegrationCardProps) {
   const Icon = getIntegrationIcon(integration.type)
   const colors = getIntegrationColors(integration.type)
@@ -66,16 +74,18 @@ export function IntegrationCard({
 
           {isSelected && (
             <Group justify="space-between" pt="xs">
-              <Group gap="xs">
-                <Text size="xs" c="dimmed">Tools selected:</Text>
-                <Badge size="xs" variant="outline">
-                  {selectedToolsCount}
-                </Badge>
-              </Group>
+              {showToolsCount && (
+                <Group gap="xs">
+                  <Text size="xs" c="dimmed">Tools selected:</Text>
+                  <Badge size="xs" variant="outline">
+                    {selectedToolsCount}
+                  </Badge>
+                </Group>
+              )}
               
-              <Group gap="xs">
+              <Group gap="xs" style={{ marginLeft: showToolsCount ? 'auto' : 0 }}>
                 <Button
-                  variant="subtle"
+                  variant={isCredentialsFormOpen ? "light" : "subtle"}
                   size="xs"
                   leftSection={<Settings size={14} />}
                   onClick={(e) => {
@@ -86,23 +96,25 @@ export function IntegrationCard({
                   Settings
                 </Button>
                 
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  leftSection={<Wrench size={14} />}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onConfigureTools(integration)
-                  }}
-                  disabled={isSelected && isTemporary}
-                  title={
-                    isSelected && isTemporary 
-                      ? "Configure credentials first to enable tool selection" 
-                      : "Configure tools for this integration"
-                  }
-                >
-                  Tools
-                </Button>
+                {showToolsButton && (
+                  <Button
+                    variant="subtle"
+                    size="xs"
+                    leftSection={<Wrench size={14} />}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onConfigureTools(integration)
+                    }}
+                    disabled={isSelected && isTemporary}
+                    title={
+                      isSelected && isTemporary 
+                        ? "Configure credentials first to enable tool selection" 
+                        : "Configure tools for this integration"
+                    }
+                  >
+                    Tools
+                  </Button>
+                )}
               </Group>
             </Group>
           )}

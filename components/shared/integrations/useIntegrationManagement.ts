@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api/client'
-import { getIntegrationDisplayName } from '../integration-utils'
+import { getIntegrationDisplayName } from './integration-utils'
 import type { ApiIntegration } from '@/lib/types'
 
 type AvailableIntegrationType = 'shopify' | 'stripe'
@@ -13,6 +13,9 @@ interface TempIntegration {
   name: string
   type: string
 }
+
+// Return type for addIntegrationType
+type AddIntegrationResult = TempIntegration
 
 export function useIntegrationManagement() {
   const [orgIntegrations, setOrgIntegrations] = useState<ApiIntegration[]>([])
@@ -63,13 +66,14 @@ export function useIntegrationManagement() {
   }
 
   // Handle adding new integration type
-  const addIntegrationType = (integrationType: AvailableIntegrationType) => {
-    const newTempIntegration = {
+  const addIntegrationType = (integrationType: AvailableIntegrationType): AddIntegrationResult => {
+    const newTempIntegration: TempIntegration = {
       id: `temp-${integrationType}-${Date.now()}`,
       name: getIntegrationDisplayName(integrationType),
       type: integrationType
     }
     setTempIntegrations(current => [...current, newTempIntegration])
+    return newTempIntegration
   }
 
   // Handle credentials saved - replace temp with real integration

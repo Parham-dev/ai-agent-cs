@@ -1,7 +1,6 @@
 import { OutputGuardrail } from '@openai/agents';
 import { 
   extractTextContent,
-  checkThreshold,
   measureGuardrailExecution,
   createGuardrailLogger,
   getCachedResult,
@@ -62,7 +61,7 @@ export function createFactualAccuracyGuardrail(
   return {
     name: 'Factual Accuracy Guardrail',
     
-    async execute({ agentOutput, context }) {
+    async execute({ agentOutput }) {
       const logger = createGuardrailLogger('factual-accuracy', {
         agentId: 'factual-accuracy-guardrail',
         agentName: 'Factual Accuracy',

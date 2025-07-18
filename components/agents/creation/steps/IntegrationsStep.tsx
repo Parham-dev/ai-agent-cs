@@ -1,30 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { 
-  Stack, 
-  Title, 
-  Text, 
-  Grid, 
-  Card, 
-  Group, 
-  Button, 
-  Badge, 
-  LoadingOverlay,
-} from '@mantine/core'
-import { Plus } from 'lucide-react'
+import { Stack } from '@mantine/core'
 import { toast } from 'sonner'
 import { StepProps } from '../forms/types'
-import { AVAILABLE_INTEGRATIONS } from '../shared/constants'
-import { AddIntegrationModal } from '../shared/AddIntegrationModal'
 import { ToolConfigurationModal } from '../shared/ToolConfigurationModal'
-import { IntegrationCard, CredentialsFormSection } from '../shared/components'
-import { useIntegrationManagement, useIntegrationFormState } from '../shared/hooks'
+import { CredentialsFormSection } from '@/components/shared/integrations'
+import { useIntegrationFormState } from '../shared/hooks'
+import { useIntegrationManagement } from '@/components/shared/integrations'
+import { IntegrationGrid } from '@/components/shared/integrations'
 import type { ApiIntegration } from '@/lib/types'
 
 export function IntegrationsStep({ form }: StepProps) {
   // Modal state
-  const [addModalOpened, setAddModalOpened] = useState(false)
   const [toolModalOpened, setToolModalOpened] = useState(false)
   const [credentialsFormOpened, setCredentialsFormOpened] = useState(false)
   const [selectedIntegrationForTools, setSelectedIntegrationForTools] = useState<ApiIntegration | null>(null)
@@ -32,26 +20,39 @@ export function IntegrationsStep({ form }: StepProps) {
 
   // Custom hooks
   const {
-    loading,
-    getAllIntegrations,
-    addIntegrationType,
     handleCredentialsSaved: handleCredentialsSavedHook
   } = useIntegrationManagement()
 
   const {
     isIntegrationSelected,
     getSelectedTools,
-    toggleIntegration,
+    toggleIntegration: toggleIntegrationBase,
     updateSelectedTools,
     updateIntegrationId
   } = useIntegrationFormState(form)
 
-  // Get all integrations for display
-  const allIntegrations = getAllIntegrations()
-  
-  // Filter out integration types that are already in the grid
-  const existingTypes = allIntegrations.map(integration => integration.type)
-  const availableTypes = AVAILABLE_INTEGRATIONS.filter(type => !existingTypes.includes(type))
+  // Wrap toggle integration to also close credentials form when disabling
+  const toggleIntegration = (integration: ApiIntegration) => {
+    const wasSelected = isIntegrationSelected(integration.id)
+    
+    // Call the base toggle function
+    toggleIntegrationBase(integration)
+    
+    if (wasSelected) {
+      // If integration was selected and is now being deselected, close credentials form
+      if (credentialsFormOpened && selectedIntegrationForCredentials?.id === integration.id) {
+        setCredentialsFormOpened(false)
+        setSelectedIntegrationForCredentials(null)
+      }
+    } else {
+      // If integration was not selected and is now being selected
+      // If this is a temp integration (doesn't exist in DB), auto-show config form
+      if (integration.id.startsWith('temp-')) {
+        setSelectedIntegrationForCredentials(integration)
+        setCredentialsFormOpened(true)
+      }
+    }
+  }
 
   // Handle opening tool configuration
   const handleConfigureTools = (integration: ApiIntegration) => {
@@ -63,10 +64,17 @@ export function IntegrationsStep({ form }: StepProps) {
     setToolModalOpened(true)
   }
 
-  // Handle opening credentials form
+  // Handle opening credentials form (toggle)
   const handleConfigureCredentials = (integration: ApiIntegration) => {
-    setSelectedIntegrationForCredentials(integration)
-    setCredentialsFormOpened(true)
+    if (credentialsFormOpened && selectedIntegrationForCredentials?.id === integration.id) {
+      // If form is already open for this integration, close it
+      setCredentialsFormOpened(false)
+      setSelectedIntegrationForCredentials(null)
+    } else {
+      // Open form for this integration
+      setSelectedIntegrationForCredentials(integration)
+      setCredentialsFormOpened(true)
+    }
   }
 
   // Handle credentials saved
@@ -96,84 +104,19 @@ export function IntegrationsStep({ form }: StepProps) {
 
   return (
     <Stack gap="lg">
-      <LoadingOverlay visible={loading} />
-      
-      <Stack gap="sm">
-        <Group justify="space-between">
-          <div>
-            <Title order={3}>Integrations</Title>
-            <Text c="dimmed" size="sm">
-              Connect external services and select which tools your agent can use
-            </Text>
-          </div>
-          
-          {availableTypes.length > 0 ? (
-            <Button
-              leftSection={<Plus size={16} />}
-              onClick={() => setAddModalOpened(true)}
-              variant="light"
-            >
-              Add Integration
-            </Button>
-          ) : allIntegrations.length > 0 ? (
-            <Text size="sm" c="dimmed">
-              All available integration types have been added
-            </Text>
-          ) : null}
-        </Group>
-      </Stack>
-
-      {/* Integrations Grid */}
-      {allIntegrations.length > 0 ? (
-        <Grid>
-          {allIntegrations.map(integration => (
-            <IntegrationCard
-              key={integration.id}
-              integration={integration}
-              isSelected={isIntegrationSelected(integration.id)}
-              selectedToolsCount={getSelectedTools(integration.id).length}
-              onToggle={toggleIntegration}
-              onConfigureCredentials={handleConfigureCredentials}
-              onConfigureTools={handleConfigureTools}
-            />
-          ))}
-        </Grid>
-      ) : (
-        <Card withBorder p="xl">
-          <Stack gap="sm" align="center">
-            <Text c="dimmed">No integrations configured for your organization</Text>
-            <Text size="sm" c="dimmed">
-              Available integration types: {AVAILABLE_INTEGRATIONS.join(', ')}
-            </Text>
-            <Button
-              leftSection={<Plus size={16} />}
-              onClick={() => setAddModalOpened(true)}
-              disabled={availableTypes.length === 0}
-            >
-              Add Your First Integration
-            </Button>
-          </Stack>
-        </Card>
-      )}
-
-      {/* Selected integrations summary */}
-      {form.getValues().selectedIntegrations?.length > 0 && (
-        <Card withBorder p="md">
-          <Stack gap="sm">
-            <Text fw={500} size="sm">Selected for this agent:</Text>
-            <Group gap="xs">
-              {form.getValues().selectedIntegrations?.map((selected, index) => {
-                const integration = allIntegrations.find(int => int.id === selected.integrationId)
-                return integration ? (
-                  <Badge key={index} variant="light" color="blue">
-                    {integration.name} ({selected.selectedTools?.length || 0} tools)
-                  </Badge>
-                ) : null
-              })}
-            </Group>
-          </Stack>
-        </Card>
-      )}
+      <IntegrationGrid
+        title="Integrations"
+        description="Connect external services and select which tools your agent can use"
+        showAddButton={true}
+        onIntegrationToggle={toggleIntegration}
+        onConfigureCredentials={handleConfigureCredentials}
+        onConfigureTools={handleConfigureTools}
+        isIntegrationSelected={isIntegrationSelected}
+        getSelectedToolsCount={(integrationId: string) => getSelectedTools(integrationId).length}
+        selectedIntegrations={form.getValues().selectedIntegrations}
+        showSelectedSummary={true}
+        selectedIntegrationForCredentials={selectedIntegrationForCredentials}
+      />
 
       {/* Credentials Form Section */}
       {credentialsFormOpened && selectedIntegrationForCredentials && (
@@ -184,14 +127,7 @@ export function IntegrationsStep({ form }: StepProps) {
         />
       )}
 
-      {/* Modals */}
-      <AddIntegrationModal
-        opened={addModalOpened}
-        onClose={() => setAddModalOpened(false)}
-        onIntegrationAdded={addIntegrationType}
-        availableTypes={availableTypes}
-      />
-
+      {/* Tool Configuration Modal */}
       {selectedIntegrationForTools && (
         <ToolConfigurationModal
           opened={toolModalOpened}

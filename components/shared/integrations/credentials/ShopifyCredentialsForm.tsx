@@ -58,6 +58,12 @@ export function ShopifyCredentialsForm({
         return null
       },
       accessToken: (value) => value.trim() ? null : 'Admin API Token is required'
+    },
+    onValuesChange: () => {
+      // Reset connection status when form values change
+      if (testResult === 'success') {
+        setTestResult(null)
+      }
     }
   })
 
@@ -69,6 +75,10 @@ export function ShopifyCredentialsForm({
         shopUrl: dbCreds.shopUrl || '',
         accessToken: dbCreds.accessToken || ''
       })
+      // If we have existing credentials, assume they're valid
+      if (dbCreds.shopUrl && dbCreds.accessToken) {
+        setTestResult('success')
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [integration])
@@ -95,14 +105,32 @@ export function ShopifyCredentialsForm({
       setTestResult(null)
       
       const values = form.getValues()
-      formatStoreUrl(values.shopUrl)
+      const formattedUrl = formatStoreUrl(values.shopUrl)
       
-      // Test the connection (this would be your actual test endpoint)
-      // For now, just simulate a test
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      setTestResult('success')
-      toast.success('Connection test successful!')
+      // Test the connection using the API endpoint
+      const response = await fetch('/api/v2/integrations/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'shopify',
+          credentials: {
+            shopUrl: formattedUrl,
+            accessToken: values.accessToken.trim()
+          }
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setTestResult('success')
+        toast.success(`Connection successful! Connected to ${result.shopName || 'your Shopify store'}`)
+      } else {
+        setTestResult('error')
+        toast.error(result.error || 'Connection test failed. Please check your credentials.')
+      }
     } catch (error) {
       console.error('Connection test failed:', error)
       setTestResult('error')
@@ -198,9 +226,10 @@ export function ShopifyCredentialsForm({
                   variant="outline"
                   onClick={testConnection}
                   loading={testing}
-                  disabled={loading}
+                  disabled={loading || testResult === 'success'}
+                  color={testResult === 'success' ? 'green' : undefined}
                 >
-                  Test Connection
+                  {testResult === 'success' ? 'Connected' : 'Connect'}
                 </Button>
                 
                 <Group gap="sm">
@@ -214,7 +243,7 @@ export function ShopifyCredentialsForm({
                   <Button
                     type="submit"
                     loading={loading}
-                    disabled={testing}
+                    disabled={testing || testResult !== 'success'}
                   >
                     Save Configuration
                   </Button>

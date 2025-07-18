@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Bot, Activity, Shield, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Bot, Activity, ShieldCheck } from 'lucide-react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { Thread } from '@/components/assistant-ui/thread'
 import { apiClient } from '@/lib/api/client'

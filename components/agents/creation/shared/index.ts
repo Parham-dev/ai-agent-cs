@@ -2,8 +2,8 @@
 export * from './constants'
 
 // Shared utilities
-export * from './integration-utils'
+export * from '@/components/shared/integrations/integration-utils'
 
 // Shared modals
-export { AddIntegrationModal } from './AddIntegrationModal'
 export { ToolConfigurationModal } from './ToolConfigurationModal'
+// Note: AddIntegrationModal is now part of IntegrationGrid component

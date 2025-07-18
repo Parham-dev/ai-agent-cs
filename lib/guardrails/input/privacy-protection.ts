@@ -1,7 +1,6 @@
 import { InputGuardrail } from '@openai/agents';
 import { 
   extractTextContent,
-  checkThreshold,
   measureGuardrailExecution,
   createGuardrailLogger,
   getCachedResult,
@@ -43,7 +42,7 @@ export function createPrivacyProtectionGuardrail(threshold?: number): InputGuard
   return {
     name: 'Privacy Protection Guardrail',
     
-    async execute({ input, context }) {
+    async execute({ input }) {
       const logger = createGuardrailLogger('privacy-protection', {
         agentId: 'privacy-protection-guardrail',
         agentName: 'Privacy Protection',

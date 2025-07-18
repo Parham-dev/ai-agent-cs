@@ -1,7 +1,7 @@
 'use client'
 
 import { Card } from '@mantine/core'
-import { ShopifyCredentialsForm, StripeCredentialsForm } from '../credentials'
+import { ShopifyCredentialsForm, StripeCredentialsForm } from '@/components/shared/integrations/credentials'
 import type { ApiIntegration } from '@/lib/types'
 
 interface CredentialsFormSectionProps {
