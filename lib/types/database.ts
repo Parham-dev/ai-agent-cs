@@ -168,5 +168,33 @@ export interface OrganizationFilters {
   offset?: number
 }
 
+// Customer Memory Types
+export interface CustomerMemory {
+  id: string
+  customerId: string
+  organizationId: string
+  content: string
+  memoryType: 'preference' | 'context' | 'fact'
+  embedding?: number[] // Vector embedding
+  metadata: Record<string, unknown>
+  createdAt: Date
+}
+
+export interface CreateCustomerMemoryData {
+  customerId: string
+  organizationId: string
+  content: string
+  memoryType?: 'preference' | 'context' | 'fact'
+  metadata?: Record<string, unknown>
+}
+
+export interface CustomerMemoryFilters {
+  customerId?: string
+  organizationId?: string
+  memoryType?: 'preference' | 'context' | 'fact'
+  limit?: number
+  offset?: number
+}
+
 // This file must be a module
 export {}

@@ -3,9 +3,9 @@
  */
 
 export const ORGANIZATION_CONTEXT = {
-  id: 'parham',
-  name: 'parham',
-  slug: 'parham',
+  id: 'cmd97wv8x0001jgulv6p9rxbj',
+  name: 'Test Organization',
+  slug: 'test-org',
 } as const;
 
 export function getOrganizationId(): string {

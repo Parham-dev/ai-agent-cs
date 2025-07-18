@@ -5,6 +5,7 @@
 import '../../types/prisma-json'
 
 // Export all services
+export { usersService } from './users'
 export { organizationsService } from './organizations.service'
 export { agentsService } from './agents.service'
 export { integrationsService } from './integrations.service'

@@ -1,0 +1,1 @@
+export { customerMemory } from './customer-memory'

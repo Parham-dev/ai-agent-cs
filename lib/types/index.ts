@@ -7,6 +7,9 @@ export type * from './database'
 // API types (string dates, for client-server communication)
 export * from './api'
 
+// Auth types
+export * from './auth'
+
 // Common utility types
 export type * from './common'
 

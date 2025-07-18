@@ -206,6 +206,10 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
             agentId,
             agentName: agentData.name,
             organizationId: agentData.organizationId,
+            // HARDCODED for testing - customer memory functionality
+            customerId: 'test-customer-john-doe',
+            customerEmail: 'john.doe@example.com',
+            customerName: 'John Doe',
             integrations: agentIntegrations.map((ai: { integrationId: string; integration?: { type?: string; name?: string } }) => ({
               id: ai.integrationId,
               type: ai.integration?.type || 'unknown',

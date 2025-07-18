@@ -1,6 +1,3 @@
-// V2 Schema - Normalized version based on FOCUSED_SCHEMA.prisma
-// This will replace the current schema.prisma after migration
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,137 +11,159 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================================
-// CORE MODELS - Organizations, Agents, Integrations (V2)
-// ============================================================================
+model User {
+  id             String        @id @default(cuid())
+  supabaseId     String        @unique
+  email          String        @unique
+  name           String?
+  role           UserRole      @default(USER)
+  organizationId String?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  @@map("users")
+}
 
 model Organization {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String         @id @default(cuid())
+  name          String
+  slug          String         @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  description   String?
+  agents          Agent[]
+  conversations   Conversation[]
+  integrations    Integration[]
+  users           User[]
+  customerMemories CustomerMemory[]
+  knowledgeEntries KnowledgeEntry[]
 
-  // Core entities
-  agents       Agent[]
-  integrations Integration[]
-  conversations Conversation[]  // Keep conversations for compatibility
-  
   @@map("organizations")
 }
 
-// ============================================================================
-// INTEGRATION SYSTEM (V2)
-// ============================================================================
-
 model Integration {
-  id             String   @id @default(cuid())
-  organizationId String
-  name           String
-  type           String   // 'shopify', 'stripe', etc.
-  description    String?
-  isActive       Boolean  @default(true)
-  
-  // Keep credentials as JSON since each integration has different fields
+  id                String             @id @default(cuid())
+  organizationId    String
+  type              String
+  name              String
   /// [IntegrationCredentials]
-  credentials    Json     @default("{}")  // Encrypted credentials specific to integration type
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization     Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  // Agents using this integration
+  credentials       Json               @default("{}")
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  description       String?
   agentIntegrations AgentIntegration[]
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
-  @@unique([organizationId, type])  // One integration per type per org
+  @@unique([organizationId, type])
   @@map("integrations")
 }
 
-// ============================================================================
-// AGENT SYSTEM (V2)
-// ============================================================================
-
 model Agent {
-  id             String   @id @default(cuid())
-  organizationId String
-  name           String
-  description    String?
-  isActive       Boolean  @default(true)
-  
-  // Agent behavior configuration
-  systemPrompt   String?
-  model          String   @default("gpt-4o")
-  temperature    Float    @default(0.7)
-  maxTokens      Int      @default(4000)
-  
-  // Agent rules and behavior (simplified from agentConfig)
+  id                String             @id @default(cuid())
+  organizationId    String
+  name              String
+  tools             String[]           @default([])
+  model             String             @default("gpt-4o")
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  description       String?
+  maxTokens         Int                @default(4000)
   /// [AgentRules]
-  rules          Json?    @default("{}")  // Custom rules and behavior settings
-  
-  // Universal tools configuration
-  tools          String[] @default([])    // Array of enabled tool IDs
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  
-  // Integration relationships (NEW)
+  rules             Json?              @default("{}")
+  systemPrompt      String?
+  temperature       Float              @default(0.7)
   agentIntegrations AgentIntegration[]
-  
-  // Keep conversations for compatibility
-  conversations  Conversation[]
-  
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  conversations     Conversation[]
+
   @@map("agents")
 }
 
 model AgentIntegration {
-  id            String   @id @default(cuid())
+  id            String      @id @default(cuid())
   agentId       String
   integrationId String
-  isEnabled     Boolean  @default(true)
-  
-  // Which tools from this integration the agent can use (NEW)
-  selectedTools String[] @default([])  // ['searchProducts', 'getProductDetails', etc.]
-  
-  // Integration-specific configuration for this agent (NEW)
+  isEnabled     Boolean     @default(true)
+  selectedTools String[]    @default([])
   /// [AgentIntegrationConfig]
-  config        Json?    @default("{}")  // Agent-specific integration settings
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  agent       Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  config        Json?       @default("{}")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  agent         Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  integration   Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
   @@unique([agentId, integrationId])
   @@map("agent_integrations")
 }
 
-// ============================================================================
-// CONVERSATION SYSTEM (Keep for compatibility)
-// ============================================================================
-
 model Conversation {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
-  agentId        String?                      // Assigned agent
-  customerId     String?                      // External customer ID
+  agentId        String?
+  customerId     String?
   customerEmail  String?
   customerName   String?
   /// [ConversationMessages]
-  messages       Json     @default("[]")      // Store messages as JSON for now
-  status         String   @default("open")    // open, resolved, closed
-  channel        String   @default("web")     // web, sms, email, etc.
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  messages       Json         @default("[]")
+  status         String       @default("open")
+  channel        String       @default("web")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  agent          Agent?       @relation(fields: [agentId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@map("conversations")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+// ============================================================================
+// VECTOR/MEMORY SYSTEM 
+// ============================================================================
+
+model CustomerMemory {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customerId     String       @map("customer_id")
+  organizationId String       @map("organization_id")
+  content        String
+  memoryType     String       @default("context") @map("memory_type")
+  embedding      Unsupported("vector(1536)")?
+  metadata       Json         @default("{}")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   
   // Relations
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  agent          Agent?       @relation(fields: [agentId], references: [id])
   
-  @@index([organizationId, status])
-  @@map("conversations")
+  @@index([customerId, organizationId])
+  @@index([createdAt(sort: Desc)])
+  @@map("customer_memories")
+}
+
+model KnowledgeEntry {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String       @map("organization_id")
+  title          String
+  content        String
+  category       String?
+  tags           String[]     @default([])
+  embedding      Unsupported("vector(1536)")?
+  metadata       Json         @default("{}")
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@index([organizationId])
+  @@map("knowledge_entries")
 }

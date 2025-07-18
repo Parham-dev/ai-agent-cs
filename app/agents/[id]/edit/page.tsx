@@ -45,6 +45,7 @@ export default function EditAgentPage() {
         maxTokens: data.maxTokens,
         isActive: data.isActive,
         rules: data.rules,
+        tools: data.selectedTools,
       })
 
       toast.success('Agent updated successfully!')
@@ -113,8 +114,8 @@ export default function EditAgentPage() {
       customInstructions: (agent.rules as Record<string, unknown>)?.customInstructions as string[] || []
     },
     selectedIntegrations: [],
-    availableTools: [],
-    selectedTools: [],
+    availableTools: agent.tools || [],
+    selectedTools: agent.tools || [],
   }
 
   return (

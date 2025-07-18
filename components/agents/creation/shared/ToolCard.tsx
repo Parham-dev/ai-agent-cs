@@ -8,7 +8,7 @@ import {
   Badge,
   Stack,
 } from '@mantine/core'
-import { Calculator, Search } from 'lucide-react'
+import { Calculator, Search, Brain } from 'lucide-react'
 import { AVAILABLE_TOOLS } from '@/lib/tools'
 
 interface ToolCardProps {
@@ -23,6 +23,8 @@ function getToolIcon(category: string) {
       return Calculator
     case 'search':
       return Search
+    case 'memory':
+      return Brain
     default:
       return Calculator
   }
@@ -79,8 +81,7 @@ export function ToolCard({
               </Badge>
             </Group>
             <Text size="xs" c="dimmed">
-              {tool.category === 'calculation' && 'Mathematical calculations'}
-              {tool.category === 'search' && 'Web search capabilities'}
+              {tool.description}
             </Text>
           </Stack>
         </Group>

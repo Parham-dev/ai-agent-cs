@@ -10,7 +10,7 @@ import {
   Button,
   Badge,
 } from '@mantine/core'
-import { Calculator, Search } from 'lucide-react'
+import { Calculator, Search, Brain } from 'lucide-react'
 import { toast } from 'sonner'
 import { AVAILABLE_TOOLS, type ToolConfig } from '@/lib/tools'
 
@@ -27,6 +27,8 @@ function getToolIcon(category: string) {
       return Calculator
     case 'search':
       return Search
+    case 'memory':
+      return Brain
     default:
       return Calculator
   }
@@ -113,8 +115,7 @@ export function AddToolModal({
                       </Badge>
                     </Group>
                     <Text size="sm" c="dimmed">
-                      {tool.category === 'calculation' && 'Perform mathematical calculations'}
-                      {tool.category === 'search' && 'Search the web for real-time information'}
+                      {tool.description}
                     </Text>
                   </Stack>
                   <Button variant="light" size="sm">
