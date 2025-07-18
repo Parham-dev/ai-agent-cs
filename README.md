@@ -2,79 +2,91 @@
 
 > **⚠️ ACTIVE DEVELOPMENT** - This project is under active development. Features may change, and breaking changes may occur. Use in production at your own risk. Contributions and feedback welcome!
 
-A powerful open-source platform that enables **business owners** to create intelligent AI customer service agents using OpenAI Agents SDK and Model Context Protocol (MCP). Business owners configure integrations, select capabilities, and deploy AI agents as embeddable widgets for their customers.
+A comprehensive open-source platform that enables **business owners** to create intelligent AI customer service agents using OpenAI Agents SDK with advanced safety features. Create agents with a powerful wizard, configure integrations, select tools, set up guardrails, and deploy as embeddable widgets.
 
 ## 🌟 Platform Overview
 
 ### For Business Owners
-Create AI customer service agents in minutes:
-1. **Connect Your Systems** - Link Shopify, Stripe, and other business tools
-2. **Choose Capabilities** - Select from OpenAI tools and integration-specific functions  
-3. **Deploy Instantly** - Embed the AI agent widget on your website
-4. **Serve Customers** - AI handles inquiries using real business data
+Create AI customer service agents through our **5-step wizard**:
+1. **Basic Information** - Configure agent name, model, instructions, and behavior
+2. **Integrations** - Connect Shopify, Stripe, and other business systems via MCP
+3. **Tools** - Select from OpenAI hosted tools, custom functions, and MCP capabilities
+4. **Guardrails** - Enable safety and quality protection (content safety, tone, privacy, accuracy)
+5. **Review & Deploy** - Launch your agent with confidence
 
-### For Customers
-Get instant, intelligent support:
-- Real order lookups and tracking
-- Product recommendations and availability
-- Instant answers from knowledge base
-- Seamless escalation to human support
+### For Customers  
+Get instant, intelligent, and **safe** support:
+- Real order lookups and tracking with data protection
+- Product recommendations with professional communication
+- Instant answers with factual accuracy verification
+- Content safety filtering for respectful interactions
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Business Owner                            │
-│              (Configuration Dashboard)                       │
-│  • Connect Integrations (Shopify, Stripe, etc.)            │
-│  • Select AI Capabilities & Tools                          │
-│  • Configure Agent Instructions                            │
-│  • Deploy Widget to Website                                │
+│                 Business Owner                              │
+│              (Agent Creation Wizard)                        │
+│  • 5-Step Configuration Process                            │
+│  • Integrations, Tools, Guardrails Setup                   │
+│  • Live Preview & Testing                                  │
+│  • One-Click Deployment                                    │
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────┐
 │                  AI Agent Engine                            │
-│              (OpenAI Agents SDK)                            │
-│  • Dynamic Tool Loading                                     │
-│  • Integration-Specific Capabilities                       │
-│  • OpenAI Hosted Tools (Web Search, etc.)                 │
-│  • General MCP Server Tools                               │
+│            (OpenAI Agents SDK + Guardrails)                │
+│  • Input Guardrails (Content Safety, Privacy)             │
+│  • Universal Tools System (OpenAI + Custom + MCP)         │
+│  • Output Guardrails (Professional Tone, Accuracy)        │
+│  • Comprehensive Logging & Monitoring                     │
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────┐
-│                 MCP Integration Layer                        │
-│  • Shopify MCP (Orders, Products, Customers)               │
-│  • Stripe MCP (Payments, Refunds, Subscriptions)          │
-│  • Knowledge Base MCP (FAQs, Docs, Policies)              │
-│  • General Purpose MCPs (File System, Memory, etc.)       │
+│                 Tools & Integrations                        │
+│  • OpenAI Hosted Tools (Web Search, File Search)          │
+│  • Custom Functions (Add Numbers, Calculations)           │
+│  • MCP Integrations (Shopify, Stripe, Knowledge Base)     │
+│  • Dynamic Tool Loading per Agent                         │
 └─────────────────────┬───────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────┐
-│                 Customer Interface                           │
-│              (Embeddable Widget)                            │
-│  • Chat Interface on Business Website                      │
-│  • Context-Aware Responses                                 │
-│  • Real Business Data Access                               │
+│                 Safety & Security Layer                     │
+│  • Content Moderation (Toxicity, Harassment Detection)    │
+│  • Privacy Protection (PII Detection & Blocking)          │
+│  • Professional Tone Validation                           │
+│  • Factual Accuracy Checking                              │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────┐
+│                 Customer Interface                          │
+│              (Protected Chat Experience)                    │
+│  • Safe, Filtered Conversations                           │
+│  • Real-time Guardrail Feedback                           │
+│  • Cross-domain Widget Security                           │
+│  • Professional, Accurate Responses                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## 🚀 Current Features
 
-### ✅ Implemented
-- **OpenAI Agents SDK Integration** - Full TypeScript implementation
-- **Shopify Integration** - Product catalog, inventory, pricing
-- **Dynamic Tool System** - Configurable capabilities per agent
-- **Embeddable Chat Widget** - Cross-domain widget with JWT authentication
-- **CORS Security** - Domain validation and cross-origin support
-- **Real-time Validation** - Test integrations before deployment
+### ✅ Fully Implemented
+- **🧙‍♂️ Agent Creation Wizard** - 5-step guided setup process
+- **🛡️ Comprehensive Guardrails System** - Input/output safety and quality protection
+- **🔧 Universal Tools System** - OpenAI hosted, custom functions, and MCP integrations
+- **🛒 Shopify Integration** - Complete MCP server with product catalog and inventory
+- **💬 Protected Chat Interface** - Real-time guardrail monitoring and user-friendly blocking
+- **🔐 JWT Security** - Cross-domain widget authentication with domain validation
+- **📊 Advanced Logging** - Comprehensive monitoring and performance tracking
+- **🎨 Modern UI/UX** - Mantine-based responsive interface with dark/light themes
 
 ### 🔄 In Development  
-- **Widget Security** - Enhanced domain whitelisting and rate limiting
-- **Multi-integration Support** - Shopify + Stripe + more platforms
-- **Additional MCP Servers** - File system, memory, database tools
-- **Enhanced Dashboard** - Improved business owner configuration UI
-- **Analytics & Monitoring** - Conversation metrics and performance insights
-- **Production Deployment** - CDN distribution and scaling infrastructure
+- **💳 Stripe Integration** - Payment processing and subscription management MCP
+- **📈 Analytics Dashboard** - Conversation metrics, guardrail triggers, and performance insights
+- **⚡ Rate Limiting** - API protection and abuse prevention
+- **🌐 CDN Distribution** - Global widget delivery and scaling infrastructure
+- **📱 Mobile Optimization** - Enhanced mobile chat experience
+- **🔌 Additional MCPs** - File system, email, database, and memory tools
 
 ## 🛠️ Quick Start
 
@@ -122,10 +134,12 @@ npm run dev
 
 ### Create Your First Agent
 
-1. **Visit Setup Page**: Navigate to `/setup/shopify`
-2. **Connect Your Store**: Enter Shopify credentials and validate connection
-3. **Configure Agent**: Choose tools and capabilities
-4. **Test & Deploy**: Use the chat interface at `/chat/shopify`
+1. **Start the Wizard**: Navigate to `/agents/new`
+2. **Basic Information**: Set agent name, model (GPT-4o, etc.), and instructions
+3. **Connect Integrations**: Link your Shopify store and validate connection
+4. **Select Tools**: Choose from web search, custom functions, and MCP tools
+5. **Configure Guardrails**: Enable safety protection (content safety, privacy, tone, accuracy)
+6. **Review & Deploy**: Test your agent and launch at `/chat/[AGENT_ID]`
 
 ## 💻 Available Integrations
 
@@ -142,70 +156,86 @@ npm run dev
   - Subscription management
   - Invoice generation
 
-### OpenAI Hosted Tools
-- **Web Search** - Real-time internet search
-- **File Search** - Knowledge base queries
-- **Code Interpreter** - Dynamic calculations
-- **Image Generation** - Visual content creation
+### Universal Tools System
 
-### General MCP Tools (Planned)
-- **File System** - Document management
-- **Memory** - Conversation persistence  
-- **Database** - Custom data queries
-- **Email** - Communication automation
+#### OpenAI Hosted Tools ✅
+- **Web Search** - Real-time internet search with current information
+- **File Search** - Knowledge base queries and document search
+
+#### Custom Functions ✅  
+- **Add Numbers** - Mathematical calculations and arithmetic operations
+- *More custom tools can be easily added to the registry*
+
+#### MCP Integration Tools ✅
+- **Shopify Tools** - Product catalog, inventory, pricing, search
+- *Stripe and other platform tools coming soon*
+
+### Guardrails System ✅
+
+#### Input Guardrails (Pre-processing)
+- **Content Safety** - Blocks toxic, inappropriate, or harmful content
+- **Privacy Protection** - Detects and prevents PII exposure (emails, SSN, addresses)
+
+#### Output Guardrails (Post-processing)
+- **Professional Tone** - Ensures responses maintain appropriate customer service tone
+- **Factual Accuracy** - Validates responses for correctness and uncertainty indicators
 
 ## 🔧 Agent Configuration
 
-Business owners can customize their AI agents with:
+Business owners can customize their AI agents through the **5-step wizard**:
 
-### Integration-Specific Tools
+### Step 1: Basic Information
 ```typescript
-// Shopify Tools
-const shopifyTools = [
-  'searchProducts',      // Find products by name/category
-  'getProductDetails',   // Detailed product information
-  'listProducts',        // Browse entire catalog
-  'checkInventory'       // Stock level verification
-];
-
-// Stripe Tools (Coming Soon)
-const stripeTools = [
-  'lookupPayment',       // Payment status and details
-  'processRefund',       // Automated refund handling
-  'getInvoices',         // Invoice management
-  'manageSubscription'   // Subscription operations
-];
-```
-
-### OpenAI Enhanced Capabilities
-```typescript
-const openAITools = [
-  'webSearch',           // Real-time search
-  'fileSearch',          // Knowledge base
-  'codeInterpreter',     // Calculations
-  'imageGeneration'      // Visual content
-];
-```
-
-### Custom Instructions
-```typescript
-const agentConfig = {
-  instructions: `You are a helpful customer service agent for [Business Name]. 
-  You can access real order data, product information, and help customers with:
-  - Order status and tracking
-  - Product recommendations  
-  - Return and refund requests
-  - General product questions
-  
-  Always be friendly, helpful, and professional.`,
-  
-  businessContext: {
-    name: "Your Business Name",
-    industry: "retail/ecommerce",
-    tone: "friendly and professional"
-  }
+const basicConfig = {
+  name: "MyStore Customer Service Agent",
+  description: "Helpful assistant for customer inquiries",
+  model: "gpt-4o",           // Choose from available OpenAI models
+  temperature: 0.7,          // Response creativity level
+  maxTokens: 4000,          // Response length limit
+  systemPrompt: `You are a helpful customer service agent...`
 };
 ```
+
+### Step 2: Integrations (MCP Servers)
+```typescript
+const integrations = [
+  {
+    type: "shopify",
+    name: "MyStore Shopify",
+    credentials: { /* encrypted */ },
+    selectedTools: ["searchProducts", "getProductDetails", "listProducts"]
+  }
+  // Stripe and other integrations coming soon
+];
+```
+
+### Step 3: Universal Tools
+```typescript
+const universalTools = [
+  "web-search",          // OpenAI hosted web search
+  "add-numbers",         // Custom mathematical functions
+  // MCP tools auto-included from integrations
+];
+```
+
+### Step 4: Guardrails (Safety & Quality)
+```typescript
+const guardrails = {
+  input: [
+    "content-safety",     // Block toxic/inappropriate content
+    "privacy-protection"  // Prevent PII exposure
+  ],
+  output: [
+    "professional-tone",  // Ensure professional communication
+    "factual-accuracy"   // Validate response correctness
+  ]
+};
+```
+
+### Step 5: Review & Deploy
+- **Live Preview** - Test your agent configuration
+- **Validation** - Ensure all settings are correct
+- **One-Click Deploy** - Launch your agent instantly
 
 ## 🚀 Deployment Options
 
@@ -233,31 +263,50 @@ const agentConfig = {
 
 ### API Integration
 ```javascript
-// REST API for custom integrations
-const response = await fetch('/api/agents/chat', {
+// REST API for custom integrations with guardrail protection
+const response = await fetch('/api/v2/agents/chat', {
   method: 'POST',
-  headers: { 'Authorization': 'Bearer your-api-key' },
+  headers: { 'Authorization': 'Bearer your-jwt-token' },
   body: JSON.stringify({
     agentId: 'your-agent-id',
     message: 'Customer inquiry...',
+    conversationHistory: [...],
     context: { customerId: '123', platform: 'website' }
   })
 });
+
+// Response includes guardrail information
+const result = await response.json();
+if (result.blocked) {
+  console.log('Message blocked by guardrails:', result.reason);
+}
 ```
 
 ## 🔐 Security & Privacy
 
-- **Secure Credential Storage** - Encrypted platform credentials
-- **API Rate Limiting** - Protection against abuse
-- **Data Privacy** - Customer data handled securely
-- **Access Controls** - Business owner permission management
+### Multi-Layer Protection
+- **🛡️ Input Guardrails** - Content safety and privacy protection before processing
+- **🔍 Output Guardrails** - Professional tone and factual accuracy validation
+- **🔐 Secure Storage** - Encrypted credentials and sensitive data protection
+- **🚫 PII Detection** - Automatic detection and blocking of personal information
+- **⚡ Rate Limiting** - API abuse prevention and spam protection
+- **🌐 CORS Security** - Cross-origin request validation and domain whitelisting
+- **🔑 JWT Authentication** - Secure token-based API access
+- **📊 Audit Logging** - Comprehensive tracking of all interactions and guardrail triggers
 
 ## 📊 Analytics & Insights
 
-- **Conversation Metrics** - Volume, resolution rates
-- **Popular Topics** - Most common customer inquiries  
-- **Agent Performance** - Response times, satisfaction
-- **Integration Usage** - Which tools are most valuable
+### Real-time Monitoring ✅
+- **🛡️ Guardrail Triggers** - Track safety violations and content filtering
+- **⚡ Performance Metrics** - Response times, token usage, and execution speed
+- **🔧 Tool Usage** - Which tools and integrations are most utilized
+- **📈 Conversation Volume** - Chat frequency and peak usage patterns
+
+### Advanced Analytics (Coming Soon) 🔄
+- **📊 Resolution Rates** - Customer satisfaction and issue resolution tracking
+- **🎯 Popular Topics** - Most common customer inquiries and pain points
+- **🚀 Agent Performance** - Detailed performance analysis and optimization recommendations
+- **💡 Insights Dashboard** - Business intelligence and actionable recommendations
 
 ## 🗺️ Platform Roadmap
 
