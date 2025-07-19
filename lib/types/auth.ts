@@ -1,12 +1,13 @@
 /**
- * Authentication & Authorization Types
+ * Ultra-Simplified Authentication Types
+ * Single source of truth with JWT metadata approach
  */
 
-// User roles
+// Simple user roles
 export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'USER';
 
-// Database User type (with Date objects)
-export interface DbUser {
+// Single User type - no more DbUser/ApiUser split!
+export interface User {
   id: string;
   supabaseId: string;
   email: string;
@@ -18,39 +19,33 @@ export interface DbUser {
   updatedAt: Date;
 }
 
-// API User type (with string dates for JSON serialization)
-export interface ApiUser {
-  id: string;
-  supabaseId: string;
-  email: string;
-  name: string | null;
-  role: UserRole;
+// JWT metadata structure (stored in Supabase app_metadata)
+export interface JWTMetadata {
   organizationId: string | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  role: UserRole;
+  userId: string; // Our internal user ID
 }
 
-// Auth session from Supabase
-export interface AuthSession {
+// Simplified auth context - no session needed
+export interface AuthContext {
   user: {
     id: string;
+    supabaseId: string;
     email: string;
-    name?: string;
+    name: string | null;
+    role: UserRole;
+    organizationId: string | null;
   };
+}
+
+// Simple session type for frontend compatibility
+export interface AuthSession {
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
 }
 
-// Auth context for API requests
-export interface AuthContext {
-  user: ApiUser;
-  session: AuthSession;
-  organizationId?: string;
-}
-
-// Login/Signup request types
+// Login/Signup - keep simple
 export interface LoginRequest {
   email: string;
   password: string;
@@ -62,13 +57,7 @@ export interface SignupRequest {
   name?: string;
 }
 
-// Auth response types
-export interface AuthResponse {
-  user: ApiUser;
-  session: AuthSession;
-}
-
-// User creation/update types
+// User creation/update
 export interface CreateUserData {
   supabaseId: string;
   email: string;
@@ -84,27 +73,18 @@ export interface UpdateUserData {
   isActive?: boolean;
 }
 
-// User filters for listing
-export interface UserFilters {
-  organizationId?: string;
-  role?: UserRole;
-  isActive?: boolean;
-  search?: string;
-}
-
-// User permissions
-export const USER_PERMISSIONS = {
+// Simple permissions - based on roles
+export const PERMISSIONS = {
   SUPER_ADMIN: [
     'manage_all_organizations',
-    'manage_all_users',
+    'manage_all_users', 
     'manage_all_agents',
-    'manage_all_integrations',
-    'view_system_settings'
+    'manage_all_integrations'
   ],
   ADMIN: [
     'manage_organization',
     'manage_organization_users',
-    'manage_organization_agents',
+    'manage_organization_agents', 
     'manage_organization_integrations'
   ],
   USER: [
@@ -114,10 +94,15 @@ export const USER_PERMISSIONS = {
   ]
 } as const;
 
-export type Permission = typeof USER_PERMISSIONS[keyof typeof USER_PERMISSIONS][number];
+export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS][number];
 
-// Auth middleware types
-export interface AuthenticatedRequest extends Request {
-  user?: ApiUser;
-  organizationId?: string;
+// Helper to check permissions
+export function hasPermission(role: UserRole, permission: Permission): boolean {
+  return (PERMISSIONS[role] as readonly Permission[]).includes(permission);
+}
+
+// Helper to check org access
+export function canAccessOrganization(userRole: UserRole, userOrgId: string | null, targetOrgId: string): boolean {
+  if (userRole === 'SUPER_ADMIN') return true;
+  return userOrgId === targetOrgId;
 }

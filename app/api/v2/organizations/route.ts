@@ -1,5 +1,5 @@
 import { organizationsService } from '@/lib/database/services'
-import { authenticatedList, authenticatedPost } from '@/lib/api/authenticated-routes'
+import { authenticatedList, authenticatedPost } from '@/lib/api/routes'
 import type { CreateOrganizationData, OrganizationFilters } from '@/lib/types'
 
 // List organizations - authenticated, super admin only, rate-limited
@@ -7,7 +7,6 @@ export const GET = authenticatedList<typeof organizationsService, OrganizationFi
   organizationsService, 
   'getOrganizations',
   { 
-    requireAuth: true, 
     roles: ['SUPER_ADMIN'], 
     rateLimit: 'api' 
   }
@@ -18,7 +17,6 @@ export const POST = authenticatedPost<typeof organizationsService, CreateOrganiz
   organizationsService,
   'createOrganization',
   { 
-    requireAuth: true, 
     roles: ['SUPER_ADMIN'], 
     rateLimit: 'api' 
   }

@@ -18,15 +18,54 @@ export const customerMemory = tool({
       
       // Get context from agent execution environment - required for proper operation
       const runContext = context?.context as Record<string, unknown> | undefined
-      const actualCustomerId = (runContext?.customerId as string) || 'anonymous-customer'
-      const actualOrganizationId = (runContext?.organizationId as string) || 'default-org'
-      const customerName = (runContext?.customerName as string) || 'Anonymous User'
-      const customerEmail = (runContext?.customerEmail as string) || 'user@example.com'
+      
+      // Required context - agent and organization
+      const agentId = (runContext?.agentId as string)
+      const organizationId = (runContext?.organizationId as string)
+      
+      if (!agentId || !organizationId) {
+        return {
+          success: false,
+          error: 'Missing required agent or organization context'
+        }
+      }
+      
+      // Determine customer context based on chat scenario
+      const platformUserId = (runContext?.platformUserId as string) || null
+      const endCustomerId = (runContext?.endCustomerId as string) || null
+      const chatContext = (runContext?.chatContext as string) || 'unknown'
+      
+      // Customer identification logic:
+      let actualCustomerId: string
+      let customerName: string
+      let customerEmail: string
+      
+      if (endCustomerId) {
+        // Scenario 1: End customer (widget) or Platform user acting as customer
+        actualCustomerId = endCustomerId
+        customerName = (runContext?.endCustomerName as string) || (runContext?.customerName as string) || 'Customer'
+        customerEmail = (runContext?.endCustomerEmail as string) || (runContext?.customerEmail as string) || 'customer@example.com'
+      } else if (platformUserId) {
+        // Scenario 2: Platform user testing through dashboard
+        actualCustomerId = `platform_user_${platformUserId}`
+        customerName = (runContext?.platformUserName as string) || (runContext?.customerName as string) || 'Platform User'
+        customerEmail = (runContext?.platformUserEmail as string) || (runContext?.customerEmail as string) || 'user@platform.com'
+      } else {
+        // Scenario 3: Fallback for anonymous/testing
+        const sessionId = (runContext?.sessionId as string) || 'unknown'
+        actualCustomerId = `anonymous_${sessionId}`
+        customerName = 'Anonymous User'
+        customerEmail = 'anonymous@example.com'
+      }
       
       console.log('🧠 Memory tool called:', { 
         action, 
         actualCustomerId, 
-        actualOrganizationId, 
+        organizationId, 
+        agentId,
+        chatContext,
+        platformUserId,
+        endCustomerId,
         content: content?.substring(0, 50) + (content ? '...' : 'N/A'),
         memoryType,
         query,
@@ -46,12 +85,14 @@ export const customerMemory = tool({
 
           await vectorService.saveCustomerMemory({
             customerId: actualCustomerId,
-            organizationId: actualOrganizationId,
+            organizationId: organizationId,
             content,
             memoryType: memoryType || 'context',
             metadata: {
               savedAt: new Date().toISOString(),
               source: 'agent_conversation',
+              agentId: agentId,
+              chatContext: chatContext,
               customerName: customerName,
               customerEmail: customerEmail
             }
@@ -59,7 +100,8 @@ export const customerMemory = tool({
 
           console.log('🧠 Memory successfully saved to database:', {
             customerId: actualCustomerId,
-            organizationId: actualOrganizationId,
+            organizationId: organizationId,
+            agentId: agentId,
             content: content.substring(0, 100) + '...',
             memoryType: memoryType || 'context'
           })
@@ -75,7 +117,7 @@ export const customerMemory = tool({
         case 'get':
           const memories = await vectorService.getCustomerMemories({
             customerId: actualCustomerId,
-            organizationId: actualOrganizationId,
+            organizationId: organizationId,
             limit
           })
 
@@ -102,7 +144,7 @@ export const customerMemory = tool({
 
           const searchResults = await vectorService.searchSimilarMemories(
             actualCustomerId,
-            actualOrganizationId,
+            organizationId,
             query,
             limit
           )

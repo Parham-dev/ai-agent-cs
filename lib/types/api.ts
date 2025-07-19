@@ -1,5 +1,5 @@
 // API-specific types for requests, responses, and client-server communication
-// These types use string dates for JSON serialization
+// Simplified - let JSON.stringify handle Date serialization automatically
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -81,14 +81,14 @@ export const ERROR_STATUS_MAPPING: Record<ApiErrorCode, number> = {
   [API_ERROR_CODES.CHAT_ERROR]: 500,
 };
 
-// API Entity Types (with string dates for JSON serialization)
+// API Entity Types (simplified - use Prisma types directly)
 export interface ApiOrganization {
   id: string;
   name: string;
   slug: string;
   description?: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ApiIntegration {
@@ -99,8 +99,8 @@ export interface ApiIntegration {
   description?: string | null;
   isActive: boolean;
   credentials: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ApiAgent {
@@ -115,8 +115,8 @@ export interface ApiAgent {
   maxTokens: number;
   rules?: Record<string, unknown> | null;
   tools: string[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   agentIntegrations?: ApiAgentIntegration[];  // Match Prisma schema
 }
 
@@ -127,8 +127,8 @@ export interface ApiAgentIntegration {
   isEnabled: boolean;
   selectedTools: string[];
   config?: Record<string, unknown> | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   integration?: ApiIntegration;
 }
 

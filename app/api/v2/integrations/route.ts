@@ -1,5 +1,5 @@
 import { integrationsService } from '@/lib/database/services'
-import { authenticatedList, authenticatedPost } from '@/lib/api/authenticated-routes'
+import { authenticatedList, authenticatedPost } from '@/lib/api/routes'
 import type { CreateIntegrationData, IntegrationFilters } from '@/lib/types'
 
 // List integrations - authenticated, rate-limited (org filtering handled by service)
@@ -7,7 +7,6 @@ export const GET = authenticatedList<typeof integrationsService, IntegrationFilt
   integrationsService, 
   'getIntegrations',
   { 
-    requireAuth: true, 
     rateLimit: 'api' 
   }
 )
@@ -17,7 +16,6 @@ export const POST = authenticatedPost<typeof integrationsService, CreateIntegrat
   integrationsService,
   'createIntegration',
   { 
-    requireAuth: true, 
     rateLimit: 'api' 
   }
 )

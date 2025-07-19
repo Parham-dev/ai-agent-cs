@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { agentIntegrationsService } from '@/lib/database/services'
-import { ApiResponseHelper as Api, validateMethod } from '@/lib/api/helpers'
-import { withErrorHandling } from '@/lib/api/error-handling'
+import { ApiResponseHelper as Api, validateMethod, withErrorHandling } from '@/lib/api/helpers'
 import type { CreateAgentIntegrationData } from '@/lib/types'
 
 export const GET = withErrorHandling(async (request: NextRequest) => {

@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { authService } from '@/lib/services/auth.service';
-import type { ApiUser, AuthSession, LoginRequest, SignupRequest } from '@/lib/types';
+import type { User, LoginRequest, SignupRequest, AuthSession } from '@/lib/types/auth';
 
 interface AuthState {
-  user: ApiUser | null;
+  user: User | null;
   session: AuthSession | null;
   loading: boolean;
   error: string | null;

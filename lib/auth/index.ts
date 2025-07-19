@@ -12,14 +12,14 @@ export {
   withAuth,
   withAuthParams,
   withRoles,
-  withOrganization,
+  withOrgScoping,
   withOptionalAuth,
-  withPublic,
-  type AuthContext,
-  type AuthenticatedHandler,
-  type AuthenticatedHandlerWithParams,
-  type RoleBasedHandler
-} from './api-middleware';
+  updateUserJWTMetadata,
+  requireAuth
+} from './middleware';
+
+// Export types
+export type { AuthContext } from '@/lib/types/auth';
 
 // Export rate limiting utilities  
 export {
@@ -29,10 +29,8 @@ export {
   RateLimits
 } from './rate-limiting';
 
-// Export existing middleware functions
+// Export auth utilities
 export {
-  authenticateUser,
-  getAuthContext,
   hasPermission,
   canAccessOrganization
-} from './middleware';;
+} from '@/lib/types/auth';

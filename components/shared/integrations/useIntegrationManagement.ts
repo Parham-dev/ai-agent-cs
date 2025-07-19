@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { apiClient } from '@/lib/api/authenticated-client'
+import { apiClient } from '@/lib/api/client'
 import { getIntegrationDisplayName } from './integration-utils'
 import type { ApiIntegration } from '@/lib/types'
 
@@ -49,8 +49,8 @@ export function useIntegrationManagement() {
         description: `${getIntegrationDisplayName(temp.type)} integration`,
         isActive: true,
         credentials: {},
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         organizationId: 'temp'
       } as ApiIntegration))
     ]

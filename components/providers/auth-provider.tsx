@@ -2,10 +2,10 @@
 
 import { createContext, useContext, ReactNode } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
-import type { ApiUser, AuthSession, LoginRequest, SignupRequest } from '@/lib/types';
+import type { User, LoginRequest, SignupRequest, AuthSession } from '@/lib/types/auth';
 
 interface AuthContextType {
-  user: ApiUser | null;
+  user: User | null;
   session: AuthSession | null;
   loading: boolean;
   error: string | null;

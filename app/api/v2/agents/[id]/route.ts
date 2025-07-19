@@ -1,16 +1,13 @@
 import { agentsService } from '@/lib/database/services'
-import { authenticatedGet, authenticatedPut, authenticatedDelete } from '@/lib/api/authenticated-routes'
+import { authenticatedGet, authenticatedPut, authenticatedDelete } from '@/lib/api/routes'
 import type { UpdateAgentData } from '@/lib/types'
 
-// Get agent - authenticated, organization-scoped
+// Get agent - authenticated, with organization access validation
 export const GET = authenticatedGet(
   agentsService, 
   'getAgentById', 
   'Agent',
-  { 
-    requireAuth: true, 
-    requireOrganization: true 
-  }
+  {}
 )
 
 // Update agent - authenticated, organization-scoped, admin+ only
@@ -19,8 +16,6 @@ export const PUT = authenticatedPut<typeof agentsService, UpdateAgentData>(
   'updateAgent',
   'Agent',
   { 
-    requireAuth: true, 
-    requireOrganization: true,
     roles: ['ADMIN', 'SUPER_ADMIN']
   }
 )
@@ -31,8 +26,6 @@ export const DELETE = authenticatedDelete(
   'deleteAgent',
   'Agent',
   { 
-    requireAuth: true, 
-    requireOrganization: true,
     roles: ['ADMIN', 'SUPER_ADMIN']
   }
 )

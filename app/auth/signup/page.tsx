@@ -21,7 +21,7 @@ import { notifications } from '@mantine/notifications';
 import { AlertCircle, UserPlus, Building2, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthContext } from '@/components/providers';
-import type { SignupRequest } from '@/lib/types';
+import type { SignupRequest } from '@/lib/types/auth';
 
 export default function SignupPage() {
   const { signup, isAuthenticated, loading } = useAuthContext();

@@ -1,5 +1,5 @@
 import { organizationsService } from '@/lib/database/services'
-import { authenticatedGet, authenticatedPut, authenticatedDelete } from '@/lib/api/authenticated-routes'
+import { authenticatedGet, authenticatedPut, authenticatedDelete } from '@/lib/api/routes'
 import type { UpdateOrganizationData } from '@/lib/types'
 
 // Get organization - authenticated, super admin only
@@ -8,7 +8,6 @@ export const GET = authenticatedGet(
   'getOrganizationById', 
   'Organization',
   { 
-    requireAuth: true, 
     roles: ['SUPER_ADMIN'] 
   }
 )
@@ -19,7 +18,6 @@ export const PUT = authenticatedPut<typeof organizationsService, UpdateOrganizat
   'updateOrganization',
   'Organization',
   { 
-    requireAuth: true, 
     roles: ['SUPER_ADMIN'] 
   }
 )
@@ -30,7 +28,6 @@ export const DELETE = authenticatedDelete(
   'deleteOrganization',
   'Organization',
   { 
-    requireAuth: true, 
     roles: ['SUPER_ADMIN'] 
   }
 )

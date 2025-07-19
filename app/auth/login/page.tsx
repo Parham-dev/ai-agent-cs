@@ -21,7 +21,7 @@ import { notifications } from '@mantine/notifications';
 import { AlertCircle, LogIn, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuthContext } from '@/components/providers';
-import type { LoginRequest } from '@/lib/types';
+import type { LoginRequest } from '@/lib/types/auth';
 
 export default function LoginPage() {
   const { login, isAuthenticated, loading, error } = useAuthContext();

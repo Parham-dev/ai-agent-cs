@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server'
-import { ApiResponseHelper as Api, validateMethod } from '@/lib/api/helpers'
-import { withErrorHandling } from '@/lib/api/error-handling'
+import { ApiResponseHelper as Api, validateMethod, withErrorHandling } from '@/lib/api/helpers'
 import { createApiLogger } from '@/lib/utils/logger'
 
 // Import available tools for each integration type

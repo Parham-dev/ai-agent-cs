@@ -3,8 +3,9 @@ import { createServerSupabaseClient } from '@/lib/database/clients';
 import { usersService } from '@/lib/database/services';
 import { Api, validateRequest, validateMethod } from '@/lib/api';
 import { withRateLimit, RateLimits } from '@/lib/auth/rate-limiting';
+import { syncUserJWTMetadata } from '@/lib/services/jwt-metadata.service';
 import { z } from 'zod';
-import type { LoginRequest, AuthResponse } from '@/lib/types';
+import type { LoginRequest } from '@/lib/types/auth';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -71,32 +72,17 @@ export const POST = rateLimitedHandler(async function(request: NextRequest): Pro
       );
     }
 
-    // Prepare response
-    const response: AuthResponse = {
-      user: {
-        id: user.id,
-        supabaseId: user.supabaseId,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        organizationId: user.organizationId,
-        isActive: user.isActive,
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString()
-      },
-      session: {
-        user: {
-          id: authData.user.id,
-          email: authData.user.email || '',
-          name: authData.user.user_metadata?.name
-        },
-        accessToken: authData.session.access_token,
-        refreshToken: authData.session.refresh_token,
-        expiresAt: authData.session.expires_at || 0
-      }
-    };
+    // Sync JWT metadata with latest user data
+    try {
+      await syncUserJWTMetadata(authData.user.id, user);
+    } catch (error) {
+      console.error('Failed to sync JWT metadata:', error);
+      // Don't fail login for metadata sync errors
+    }
 
-    return Api.success(response, {
+    // Return simplified user data (no need for session object)
+    return Api.success({
+      user,
       message: 'Login successful'
     });
 

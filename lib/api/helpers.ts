@@ -168,3 +168,79 @@ export function validateMethod(request: Request, allowedMethods: string[]): Next
   }
   return null;
 }
+
+/**
+ * Smart error handler with automatic error type detection and appropriate responses
+ */
+export function withErrorHandling<T extends unknown[], R>(
+  handler: (...args: T) => Promise<R>
+) {
+  return async (...args: T): Promise<NextResponse | R> => {
+    try {
+      return await handler(...args);
+    } catch (error) {
+      console.error('API Error:', error);
+      
+      // Handle custom application errors
+      if (error instanceof Error) {
+        if (error.name === 'NotFoundError') {
+          return ApiResponseHelper.error('NOT_FOUND', error.message);
+        }
+        
+        if (error.name === 'ValidationError') {
+          return ApiResponseHelper.error('VALIDATION_ERROR', error.message);
+        }
+        
+        if (error.name === 'DatabaseError') {
+          return ApiResponseHelper.error('DATABASE_ERROR', 'Database operation failed', {
+            operation: error.cause || 'unknown'
+          });
+        }
+      }
+      
+      // Handle Prisma specific errors
+      if (error && typeof error === 'object' && 'code' in error) {
+        const prismaError = error as { code: string; meta?: { target?: string[] } };
+        
+        switch (prismaError.code) {
+          case 'P2002':
+            return ApiResponseHelper.error('CONFLICT', 'Resource already exists', {
+              field: prismaError.meta?.target
+            });
+          case 'P2025':
+            return ApiResponseHelper.error('NOT_FOUND', 'Resource not found');
+          case 'P2003':
+            return ApiResponseHelper.error('VALIDATION_ERROR', 'Foreign key constraint failed');
+          default:
+            return ApiResponseHelper.error('DATABASE_ERROR', 'Database operation failed');
+        }
+      }
+      
+      // Handle validation errors (from Zod or similar)
+      if (error && typeof error === 'object' && 'issues' in error) {
+        const zodError = error as { issues: Array<{ path: string[]; message: string }> };
+        const validationErrors = zodError.issues.reduce((acc: Record<string, string>, issue) => {
+          const path = issue.path.join('.');
+          acc[path] = issue.message;
+          return acc;
+        }, {});
+        
+        return ApiResponseHelper.validationError(validationErrors);
+      }
+      
+      // Handle network/external API errors
+      if (error instanceof Error) {
+        if (error.message.includes('fetch') || error.message.includes('network')) {
+          return ApiResponseHelper.error('EXTERNAL_API_ERROR', 'External service unavailable');
+        }
+        
+        if (error.message.includes('timeout')) {
+          return ApiResponseHelper.error('EXTERNAL_API_ERROR', 'Request timeout');
+        }
+      }
+      
+      // Generic internal error
+      return ApiResponseHelper.internalError();
+    }
+  };
+}

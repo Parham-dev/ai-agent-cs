@@ -1,24 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth/api-middleware';
+import { withAuth } from '@/lib/auth/middleware';
 import { Api } from '@/lib/api';
-import type { ApiUser } from '@/lib/types';
+// No need for User import - using it directly from context
 
 export const GET = withAuth(async function(request: NextRequest, { user }): Promise<NextResponse> {
   try {
-    // Return user data directly from auth context
-    const apiUser: ApiUser = {
-      id: user.id,
-      supabaseId: user.supabaseId,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      organizationId: user.organizationId,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
-
-    return Api.success(apiUser, {
+    // Return user data directly from JWT context (no DB lookup needed!)
+    return Api.success(user, {
       message: 'User retrieved successfully'
     });
 

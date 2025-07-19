@@ -3,23 +3,31 @@
 import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { AgentCreationWizard, type AgentFormData } from '@/components/agents/creation'
-import { apiClient } from '@/lib/api/authenticated-client'
+import { apiClient } from '@/lib/api/client'
+import { useAuthContext } from '@/components/providers'
 import { toast } from 'sonner'
 import { createClientLogger } from '@/lib/utils/client-logger'
 
 export default function NewAgentPage() {
   const router = useRouter()
+  const { user } = useAuthContext()
   const logger = createClientLogger('NewAgentPage')
 
   const handleSave = async (data: AgentFormData) => {
     try {
+      if (!user?.organizationId) {
+        toast.error('Organization ID not found. Please refresh and try again.')
+        return
+      }
+
       logger.info('Creating agent', {
         name: data.name,
+        organizationId: user.organizationId,
         integrationsCount: data.selectedIntegrations?.length || 0,
         action: 'agent-creation'
       });
 
-      // Create the agent using v2 API format
+      // Create the agent using v2 API format with organization ID
       const agent = await apiClient.createAgent({
         name: data.name,
         description: data.description,
@@ -28,6 +36,7 @@ export default function NewAgentPage() {
         temperature: data.temperature,
         maxTokens: data.maxTokens,
         rules: data.rules,
+        organizationId: user.organizationId,
         tools: data.selectedTools || []
       })
 

@@ -15,7 +15,7 @@ import {
   ScrollArea,
 } from '@mantine/core'
 import { toast } from 'sonner'
-import { apiClient } from '@/lib/api/authenticated-client'
+import { apiClient } from '@/lib/api/client'
 import type { ApiIntegration, IntegrationTool } from '@/lib/types'
 
 interface ToolConfigurationModalProps {

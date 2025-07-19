@@ -203,18 +203,44 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       response = await logger.time('agent-execution', async () => {
         return await run(openaiAgent, fullMessage, {
           context: {
+            // Required agent context
             agentId,
             agentName: agentData.name,
             organizationId: agentData.organizationId,
-            // Anonymous customer context for widget/public usage
-            customerId: 'anonymous-customer',
-            customerEmail: 'user@example.com',
-            customerName: 'Anonymous User',
+            
+            // Customer context - varies by scenario
+            ...(widgetAuth 
+              ? {
+                  // Widget scenario: End customer chatting
+                  chatContext: 'widget',
+                  endCustomerId: context.endCustomerId || `widget_visitor_${crypto.randomUUID()}`,
+                  endCustomerName: context.endCustomerName || context.customerName || 'Website Visitor',
+                  endCustomerEmail: context.endCustomerEmail || context.customerEmail || null,
+                  sessionId: context.sessionId || crypto.randomUUID(),
+                  sourceUrl: context.sourceUrl || widgetAuth.domain
+                }
+              : {
+                  // Dashboard/Testing scenario: Platform user or anonymous
+                  chatContext: context.platformUserId ? 'dashboard' : 'anonymous',
+                  platformUserId: context.platformUserId || null,
+                  platformUserName: context.platformUserName || null,
+                  platformUserEmail: context.platformUserEmail || null,
+                  // If platform user wants to test as customer
+                  endCustomerId: context.endCustomerId || (context.platformUserId ? `platform_user_${context.platformUserId}` : null),
+                  endCustomerName: context.endCustomerName || context.customerName || 'Test User',
+                  endCustomerEmail: context.endCustomerEmail || context.customerEmail || null,
+                  sessionId: context.sessionId || crypto.randomUUID()
+                }
+            ),
+            
+            // Integration context
             integrations: agentIntegrations.map((ai: { integrationId: string; integration?: { type?: string; name?: string } }) => ({
               id: ai.integrationId,
               type: ai.integration?.type || 'unknown',
               name: ai.integration?.name || 'unknown'
             })),
+            
+            // Pass through any additional context
             ...context
           },
         });

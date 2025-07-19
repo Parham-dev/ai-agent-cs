@@ -5,7 +5,7 @@ import { withRateLimit, RateLimits } from '@/lib/auth/rate-limiting';
 import { createServerSupabaseClient } from '@/lib/database/clients';
 import { prisma } from '@/lib/database';
 import { z } from 'zod';
-import type { SignupRequest } from '@/lib/types';
+import type { SignupRequest } from '@/lib/types/auth';
 
 const signupSchema = z.object({
   email: z.string().email('Invalid email format'),

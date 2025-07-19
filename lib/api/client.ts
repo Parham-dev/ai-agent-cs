@@ -1,7 +1,9 @@
 /**
- * API Client with proper error handling and organization context
+ * Unified API Client - handles both authenticated and public requests
+ * Supports optional authentication via Supabase session
  */
 
+import { createClientSupabaseClient } from '@/lib/database/clients';
 import { 
   ApiResponse, 
   ApiAgent,
@@ -31,13 +33,35 @@ export class ApiError extends Error {
   }
 }
 
+interface ApiClientOptions {
+  baseUrl?: string;
+  organizationId?: string;
+  requireAuth?: boolean;
+}
+
 export class ApiClient {
   private baseUrl: string;
-  private organizationId: string;
+  private organizationId?: string;
+  private requireAuth: boolean;
+  private supabase = createClientSupabaseClient();
 
-  constructor(organizationId: string, baseUrl: string = '/api/v2') {
-    this.baseUrl = baseUrl;
-    this.organizationId = organizationId;
+  constructor(options: ApiClientOptions = {}) {
+    this.baseUrl = options.baseUrl || '/api/v2';
+    this.organizationId = options.organizationId;
+    this.requireAuth = options.requireAuth ?? true;
+  }
+
+  /**
+   * Get current auth token from Supabase session
+   */
+  private async getAuthToken(): Promise<string | null> {
+    try {
+      const { data: { session } } = await this.supabase.auth.getSession();
+      return session?.access_token || null;
+    } catch (error) {
+      console.error('Failed to get auth token:', error);
+      return null;
+    }
   }
 
   private async request<T>(
@@ -46,13 +70,45 @@ export class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // Get auth token if authentication is required
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options.headers as Record<string, string>,
+    };
+
+    if (this.requireAuth) {
+      const token = await this.getAuthToken();
+      if (!token) {
+        throw new ApiError(
+          API_ERROR_CODES.AUTHENTICATION_ERROR,
+          'Missing or invalid authorization header'
+        );
+      }
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
       ...options,
+      headers,
     });
+
+    if (!response.ok) {
+      // Handle non-JSON error responses
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const errorData: ApiResponse = await response.json();
+        throw new ApiError(
+          errorData.error?.code as ApiErrorCode || API_ERROR_CODES.INTERNAL_ERROR,
+          errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`,
+          errorData.error?.details
+        );
+      } else {
+        throw new ApiError(
+          API_ERROR_CODES.INTERNAL_ERROR,
+          `HTTP ${response.status}: ${response.statusText}`
+        );
+      }
+    }
 
     const data: ApiResponse<T> = await response.json();
 
@@ -67,7 +123,7 @@ export class ApiClient {
     return data.data!;
   }
 
-  // Organizations
+  // Organizations (Super Admin only)
   async getOrganizations(): Promise<ApiOrganization[]> {
     return this.request<ApiOrganization[]>('/organizations');
   }
@@ -76,13 +132,40 @@ export class ApiClient {
     return this.request<ApiOrganization>(`/organizations/${id}`);
   }
 
-  // Agents
-  async getAgents(filters?: Omit<ApiAgentFilters, 'organizationId'>): Promise<ApiAgent[]> {
+  async createOrganization(data: Omit<CreateIntegrationRequest, 'organizationId'>): Promise<ApiOrganization> {
+    return this.request<ApiOrganization>('/organizations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateOrganization(id: string, data: Partial<ApiOrganization>): Promise<ApiOrganization> {
+    return this.request<ApiOrganization>(`/organizations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteOrganization(id: string): Promise<void> {
+    await this.request<void>(`/organizations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Agents (Organization scoped)
+  async getAgents(filters?: ApiAgentFilters): Promise<ApiAgent[]> {
     const params = new URLSearchParams();
     
-    // Always filter by organization
-    params.append('organizationId', this.organizationId);
+    // Add organization filter if specified in constructor
+    if (this.organizationId && !filters?.organizationId) {
+      if (filters) {
+        filters.organizationId = this.organizationId;
+      } else {
+        filters = { organizationId: this.organizationId };
+      }
+    }
     
+    if (filters?.organizationId) params.append('organizationId', filters.organizationId);
     if (filters?.search) params.append('search', filters.search);
     if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString());
     if (filters?.page) params.append('page', filters.page.toString());
@@ -96,13 +179,15 @@ export class ApiClient {
     return this.request<ApiAgent>(`/agents/${id}`);
   }
 
-  async createAgent(data: Omit<CreateAgentRequest, 'organizationId'>): Promise<ApiAgent> {
+  async createAgent(data: CreateAgentRequest): Promise<ApiAgent> {
+    // Auto-inject organizationId if not provided and we have one
+    const requestData = this.organizationId && !data.organizationId 
+      ? { ...data, organizationId: this.organizationId }
+      : data;
+
     return this.request<ApiAgent>('/agents', {
       method: 'POST',
-      body: JSON.stringify({
-        ...data,
-        organizationId: this.organizationId,
-      }),
+      body: JSON.stringify(requestData),
     });
   }
 
@@ -114,20 +199,27 @@ export class ApiClient {
   }
 
   async deleteAgent(id: string): Promise<void> {
-    return this.request<void>(`/agents/${id}`, {
+    await this.request<void>(`/agents/${id}`, {
       method: 'DELETE',
     });
   }
 
-  // Integrations
-  async getIntegrations(filters?: Omit<ApiIntegrationFilters, 'organizationId'>): Promise<ApiIntegration[]> {
+  // Integrations (Organization scoped)
+  async getIntegrations(filters?: ApiIntegrationFilters): Promise<ApiIntegration[]> {
     const params = new URLSearchParams();
     
-    // Always filter by organization
-    params.append('organizationId', this.organizationId);
+    // Add organization filter if specified in constructor
+    if (this.organizationId && !filters?.organizationId) {
+      if (filters) {
+        filters.organizationId = this.organizationId;
+      } else {
+        filters = { organizationId: this.organizationId };
+      }
+    }
     
-    if (filters?.type) params.append('type', filters.type);
+    if (filters?.organizationId) params.append('organizationId', filters.organizationId);
     if (filters?.search) params.append('search', filters.search);
+    if (filters?.type) params.append('type', filters.type);
     if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString());
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());
@@ -140,13 +232,15 @@ export class ApiClient {
     return this.request<ApiIntegration>(`/integrations/${id}`);
   }
 
-  async createIntegration(data: Omit<CreateIntegrationRequest, 'organizationId'>): Promise<ApiIntegration> {
+  async createIntegration(data: CreateIntegrationRequest): Promise<ApiIntegration> {
+    // Auto-inject organizationId if not provided and we have one
+    const requestData = this.organizationId && !data.organizationId 
+      ? { ...data, organizationId: this.organizationId }
+      : data;
+
     return this.request<ApiIntegration>('/integrations', {
       method: 'POST',
-      body: JSON.stringify({
-        ...data,
-        organizationId: this.organizationId,
-      }),
+      body: JSON.stringify(requestData),
     });
   }
 
@@ -158,22 +252,36 @@ export class ApiClient {
   }
 
   async deleteIntegration(id: string): Promise<void> {
-    return this.request<void>(`/integrations/${id}`, {
+    await this.request<void>(`/integrations/${id}`, {
       method: 'DELETE',
     });
   }
 
-  async getIntegrationTools(type: string): Promise<IntegrationTool[]> {
-    return this.request<IntegrationTool[]>(`/integrations/tools?type=${type}`);
+  // Integration Tools
+  async getIntegrationTools(): Promise<IntegrationTool[]> {
+    return this.request<IntegrationTool[]>('/integrations/tools');
   }
 
-  // Agent-Integration Relationships
-  async getAgentIntegrations(agentId: string): Promise<ApiAgentIntegration[]> {
-    return this.request<ApiAgentIntegration[]>(`/agent-integrations?agentId=${agentId}`);
+  async testIntegration(id: string): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/integrations/${id}/test`, {
+      method: 'POST',
+    });
   }
 
-  async getIntegrationAgents(integrationId: string): Promise<ApiAgentIntegration[]> {
-    return this.request<ApiAgentIntegration[]>(`/agent-integrations?integrationId=${integrationId}`);
+  async testIntegrationCredentials(type: string, credentials: Record<string, unknown>): Promise<{ success: boolean; message?: string; businessName?: string }> {
+    return this.request<{ success: boolean; message?: string; businessName?: string }>('/integrations/test', {
+      method: 'POST',
+      body: JSON.stringify({ type, credentials }),
+    });
+  }
+
+  // Agent Integrations
+  async getAgentIntegrations(agentId?: string): Promise<ApiAgentIntegration[]> {
+    const params = new URLSearchParams();
+    if (agentId) params.append('agentId', agentId);
+    
+    const query = params.toString();
+    return this.request<ApiAgentIntegration[]>(`/agent-integrations${query ? `?${query}` : ''}`);
   }
 
   async createAgentIntegration(data: CreateAgentIntegrationRequest): Promise<ApiAgentIntegration> {
@@ -183,17 +291,18 @@ export class ApiClient {
     });
   }
 
-  async deleteAgentIntegration(agentId: string, integrationId: string): Promise<void> {
-    return this.request<void>(`/agent-integrations?agentId=${agentId}&integrationId=${integrationId}`, {
+  async deleteAgentIntegration(id: string): Promise<void> {
+    await this.request<void>(`/agent-integrations/${id}`, {
       method: 'DELETE',
     });
   }
+}
 
-  // Chat (legacy endpoint - may need updating)
-  async chat(agentId: string, message: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/agents/${agentId}/chat`, {
-      method: 'POST',
-      body: JSON.stringify({ message }),
-    });
-  }
+// Export singleton instances for different use cases
+export const apiClient = new ApiClient({ requireAuth: true });
+export const publicApiClient = new ApiClient({ requireAuth: false });
+
+// Helper function to create organization-scoped client
+export function createOrganizationApiClient(organizationId: string): ApiClient {
+  return new ApiClient({ organizationId, requireAuth: true });
 }

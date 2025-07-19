@@ -4,7 +4,8 @@
  */
 
 import { createClientSupabaseClient } from '@/lib/database/clients';
-import type { LoginRequest, SignupRequest, ApiUser, AuthSession } from '@/lib/types';
+import type { Session } from '@supabase/supabase-js';
+import type { LoginRequest, SignupRequest, User, AuthSession } from '@/lib/types/auth';
 
 export class AuthService {
   private supabase = createClientSupabaseClient();
@@ -13,7 +14,7 @@ export class AuthService {
    * Initialize auth state by getting current session and user data
    */
   async initializeAuth(): Promise<{
-    user: ApiUser | null;
+    user: User | null;
     session: AuthSession | null;
     error?: string;
   }> {
@@ -37,7 +38,7 @@ export class AuthService {
 
       return {
         user: userData,
-        session: this.formatSession(session)
+        session: this.convertSupabaseSession(session)
       };
     } catch {
       return {
@@ -85,7 +86,7 @@ export class AuthService {
     success: boolean;
     error?: string;
     message?: string;
-    user?: ApiUser;
+    user?: User;
     session?: AuthSession;
   }> {
     try {
@@ -142,7 +143,7 @@ export class AuthService {
           success: true,
           message: 'Account created successfully!',
           user: userData,
-          session: this.formatSession(authData.session)
+          session: this.convertSupabaseSession(authData.session)
         };
       }
 
@@ -192,7 +193,15 @@ export class AuthService {
 
   // Private helper methods
 
-  private async fetchUserData(accessToken: string): Promise<ApiUser | null> {
+  private convertSupabaseSession(supabaseSession: Session): AuthSession {
+    return {
+      accessToken: supabaseSession.access_token,
+      refreshToken: supabaseSession.refresh_token,
+      expiresAt: supabaseSession.expires_at ? new Date(supabaseSession.expires_at * 1000).getTime() : 0
+    };
+  }
+
+  private async fetchUserData(accessToken: string): Promise<User | null> {
     try {
       const response = await fetch('/api/v2/auth/me', {
         headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -235,23 +244,6 @@ export class AuthService {
     }
   }
 
-  private formatSession(session: {
-    user: { id: string; email?: string; user_metadata?: { name?: string } };
-    access_token: string;
-    refresh_token: string;
-    expires_at?: number;
-  }): AuthSession {
-    return {
-      user: {
-        id: session.user.id,
-        email: session.user.email || '',
-        name: session.user.user_metadata?.name
-      },
-      accessToken: session.access_token,
-      refreshToken: session.refresh_token,
-      expiresAt: session.expires_at || 0
-    };
-  }
 }
 
 // Export singleton instance

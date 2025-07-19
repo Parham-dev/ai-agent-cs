@@ -16,7 +16,8 @@ import {
 import { useForm } from '@mantine/form'
 import { ExternalLink, AlertCircle, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { apiClient } from '@/lib/api/authenticated-client'
+import { useAuthContext } from '@/components/providers'
+import { apiClient } from '@/lib/api/client'
 import type { ApiIntegration } from '@/lib/types'
 
 interface StripeCredentialsFormProps {
@@ -40,6 +41,7 @@ export function StripeCredentialsForm({
   const [loading, setLoading] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
+  const { user } = useAuthContext()
 
   const form = useForm<StripeCredentials>({
     initialValues: {
@@ -96,28 +98,17 @@ export function StripeCredentialsForm({
       
       const values = form.getValues()
       
-      // Test the connection using the API endpoint
-      const response = await fetch('/api/v2/integrations/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'stripe',
-          credentials: {
-            secretKey: values.secretKey.trim()
-          }
-        })
+      // Test the connection using the API client
+      const result = await apiClient.testIntegrationCredentials('stripe', {
+        secretKey: values.secretKey.trim()
       })
-
-      const result = await response.json()
 
       if (result.success) {
         setTestResult('success')
         toast.success(`Connection successful! Connected to ${result.businessName || 'your Stripe account'}`)
       } else {
         setTestResult('error')
-        toast.error(result.error || 'Connection test failed. Please check your credentials.')
+        toast.error(result.message || 'Connection test failed. Please check your credentials.')
       }
     } catch (error) {
       console.error('Connection test failed:', error)
@@ -148,10 +139,16 @@ export function StripeCredentialsForm({
         })
       } else {
         // Create new integration
+        if (!user?.organizationId) {
+          toast.error('Organization ID not found. Please refresh and try again.')
+          return
+        }
+        
         savedIntegration = await apiClient.createIntegration({
           name: 'Stripe',
           type: 'stripe',
-          credentials
+          credentials,
+          organizationId: user.organizationId
         })
       }
 

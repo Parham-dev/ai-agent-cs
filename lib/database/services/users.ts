@@ -5,17 +5,24 @@
 
 import { prisma } from '@/lib/database/database'
 import type { 
-  DbUser, 
+  User, 
   CreateUserData, 
-  UpdateUserData, 
-  UserFilters 
-} from '@/lib/types';
+  UpdateUserData 
+} from '@/lib/types/auth';
+
+// Simple user filters
+interface UserFilters {
+  organizationId?: string;
+  role?: string;
+  isActive?: boolean;
+  search?: string;
+}
 
 export class UsersService {
   /**
    * Get user by ID
    */
-  async getUserById(id: string): Promise<DbUser | null> {
+  async getUserById(id: string): Promise<User | null> {
     return prisma.user.findUnique({
       where: { id },
       include: {
@@ -27,7 +34,7 @@ export class UsersService {
   /**
    * Get user by Supabase ID
    */
-  async getUserBySupabaseId(supabaseId: string): Promise<DbUser | null> {
+  async getUserBySupabaseId(supabaseId: string): Promise<User | null> {
     return prisma.user.findUnique({
       where: { supabaseId },
       include: {
@@ -39,7 +46,7 @@ export class UsersService {
   /**
    * Get user by email
    */
-  async getUserByEmail(email: string): Promise<DbUser | null> {
+  async getUserByEmail(email: string): Promise<User | null> {
     return prisma.user.findUnique({
       where: { email },
       include: {
@@ -51,7 +58,7 @@ export class UsersService {
   /**
    * Create a new user
    */
-  async createUser(data: CreateUserData): Promise<DbUser> {
+  async createUser(data: CreateUserData): Promise<User> {
     return prisma.user.create({
       data: {
         supabaseId: data.supabaseId,
@@ -69,7 +76,7 @@ export class UsersService {
   /**
    * Update user
    */
-  async updateUser(id: string, data: UpdateUserData): Promise<DbUser> {
+  async updateUser(id: string, data: UpdateUserData): Promise<User> {
     return prisma.user.update({
       where: { id },
       data,
@@ -82,7 +89,7 @@ export class UsersService {
   /**
    * Delete user (soft delete by setting isActive to false)
    */
-  async deleteUser(id: string): Promise<DbUser> {
+  async deleteUser(id: string): Promise<User> {
     return prisma.user.update({
       where: { id },
       data: { isActive: false },
@@ -99,7 +106,7 @@ export class UsersService {
     filters: UserFilters = {},
     page: number = 1,
     limit: number = 20
-  ): Promise<{ users: DbUser[]; total: number }> {
+  ): Promise<{ users: User[]; total: number }> {
     const where: Record<string, unknown> = {};
 
     // Apply filters
@@ -143,7 +150,7 @@ export class UsersService {
   /**
    * Get users by organization
    */
-  async getUsersByOrganization(organizationId: string): Promise<DbUser[]> {
+  async getUsersByOrganization(organizationId: string): Promise<User[]> {
     return prisma.user.findMany({
       where: { organizationId },
       include: {
@@ -171,7 +178,7 @@ export class UsersService {
     id: string;
     email: string;
     user_metadata?: { name?: string };
-  }): Promise<DbUser> {
+  }): Promise<User> {
     const existingUser = await this.getUserBySupabaseId(supabaseUser.id);
 
     if (existingUser) {

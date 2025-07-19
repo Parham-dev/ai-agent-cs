@@ -20,7 +20,7 @@ import {
 } from '@mantine/core'
 import { Plus } from 'lucide-react'
 import { AgentIntegrationCard } from './agent-integration-card'
-import { apiClient } from '@/lib/api/authenticated-client'
+import { apiClient } from '@/lib/api/client'
 import { toast } from 'sonner'
 import type { ApiIntegration, ApiAgentIntegration } from '@/lib/types'
 
@@ -35,6 +35,12 @@ export function AgentIntegrationsManager({ agentId }: AgentIntegrationsManagerPr
 
 
   const fetchData = useCallback(async () => {
+    if (!agentId) {
+      console.warn('AgentIntegrationsManager: agentId is required')
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       const [integrationsData, agentIntegrationsData] = await Promise.all([

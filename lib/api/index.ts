@@ -5,8 +5,7 @@
 
 export * from './helpers';
 export * from './client';
-export * from './route-utils';
-export * from './error-handling';
+export * from './routes';
 
 // Re-export commonly used items for convenience
 export { ApiResponseHelper as Api } from './helpers';

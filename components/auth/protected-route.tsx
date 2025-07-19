@@ -4,7 +4,7 @@ import { useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Paper, Stack, Text, Loader } from '@mantine/core';
 import { useAuthContext } from '@/components/providers';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/lib/types/auth';
 
 interface ProtectedRouteProps {
   children: ReactNode;
