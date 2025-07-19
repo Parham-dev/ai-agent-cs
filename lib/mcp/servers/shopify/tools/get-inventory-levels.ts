@@ -1,10 +1,5 @@
-import { logger } from '@/lib/utils/logger';
-import { ShopifyMCPClient } from '../client';
-import { 
-  MCPToolContext, 
-  MCPToolResponse,
-  ShopifyInventoryLevel
-} from '../types';
+import { createShopifyTool, validators } from './base-tool-factory';
+import { ShopifyInventoryLevel } from '../types';
 
 interface GetInventoryLevelsParams {
   locationId?: number;
@@ -12,10 +7,12 @@ interface GetInventoryLevelsParams {
 }
 
 /**
- * Get Inventory Levels Tool
- * Gets inventory levels for products at specific locations
+ * Get Inventory Levels Tool - Simplified with base factory
  */
-export const getInventoryLevelsTool = {
+export const getInventoryLevelsTool = createShopifyTool<
+  GetInventoryLevelsParams,
+  { inventoryLevels: ShopifyInventoryLevel[] }
+>({
   name: 'getInventoryLevels',
   description: 'Get inventory levels for products at specific locations',
   inputSchema: {
@@ -35,64 +32,9 @@ export const getInventoryLevelsTool = {
     },
     required: []
   },
-
-  async handler(
-    params: GetInventoryLevelsParams,
-    context: MCPToolContext
-  ): Promise<MCPToolResponse<{ inventoryLevels: ShopifyInventoryLevel[] }>> {
-    const startTime = Date.now();
-    
-    try {
-      logger.debug('Get inventory levels tool called', { 
-        requestId: context.requestId,
-        locationId: params.locationId,
-        limit: params.limit
-      });
-
-      // Initialize Shopify client
-      const client = new ShopifyMCPClient(context.credentials, context.settings);
-
-      // Get inventory levels
-      const inventoryLevels = await client.getInventoryLevels(params.locationId, params.limit || 50);
-
-      logger.info('Get inventory levels completed successfully', {
-        requestId: context.requestId,
-        locationId: params.locationId,
-        inventoryCount: inventoryLevels.length,
-        executionTime: Date.now() - startTime
-      });
-
-      return {
-        success: true,
-        data: { inventoryLevels },
-        metadata: {
-          requestId: context.requestId,
-          timestamp: context.timestamp,
-          executionTime: Date.now() - startTime
-        }
-      };
-
-    } catch (error) {
-      logger.error('Get inventory levels tool failed', {
-        requestId: context.requestId,
-        locationId: params.locationId,
-        limit: params.limit
-      }, error as Error);
-
-      const errorObj = error as Record<string, unknown>;
-      return {
-        success: false,
-        error: {
-          code: (errorObj.code as string) || 'GET_INVENTORY_LEVELS_ERROR',
-          message: (errorObj.message as string) || 'Failed to get inventory levels',
-          details: errorObj.context
-        },
-        metadata: {
-          requestId: context.requestId,
-          timestamp: context.timestamp,
-          executionTime: Date.now() - startTime
-        }
-      };
-    }
+  validateParams: (params) => validators.limit(params.limit),
+  handler: async (client, params) => {
+    const inventoryLevels = await client.getInventoryLevels(params.locationId, params.limit || 50);
+    return { inventoryLevels };
   }
-};
+});

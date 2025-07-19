@@ -1,17 +1,10 @@
-import { logger } from '@/lib/utils/logger';
-import { ShopifyMCPClient } from '../client';
-import { 
-  ListProductsParams, 
-  ListProductsResponse, 
-  MCPToolContext, 
-  MCPToolResponse 
-} from '../types';
+import { createShopifyTool, validators } from './base-tool-factory';
+import { ListProductsParams, ListProductsResponse } from '../types';
 
 /**
- * List Products Tool
- * List products with optional filtering by status
+ * List Products Tool - Simplified with base factory
  */
-export const listProductsTool = {
+export const listProductsTool = createShopifyTool<ListProductsParams, ListProductsResponse>({
   name: 'listProducts',
   description: 'List products with optional filtering by status',
   inputSchema: {
@@ -32,117 +25,19 @@ export const listProductsTool = {
     },
     required: []
   },
-
-  async handler(
-    params: ListProductsParams,
-    context: MCPToolContext
-  ): Promise<MCPToolResponse<ListProductsResponse>> {
-    const startTime = Date.now();
-    
-    try {
-      logger.debug('List products tool called', { 
-        requestId: context.requestId,
-        limit: params.limit,
-        status: params.status 
-      });
-
-      // Validate parameters
-      const validationError = validateListProductsParams(params);
-      if (validationError) {
-        return {
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: validationError
-          },
-          metadata: {
-            requestId: context.requestId,
-            timestamp: context.timestamp,
-            executionTime: Date.now() - startTime
-          }
-        };
-      }
-
-      // Initialize Shopify client
-      const client = new ShopifyMCPClient(context.credentials, context.settings);
-
-      // List products
-      const response = await client.listProducts(params.limit || 50, params.status);
-
-      // Format response
-      const formattedResponse: ListProductsResponse = {
-        products: response.map((product: unknown) => formatProductListing(product as Record<string, unknown>)),
-        totalCount: response.length,
-        hasNextPage: false, // Simplified for now
-        hasPreviousPage: false // Simplified for now
-      };
-
-      logger.info('List products completed successfully', {
-        requestId: context.requestId,
-        limit: params.limit,
-        status: params.status,
-        resultCount: response.length,
-        executionTime: Date.now() - startTime
-      });
-
-      return {
-        success: true,
-        data: formattedResponse,
-        metadata: {
-          requestId: context.requestId,
-          timestamp: context.timestamp,
-          executionTime: Date.now() - startTime
-        }
-      };
-
-    } catch (error) {
-      logger.error('List products tool failed', {
-        requestId: context.requestId,
-        limit: params.limit,
-        status: params.status
-      }, error as Error);
-
-      const errorObj = error as Record<string, unknown>;
-      return {
-        success: false,
-        error: {
-          code: (errorObj.code as string) || 'LIST_PRODUCTS_ERROR',
-          message: (errorObj.message as string) || 'Failed to list products',
-          details: errorObj.context
-        },
-        metadata: {
-          requestId: context.requestId,
-          timestamp: context.timestamp,
-          executionTime: Date.now() - startTime
-        }
-      };
-    }
+  validateParams: (params) => {
+    return validators.limit(params.limit) || validators.status(params.status);
+  },
+  handler: async (client, params) => {
+    const response = await client.listProducts(params.limit || 50, params.status);
+    return {
+      products: response.map((product: unknown) => formatProductListing(product as Record<string, unknown>)),
+      totalCount: response.length,
+      hasNextPage: false, // Simplified for now
+      hasPreviousPage: false // Simplified for now
+    };
   }
-};
-
-/**
- * Validate list products parameters
- */
-function validateListProductsParams(params: ListProductsParams): string | null {
-  if (params.limit !== undefined) {
-    if (typeof params.limit !== 'number' || params.limit < 1 || params.limit > 250) {
-      return 'Limit must be a number between 1 and 250';
-    }
-  }
-
-  if (params.status !== undefined) {
-    if (typeof params.status !== 'string') {
-      return 'Status must be a string';
-    }
-
-    const validStatuses = ['active', 'archived', 'draft'];
-    if (!validStatuses.includes(params.status)) {
-      return `Status must be one of: ${validStatuses.join(', ')}`;
-    }
-  }
-
-  return null;
-}
+});
 
 /**
  * Format product for listing

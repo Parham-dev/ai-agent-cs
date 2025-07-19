@@ -197,7 +197,7 @@ export class AuthService {
     return {
       accessToken: supabaseSession.access_token,
       refreshToken: supabaseSession.refresh_token,
-      expiresAt: supabaseSession.expires_at ? new Date(supabaseSession.expires_at * 1000).getTime() : 0
+      expiresAt: supabaseSession.expires_at ? supabaseSession.expires_at * 1000 : 0
     };
   }
 

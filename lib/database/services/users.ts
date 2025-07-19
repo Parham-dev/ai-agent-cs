@@ -184,7 +184,7 @@ export class UsersService {
     if (existingUser) {
       // Update existing user
       return this.updateUser(existingUser.id, {
-        name: supabaseUser.user_metadata?.name ?? existingUser.name ?? undefined
+        name: supabaseUser.user_metadata?.name || existingUser.name || undefined
       });
     } else {
       // Create new user

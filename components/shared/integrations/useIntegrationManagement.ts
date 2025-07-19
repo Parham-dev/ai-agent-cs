@@ -42,18 +42,19 @@ export function useIntegrationManagement() {
 
   // Get all integrations (org + temp)
   const getAllIntegrations = (): ApiIntegration[] => {
-    return [
-      ...orgIntegrations,
-      ...tempIntegrations.map(temp => ({
-        ...temp,
-        description: `${getIntegrationDisplayName(temp.type)} integration`,
-        isActive: true,
-        credentials: {},
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        organizationId: 'temp'
-      } as ApiIntegration))
-    ]
+    const tempAsApi: ApiIntegration[] = tempIntegrations.map(temp => ({
+      id: temp.id,
+      name: temp.name,
+      type: temp.type,
+      description: `${getIntegrationDisplayName(temp.type)} integration`,
+      isActive: true,
+      credentials: {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      organizationId: 'temp'
+    }))
+    
+    return [...orgIntegrations, ...tempAsApi]
   }
 
   // Get available integration types (not already in org or temp)

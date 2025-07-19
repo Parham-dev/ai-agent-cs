@@ -5,6 +5,7 @@
 
 import { createServerSupabaseClient } from '@/lib/database/clients';
 import { usersService } from '@/lib/database/services';
+import { logger } from '@/lib/utils/logger';
 import type { User, JWTMetadata } from '@/lib/types/auth';
 
 /**
@@ -38,9 +39,9 @@ export async function updateUserJWTMetadata(supabaseUserId: string): Promise<voi
       throw new Error(`Failed to update JWT metadata: ${error.message}`);
     }
 
-    console.log(`Updated JWT metadata for user ${user.id}:`, metadata);
+    logger.info('Updated JWT metadata for user', { userId: user.id, metadata });
   } catch (error) {
-    console.error('Error updating JWT metadata:', error);
+    logger.error('Error updating JWT metadata', error);
     throw error;
   }
 }
@@ -66,9 +67,9 @@ export async function syncUserJWTMetadata(supabaseUserId: string, userData: Part
       throw new Error(`Failed to sync JWT metadata: ${error.message}`);
     }
 
-    console.log(`Synced JWT metadata for user ${userData.id}:`, metadata);
+    logger.info('Synced JWT metadata for user', { userId: userData.id, metadata });
   } catch (error) {
-    console.error('Error syncing JWT metadata:', error);
+    logger.error('Error syncing JWT metadata', error);
     throw error;
   }
 }
@@ -88,9 +89,9 @@ export async function clearUserJWTMetadata(supabaseUserId: string): Promise<void
       throw new Error(`Failed to clear JWT metadata: ${error.message}`);
     }
 
-    console.log(`Cleared JWT metadata for user ${supabaseUserId}`);
+    logger.info('Cleared JWT metadata for user', { supabaseUserId });
   } catch (error) {
-    console.error('Error clearing JWT metadata:', error);
+    logger.error('Error clearing JWT metadata', error);
     throw error;
   }
 }

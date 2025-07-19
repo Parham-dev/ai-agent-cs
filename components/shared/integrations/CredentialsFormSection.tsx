@@ -20,16 +20,14 @@ export function CredentialsFormSection({
       {integration.type === 'shopify' && (
         <ShopifyCredentialsForm
           integration={integration}
-          onSave={onSave}
-          onCancel={onCancel}
+          onSaved={onSave}
         />
       )}
       
       {integration.type === 'stripe' && (
         <StripeCredentialsForm
           integration={integration}
-          onSave={onSave}
-          onCancel={onCancel}
+          onSaved={onSave}
         />
       )}
     </Card>
