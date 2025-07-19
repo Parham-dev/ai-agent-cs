@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@/lib/database/clients';
 import { usersService } from '@/lib/database/services';
 import { Api, validateRequest, validateMethod } from '@/lib/api';
 import { withRateLimit, RateLimits } from '@/lib/auth/rate-limiting';
+import { syncUserJWTMetadata } from '@/lib/services/jwt-metadata.service';
 import { z } from 'zod';
 
 const syncUserSchema = z.object({
@@ -51,6 +52,17 @@ export const POST = rateLimitedHandler(async function(request: NextRequest): Pro
         role: 'ADMIN', // Make them admin of their organization
         organizationId: organizationId
       });
+    }
+
+    // Sync JWT metadata with the user data
+    try {
+      await syncUserJWTMetadata(supabaseUserId, user);
+    } catch (error) {
+      console.error('Failed to sync JWT metadata:', error);
+      return Api.error(
+        'INTERNAL_ERROR',
+        'User created but failed to set JWT metadata'
+      );
     }
 
     // Return user data

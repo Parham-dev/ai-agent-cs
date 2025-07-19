@@ -90,66 +90,54 @@ export class AuthService {
     session?: AuthSession;
   }> {
     try {
-      // Step 1: Prepare organization
-      const setupResponse = await fetch('/api/v2/auth/signup', {
+      // Single signup call - the API endpoint handles everything
+      const signupResponse = await fetch('/api/v2/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       });
 
-      const setupData = await setupResponse.json();
-      if (!setupResponse.ok) {
-        return { success: false, error: setupData.error?.message || 'Signup preparation failed' };
+      const signupData = await signupResponse.json();
+      if (!signupResponse.ok) {
+        return { success: false, error: signupData.error?.message || 'Signup failed' };
       }
 
-      // Step 2: Create Supabase auth user
-      const { data: authData, error: authError } = await this.supabase.auth.signUp({
+      // Now sign in to get the session
+      const { data: authData, error: authError } = await this.supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
-        options: {
-          data: { name: credentials.name || credentials.email.split('@')[0] }
-        }
       });
 
       if (authError) {
         return { success: false, error: authError.message };
       }
 
-      if (!authData.user) {
-        return { success: false, error: 'Failed to create user account' };
+      if (!authData.session) {
+        return { success: false, error: 'Failed to create session after signup' };
       }
 
-      // Step 3: Sync user to database (if session exists)
-      if (authData.session) {
-        const syncResult = await this.syncUserToDatabase({
-          supabaseUserId: authData.user.id,
-          email: authData.user.email || credentials.email,
-          name: credentials.name || authData.user.user_metadata?.name,
-          organizationId: setupData.data.organizationId,
-          accessToken: authData.session.access_token
-        });
+      // Wait a moment for JWT metadata to propagate, then refresh the session
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Refresh the session to get updated JWT with metadata
+      const { data: refreshData, error: refreshError } = await this.supabase.auth.refreshSession();
+      if (refreshError || !refreshData.session) {
+        console.warn('Failed to refresh session after signup, using original session');
+      }
+      
+      const finalSession = refreshData?.session || authData.session;
 
-        if (!syncResult.success) {
-          return { success: false, error: syncResult.error };
-        }
-
-        // Step 4: Get final user data
-        const userData = await this.fetchUserData(authData.session.access_token);
-        if (!userData) {
-          return { success: false, error: 'Failed to fetch user data after signup' };
-        }
-
-        return {
-          success: true,
-          message: 'Account created successfully!',
-          user: userData,
-          session: this.convertSupabaseSession(authData.session)
-        };
+      // Get user data using the refreshed session
+      const userData = await this.fetchUserData(finalSession.access_token);
+      if (!userData) {
+        return { success: false, error: 'Failed to fetch user data after signup' };
       }
 
       return {
         success: true,
-        message: 'Account created! Please check your email to confirm your account.'
+        message: 'Account created successfully!',
+        user: userData,
+        session: this.convertSupabaseSession(finalSession)
       };
     } catch (error) {
       return {
@@ -213,34 +201,6 @@ export class AuthService {
       return data.data;
     } catch {
       return null;
-    }
-  }
-
-  private async syncUserToDatabase(data: {
-    supabaseUserId: string;
-    email: string;
-    name?: string;
-    organizationId: string;
-    accessToken: string;
-  }): Promise<{ success: boolean; error?: string }> {
-    try {
-      const response = await fetch('/api/v2/auth/sync-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        return { success: false, error: errorData.error?.message || 'Failed to sync user' };
-      }
-
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to sync user'
-      };
     }
   }
 

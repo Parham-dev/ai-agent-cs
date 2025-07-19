@@ -45,7 +45,7 @@ export default function SignupPage() {
       name: (value) => (value && value.length < 2 ? 'Name must be at least 2 characters' : null),
       email: (value) => (/^\S+@\S+$/.test(value) ? null : 'Invalid email'),
       password: (value) => {
-        if (value.length < 6) return 'Password must be at least 6 characters';
+        if (value.length < 8) return 'Password must be at least 8 characters';
         if (!/(?=.*[a-z])/.test(value)) return 'Password must contain at least one lowercase letter';
         if (!/(?=.*[A-Z])/.test(value)) return 'Password must contain at least one uppercase letter';
         if (!/(?=.*\d)/.test(value)) return 'Password must contain at least one number';

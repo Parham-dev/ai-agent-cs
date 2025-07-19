@@ -1,5 +1,4 @@
 import { createShopifyTool } from './base-tool-factory';
-import { ShopifyPolicy } from '../types';
 
 /**
  * Get Policies Tool - Simplified with base factory

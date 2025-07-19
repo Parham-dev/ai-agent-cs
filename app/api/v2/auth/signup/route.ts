@@ -4,6 +4,7 @@ import { Api, validateRequest, validateMethod } from '@/lib/api';
 import { withRateLimit, RateLimits } from '@/lib/auth/rate-limiting';
 import { createServerSupabaseClient } from '@/lib/database/clients';
 import { prisma } from '@/lib/database';
+import { syncUserJWTMetadata } from '@/lib/services/jwt-metadata.service';
 import { z } from 'zod';
 import type { SignupRequest } from '@/lib/types/auth';
 
@@ -59,13 +60,15 @@ export const POST = rateLimitedHandler(async function(request: NextRequest): Pro
         }
       });
 
-      // Create Supabase user
+      // Create Supabase user using regular signup (not admin)
       const supabase = createServerSupabaseClient();
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        user_metadata: { name },
-        email_confirm: false // Auto-confirm for development
+        options: {
+          data: { name },
+          emailRedirectTo: undefined // Skip email confirmation in development
+        }
       });
 
       if (authError || !authData.user) {
@@ -90,6 +93,14 @@ export const POST = rateLimitedHandler(async function(request: NextRequest): Pro
         supabaseUser: authData.user
       };
     });
+
+    // Sync JWT metadata with the user data
+    try {
+      await syncUserJWTMetadata(result.supabaseUser.id, result.user);
+    } catch (error) {
+      console.error('Failed to sync JWT metadata during signup:', error);
+      // Don't fail the signup, but log the error
+    }
 
     return Api.success({
       message: 'Account created successfully',

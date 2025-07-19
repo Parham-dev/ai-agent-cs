@@ -1,5 +1,4 @@
 import { createShopifyTool } from './base-tool-factory';
-import { ShopifyLocation } from '../types';
 
 /**
  * Get Locations Tool - Simplified with base factory

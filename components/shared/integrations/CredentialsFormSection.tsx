@@ -7,13 +7,12 @@ import type { ApiIntegration } from '@/lib/types'
 interface CredentialsFormSectionProps {
   integration: ApiIntegration
   onSave: (integration: ApiIntegration) => void
-  onCancel: () => void
+  onCancel?: () => void
 }
 
 export function CredentialsFormSection({
   integration,
-  onSave,
-  onCancel
+  onSave
 }: CredentialsFormSectionProps) {
   return (
     <Card withBorder p="lg">

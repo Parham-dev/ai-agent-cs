@@ -41,7 +41,7 @@ export async function updateUserJWTMetadata(supabaseUserId: string): Promise<voi
 
     logger.info('Updated JWT metadata for user', { userId: user.id, metadata });
   } catch (error) {
-    logger.error('Error updating JWT metadata', error);
+    logger.error('Error updating JWT metadata', {}, error as Error);
     throw error;
   }
 }
@@ -69,7 +69,7 @@ export async function syncUserJWTMetadata(supabaseUserId: string, userData: Part
 
     logger.info('Synced JWT metadata for user', { userId: userData.id, metadata });
   } catch (error) {
-    logger.error('Error syncing JWT metadata', error);
+    logger.error('Error syncing JWT metadata', {}, error as Error);
     throw error;
   }
 }
@@ -91,7 +91,7 @@ export async function clearUserJWTMetadata(supabaseUserId: string): Promise<void
 
     logger.info('Cleared JWT metadata for user', { supabaseUserId });
   } catch (error) {
-    logger.error('Error clearing JWT metadata', error);
+    logger.error('Error clearing JWT metadata', {}, error as Error);
     throw error;
   }
 }
