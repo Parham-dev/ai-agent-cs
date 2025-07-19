@@ -17,10 +17,7 @@ import { IntegrationCard } from './IntegrationCard'
 import { AddIntegrationModal } from './AddIntegrationModal'
 import { useIntegrationManagement } from './useIntegrationManagement'
 import type { ApiIntegration } from '@/lib/types'
-
-type AvailableIntegrationType = 'shopify' | 'stripe'
-
-const AVAILABLE_INTEGRATIONS: AvailableIntegrationType[] = ['shopify', 'stripe']
+import { AVAILABLE_INTEGRATIONS, type AvailableIntegrationType } from '@/lib/constants'
 
 interface IntegrationGridProps {
   title?: string

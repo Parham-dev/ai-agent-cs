@@ -196,5 +196,101 @@ export interface CustomerMemoryFilters {
   offset?: number
 }
 
+// Usage Record Types (Cost Tracking)
+export interface UsageRecord {
+  id: string
+  organizationId: string
+  agentId?: string | null
+  model: string
+  operation: string
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  inputCost: number
+  outputCost: number
+  totalCost: number
+  source: string
+  requestId?: string | null
+  conversationId?: string | null
+  metadata?: Record<string, unknown> | null
+  createdAt: Date
+}
+
+export interface CreateUsageRecordData {
+  organizationId: string
+  agentId?: string
+  model: string
+  operation: string
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  inputCost: number
+  outputCost: number
+  totalCost: number
+  source: string
+  requestId?: string
+  conversationId?: string
+  metadata?: Record<string, unknown>
+}
+
+export interface UsageRecordFilters {
+  organizationId?: string
+  agentId?: string
+  model?: string
+  operation?: string
+  source?: string
+  startDate?: Date
+  endDate?: Date
+  limit?: number
+  offset?: number
+}
+
+export interface UsageRecordWithRelations extends UsageRecord {
+  organization: Pick<Organization, 'name' | 'slug'>
+  agent?: Pick<Agent, 'name'> | null
+}
+
+// Billing Config Types
+export interface BillingConfig {
+  id: string
+  organizationId: string
+  monthlyBudget?: number | null
+  alertThreshold: number
+  isActive: boolean
+  preferredModel: string
+  autoOptimize: boolean
+  maxCostPerMessage?: number | null
+  emailAlerts: boolean
+  alertEmail?: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CreateBillingConfigData {
+  organizationId: string
+  monthlyBudget?: number
+  alertThreshold?: number
+  preferredModel?: string
+  autoOptimize?: boolean
+  maxCostPerMessage?: number
+  emailAlerts?: boolean
+  alertEmail?: string
+}
+
+export interface UpdateBillingConfigData {
+  monthlyBudget?: number | null
+  alertThreshold?: number
+  isActive?: boolean
+  preferredModel?: string
+  autoOptimize?: boolean
+  maxCostPerMessage?: number | null
+  emailAlerts?: boolean
+  alertEmail?: string | null
+}
+
+export interface BillingConfigWithRelations extends BillingConfig {
+  organization: Pick<Organization, 'name' | 'slug'>
+}
+
 // This file must be a module
 export {}

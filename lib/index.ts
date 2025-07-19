@@ -4,6 +4,9 @@
 // Types - export all types (most commonly imported)
 export * from './types'
 
+// Constants - export centralized constants
+export * from './constants'
+
 // Utils - export common utilities (frequently used across app)
 export { cn } from './utils/cn'
 export * from './utils/errors'

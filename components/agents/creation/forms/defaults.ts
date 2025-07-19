@@ -1,4 +1,5 @@
 import { AgentFormData } from './types'
+import { DEFAULT_AI_MODEL } from '@/lib/constants'
 
 // Default values for the agent creation form
 export const getDefaultValues = (
@@ -15,7 +16,7 @@ export const getDefaultValues = (
   instructionTemplate: initialData?.instructionTemplate || undefined,
   
   // Model & Settings (now part of Basic Info)
-  model: initialData?.model || 'gpt-4o',
+  model: initialData?.model || DEFAULT_AI_MODEL, // Updated to use centralized constant
   temperature: initialData?.temperature ?? 0.7,
   maxTokens: initialData?.maxTokens ?? 4000,
   

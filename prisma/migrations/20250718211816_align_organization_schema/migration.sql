@@ -10,13 +10,7 @@
 
 */
 -- DropIndex
-DROP INDEX "customer_memories_embedding_idx";
-
--- DropIndex
 DROP INDEX "integrations_organizationId_type_name_key";
-
--- DropIndex
-DROP INDEX "knowledge_entries_embedding_idx";
 
 -- AlterTable
 ALTER TABLE "agents" DROP COLUMN "agentConfig",

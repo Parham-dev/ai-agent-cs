@@ -39,6 +39,8 @@ model Organization {
   integrations     Integration[]
   knowledgeEntries KnowledgeEntry[]
   users            User[]
+  usageRecords     UsageRecord[]
+  billingConfig    BillingConfig?
 
   @@map("organizations")
 }
@@ -79,6 +81,7 @@ model Agent {
   agentIntegrations AgentIntegration[]
   organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   conversations     Conversation[]
+  usageRecords      UsageRecord[]
 
   @@map("agents")
 }
@@ -158,4 +161,78 @@ enum UserRole {
   SUPER_ADMIN
   ADMIN
   USER
+}
+
+// =====================================
+// COST TRACKING & BILLING SCHEMA
+// =====================================
+
+// Usage tracking for OpenAI API calls
+model UsageRecord {
+  id             String      @id @default(cuid())
+  organizationId String
+  agentId        String?     // Which agent made the call (optional for embeddings)
+  
+  // API Call Details
+  model          String      // "gpt-4o", "gpt-4o-mini", "text-embedding-3-small"
+  operation      String      // "chat_completion", "embedding", "moderation"
+  promptTokens   Int         @default(0)
+  completionTokens Int       @default(0)
+  totalTokens    Int         @default(0)
+  
+  // Cost Calculation
+  inputCost      Float       @default(0) // Cost for input tokens
+  outputCost     Float       @default(0) // Cost for output tokens  
+  totalCost      Float       @default(0) // Total cost for this call
+  
+  // Context & Metadata
+  source         String      // "agent_chat", "embedding", "guardrail", "moderation"
+  requestId      String?     // OpenAI request ID for debugging
+  conversationId String?     // Link to conversation if applicable
+  
+  // Additional context stored as JSON
+  /// [UsageMetadata]
+  metadata       Json?       @default("{}")
+  
+  // Timestamps
+  createdAt      DateTime    @default(now())
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent          Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  
+  @@index([organizationId, createdAt])
+  @@index([organizationId, model])
+  @@index([organizationId, source])
+  @@index([agentId, createdAt])
+  @@map("usage_records")
+}
+
+// Organization billing settings and budgets
+model BillingConfig {
+  id                    String       @id @default(cuid())
+  organizationId        String       @unique
+  
+  // Budget Settings
+  monthlyBudget         Float?       // Monthly spending limit in USD
+  alertThreshold        Float        @default(0.8) // Alert at 80% of budget
+  isActive              Boolean      @default(true)
+  
+  // Cost Optimization Settings
+  preferredModel        String       @default("gpt-4o-mini") // Default model for cost optimization
+  autoOptimize          Boolean      @default(false) // Auto switch to cheaper models
+  maxCostPerMessage     Float?       // Maximum cost per individual message
+  
+  // Notifications
+  emailAlerts           Boolean      @default(true)
+  alertEmail            String?      // Override organization email
+  
+  // Timestamps
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  
+  // Relations
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("billing_configs")
 }
