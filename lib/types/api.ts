@@ -134,7 +134,6 @@ export interface ApiAgentIntegration {
 
 // Request Types
 export interface CreateAgentRequest {
-  organizationId: string;
   name: string;
   description?: string;
   systemPrompt?: string;
@@ -158,7 +157,6 @@ export interface UpdateAgentRequest {
 }
 
 export interface CreateIntegrationRequest {
-  organizationId: string;
   name: string;
   type: string;
   description?: string;
@@ -193,7 +191,6 @@ export interface UpdateOrganizationRequest {
 
 // Filter Types
 export interface ApiAgentFilters {
-  organizationId?: string;
   search?: string;
   isActive?: boolean;
   page?: number;
@@ -201,7 +198,6 @@ export interface ApiAgentFilters {
 }
 
 export interface ApiIntegrationFilters {
-  organizationId?: string;
   type?: string;
   search?: string;
   isActive?: boolean;

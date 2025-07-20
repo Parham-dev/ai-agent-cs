@@ -2,7 +2,6 @@ export interface AgentFormData {
   // Basic Information (expanded to include everything from Instructions step)
   name: string
   description?: string
-  organizationId: string
   
   // Instructions & Behavior (now part of Basic Info)
   systemPrompt?: string
@@ -90,4 +89,7 @@ export interface StepProps {
   form: UseFormReturnType<AgentFormData>
   onNext?: () => void
   onPrevious?: () => void
+  // Optional SWR data - only passed when available
+  availableModels?: import('@/lib/api/services/models-client').AIModel[]
+  organizationSettings?: import('@/lib/api/services/organization-client').OrganizationSettings
 }

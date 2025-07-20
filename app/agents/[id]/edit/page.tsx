@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { AgentCreationWizard, type AgentFormData } from '@/components/agents/creation'
-import { apiClient } from '@/lib/api/client'
+import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Bot } from 'lucide-react'
@@ -14,7 +14,7 @@ import type { ApiAgent } from '@/lib/types'
 export default function EditAgentPage() {
   const router = useRouter()
   const params = useParams()
-  const agentId = params.id as string
+  const agentId = params?.id as string
 
   const [agent, setAgent] = useState<ApiAgent | null>(null)
   const [loading, setLoading] = useState(true)
@@ -24,7 +24,7 @@ export default function EditAgentPage() {
     try {
       setLoading(true)
       setError(null)
-      const agentData = await apiClient.getAgent(agentId)
+      const agentData = await api.agents.getAgent(agentId)
       setAgent(agentData)
     } catch (err) {
       console.error('Failed to fetch agent:', err)
@@ -36,7 +36,7 @@ export default function EditAgentPage() {
 
   const handleSave = async (data: AgentFormData) => {
     try {
-      const updatedAgent = await apiClient.updateAgent(agentId, {
+      const updatedAgent = await api.agents.updateAgent(agentId, {
         name: data.name,
         description: data.description,
         systemPrompt: data.systemPrompt,
@@ -100,7 +100,6 @@ export default function EditAgentPage() {
   const initialFormData: Partial<AgentFormData> = {
     name: agent.name,
     description: agent.description || '',
-    organizationId: agent.organizationId,
     systemPrompt: agent.systemPrompt || '',
     model: agent.model,
     temperature: agent.temperature,
@@ -124,7 +123,6 @@ export default function EditAgentPage() {
       subtitle="Update your agent configuration and settings"
     >
       <AgentCreationWizard
-        organizationId={agent.organizationId}
         initialData={initialFormData}
         mode="edit"
         onSave={handleSave}

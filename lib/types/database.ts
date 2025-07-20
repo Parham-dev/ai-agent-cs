@@ -89,8 +89,8 @@ export interface UpdateOrganizationData {
   description?: string
 }
 
+// Create data types - organizationId provided by auth context
 export interface CreateAgentData {
-  organizationId: string
   name: string
   description?: string
   systemPrompt?: string
@@ -115,7 +115,6 @@ export interface UpdateAgentData {
 }
 
 export interface CreateIntegrationData {
-  organizationId: string
   name: string
   type: string
   description?: string
@@ -144,9 +143,8 @@ export interface UpdateAgentIntegrationData {
   isEnabled?: boolean
 }
 
-// Database filter types
+// Filter types - organizationId provided by auth context
 export interface AgentFilters {
-  organizationId?: string
   isActive?: boolean
   search?: string
   limit?: number
@@ -154,7 +152,6 @@ export interface AgentFilters {
 }
 
 export interface IntegrationFilters {
-  organizationId?: string
   type?: string
   isActive?: boolean
   search?: string

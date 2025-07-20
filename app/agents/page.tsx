@@ -29,7 +29,7 @@ import {
   Eye,
   AlertCircle
 } from 'lucide-react'
-import { apiClient } from '@/lib/api/client'
+import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import type { ApiAgent } from '@/lib/types'
 
@@ -45,7 +45,7 @@ export default function AgentsPage() {
     try {
       setLoading(true)
       setError(null)
-      const agentsData = await apiClient.getAgents()
+      const agentsData = await api.agents.getAgents()
       setAgents(agentsData)
     } catch (err) {
       console.error('Failed to fetch agents:', err)
@@ -58,7 +58,7 @@ export default function AgentsPage() {
   const handleToggleStatus = async (agent: ApiAgent) => {
     try {
       setActionLoading(agent.id)
-      const updatedAgent = await apiClient.updateAgent(agent.id, { 
+      const updatedAgent = await api.agents.updateAgent(agent.id, { 
         isActive: !agent.isActive 
       })
       
@@ -83,7 +83,7 @@ export default function AgentsPage() {
 
     try {
       setActionLoading(agent.id)
-      await apiClient.deleteAgent(agent.id)
+      await api.agents.deleteAgent(agent.id)
       
       // Remove from local state
       setAgents(prev => prev.filter(a => a.id !== agent.id))

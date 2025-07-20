@@ -117,9 +117,8 @@ export const customerMemory = tool({
         case 'get':
           const memories = await vectorService.getCustomerMemories({
             customerId: actualCustomerId,
-            organizationId: organizationId,
             limit
-          })
+          }, organizationId)
 
           return {
             success: true,

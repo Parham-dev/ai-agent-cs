@@ -7,7 +7,7 @@ import { DashboardLayout } from '@/components/dashboard/layout'
 import { IntegrationGrid } from '@/components/shared/integrations'
 import { ToolConfigurationModal } from '@/components/agents/creation/shared/ToolConfigurationModal'
 import { CredentialsFormSection } from '@/components/shared/integrations'
-import { useIntegrationManagement } from '@/components/shared/integrations'
+import { useIntegrations } from '@/components/shared/integrations'
 import type { ApiIntegration } from '@/lib/types'
 
 export default function IntegrationsPage() {
@@ -18,19 +18,16 @@ export default function IntegrationsPage() {
   const [enabledIntegrations, setEnabledIntegrations] = useState<Set<string>>(new Set())
 
   const {
-    handleCredentialsSaved: handleCredentialsSavedHook,
-    getAllIntegrations
-  } = useIntegrationManagement()
+    saveIntegrationCredentials,
+    allIntegrations
+  } = useIntegrations()
 
-  // Get all integrations function for use in useEffect
-  
   // Auto-enable existing integrations on mount
   React.useEffect(() => {
-    const currentIntegrations = getAllIntegrations()
     const newEnabledSet = new Set(enabledIntegrations)
     let hasChanges = false
     
-    currentIntegrations.forEach(integration => {
+    allIntegrations.forEach((integration: ApiIntegration) => {
       if (!newEnabledSet.has(integration.id)) {
         newEnabledSet.add(integration.id)
         hasChanges = true
@@ -40,7 +37,7 @@ export default function IntegrationsPage() {
     if (hasChanges) {
       setEnabledIntegrations(newEnabledSet)
     }
-  }, [getAllIntegrations, enabledIntegrations])
+  }, [allIntegrations, enabledIntegrations])
 
   // Handle integration toggle
   const handleIntegrationToggle = (integration: ApiIntegration) => {
@@ -109,10 +106,19 @@ export default function IntegrationsPage() {
   }
 
   // Handle credentials saved
-  const handleCredentialsSaved = (savedIntegration: ApiIntegration) => {
-    handleCredentialsSavedHook(savedIntegration, selectedIntegrationForCredentials?.id)
-    setCredentialsFormOpened(false)
-    setSelectedIntegrationForCredentials(null)
+  const handleCredentialsSaved = async (integrationData: Partial<ApiIntegration>) => {
+    try {
+      const tempId = selectedIntegrationForCredentials?.id
+      await saveIntegrationCredentials(integrationData, tempId)
+      
+      setCredentialsFormOpened(false)
+      setSelectedIntegrationForCredentials(null)
+      
+      toast.success('Integration configured successfully!')
+    } catch (error) {
+      console.error('Failed to save integration:', error)
+      toast.error('Failed to configure integration')
+    }
   }
 
   // Handle credentials cancelled
@@ -139,7 +145,6 @@ export default function IntegrationsPage() {
           showToolsButton={false}
           showToolsCount={false}
           mode="management"
-          selectedIntegrationForCredentials={selectedIntegrationForCredentials}
         />
 
         {/* Credentials Form Section */}

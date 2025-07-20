@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 
 export default function WidgetDemoPage() {
   const params = useParams()
-  const agentId = params.agentId as string
+  const agentId = params?.agentId as string
 
   useEffect(() => {
     // Status helper

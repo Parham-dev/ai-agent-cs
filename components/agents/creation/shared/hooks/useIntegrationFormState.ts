@@ -6,10 +6,42 @@ import type { UseFormReturnType } from '@mantine/form'
 
 export function useIntegrationFormState(form: UseFormReturnType<AgentFormData>) {
   // Check if integration is selected for this agent
-  const isIntegrationSelected = (integrationId: string) => {
-    return form.getValues().selectedIntegrations?.some(
-      selected => selected.integrationId === integrationId
-    ) || false
+  // Uses both direct ID matching and type-based matching for transition handling
+  const isIntegrationSelected = (integrationId: string, integrationType?: string) => {
+    const selections = form.getValues().selectedIntegrations || []
+    
+    console.log('🔍 isIntegrationSelected called:', {
+      integrationId,
+      integrationType,
+      selections: selections.map(s => s.integrationId)
+    })
+    
+    // Direct ID match (most common case)
+    const directMatch = selections.some(selected => selected.integrationId === integrationId)
+    console.log('🔍 Direct match result:', directMatch)
+    
+    if (directMatch) return true
+    
+    // If no direct match and we have the integration type, check by type
+    // This handles transitions where temp ID becomes real ID or vice versa
+    if (integrationType) {
+      const typeMatch = selections.some(selected => {
+        if (selected.integrationId.startsWith('temp-')) {
+          // Form has temp ID, extract type and compare
+          const selectedType = selected.integrationId.split('-')[1]  // Extract from temp-{type}-{timestamp}
+          return selectedType === integrationType
+        } else {
+          // Form has real ID, but we're checking against an integration of this type
+          // This means we need to check if ANY selection matches this type
+          // For now, we assume if the types match and it's a different ID, it could be the same integration
+          return false // Let direct match handle real IDs
+        }
+      })
+      console.log('🔍 Type match result:', typeMatch)
+      return typeMatch
+    }
+    
+    return false
   }
 
   // Get selected tools for integration
@@ -50,14 +82,19 @@ export function useIntegrationFormState(form: UseFormReturnType<AgentFormData>) 
     form.setFieldValue('selectedIntegrations', updated)
   }
 
-  // Update integration ID when temp integration becomes real
+  // Updates the integration ID (when temp becomes real)
   const updateIntegrationId = (oldId: string, newId: string) => {
-    const currentSelections = form.getValues().selectedIntegrations || []
-    const updated = currentSelections.map(selection => 
-      selection.integrationId === oldId
-        ? { ...selection, integrationId: newId }
-        : selection
+    const current = form.getValues().selectedIntegrations || []
+    console.log('🔄 updateIntegrationId called:', { oldId, newId })
+    console.log('🔄 Current selections before update:', current.map(s => s.integrationId))
+    
+    const updated = current.map(selected =>
+      selected.integrationId === oldId
+        ? { ...selected, integrationId: newId }
+        : selected
     )
+    
+    console.log('🔄 Updated selections after update:', updated.map(s => s.integrationId))
     form.setFieldValue('selectedIntegrations', updated)
   }
 

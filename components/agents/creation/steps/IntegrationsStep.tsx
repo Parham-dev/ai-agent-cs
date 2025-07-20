@@ -7,7 +7,7 @@ import { StepProps } from '../forms/types'
 import { ToolConfigurationModal } from '../shared/ToolConfigurationModal'
 import { CredentialsFormSection } from '@/components/shared/integrations'
 import { useIntegrationFormState } from '../shared/hooks'
-import { useIntegrationManagement } from '@/components/shared/integrations'
+import { useIntegrations } from '@/components/shared/integrations'
 import { IntegrationGrid } from '@/components/shared/integrations'
 import type { ApiIntegration } from '@/lib/types'
 
@@ -17,11 +17,15 @@ export function IntegrationsStep({ form }: StepProps) {
   const [credentialsFormOpened, setCredentialsFormOpened] = useState(false)
   const [selectedIntegrationForTools, setSelectedIntegrationForTools] = useState<ApiIntegration | null>(null)
   const [selectedIntegrationForCredentials, setSelectedIntegrationForCredentials] = useState<ApiIntegration | null>(null)
+  
+  // Loading state for integration operations (for future use)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [integrationSaving, setIntegrationSaving] = useState(false)
 
   // Custom hooks
   const {
-    handleCredentialsSaved: handleCredentialsSavedHook
-  } = useIntegrationManagement()
+    saveIntegrationCredentials
+  } = useIntegrations()
 
   const {
     isIntegrationSelected,
@@ -31,7 +35,7 @@ export function IntegrationsStep({ form }: StepProps) {
     updateIntegrationId
   } = useIntegrationFormState(form)
 
-  // Wrap toggle integration to also close credentials form when disabling
+  // Handle integration toggle - simplified logic
   const toggleIntegration = (integration: ApiIntegration) => {
     const wasSelected = isIntegrationSelected(integration.id)
     
@@ -44,14 +48,8 @@ export function IntegrationsStep({ form }: StepProps) {
         setCredentialsFormOpened(false)
         setSelectedIntegrationForCredentials(null)
       }
-    } else {
-      // If integration was not selected and is now being selected
-      // If this is a temp integration (doesn't exist in DB), auto-show config form
-      if (integration.id.startsWith('temp-')) {
-        setSelectedIntegrationForCredentials(integration)
-        setCredentialsFormOpened(true)
-      }
     }
+    // Note: Auto-show credentials form is now handled in handleIntegrationAdded
   }
 
   // Handle opening tool configuration
@@ -77,17 +75,42 @@ export function IntegrationsStep({ form }: StepProps) {
     }
   }
 
-  // Handle credentials saved
-  const handleCredentialsSaved = (savedIntegration: ApiIntegration) => {
-    const result = handleCredentialsSavedHook(savedIntegration, selectedIntegrationForCredentials?.id)
+  // Handle add integration - auto-select and show credentials
+  const handleIntegrationAdded = (integration: ApiIntegration) => {
+    // Auto-select the new integration
+    toggleIntegrationBase(integration)
     
-    if (result.replacedTempId) {
-      // Update form selections to use new integration ID
-      updateIntegrationId(result.replacedTempId, result.newIntegrationId)
+    // Auto-show credentials form
+    setSelectedIntegrationForCredentials(integration)
+    setCredentialsFormOpened(true)
+  }
+
+  // Handle credentials saved - simplified without state synchronization complexity
+  const handleCredentialsSaved = async (integrationData: Partial<ApiIntegration>) => {
+    setIntegrationSaving(true)
+    try {
+      const tempId = selectedIntegrationForCredentials?.id
+      
+      // Save integration credentials (will handle temp→real promotion internally)
+      const savedIntegration = await saveIntegrationCredentials(integrationData, tempId)
+      
+      // Update form to use the new real integration ID if this was a temp integration
+      if (tempId?.startsWith('temp-')) {
+        updateIntegrationId(tempId, savedIntegration.id)
+      }
+
+      // Clear the selected integration and close modals
+      setSelectedIntegrationForCredentials(null)
+      setCredentialsFormOpened(false)
+
+      toast.success('Integration configured successfully!')
+      
+    } catch (error) {
+      console.error('Failed to save integration:', error)
+      toast.error('Failed to configure integration')
+    } finally {
+      setIntegrationSaving(false)
     }
-    
-    setCredentialsFormOpened(false)
-    setSelectedIntegrationForCredentials(null)
   }
 
   // Handle credentials cancelled
@@ -115,7 +138,7 @@ export function IntegrationsStep({ form }: StepProps) {
         getSelectedToolsCount={(integrationId: string) => getSelectedTools(integrationId).length}
         selectedIntegrations={form.getValues().selectedIntegrations}
         showSelectedSummary={true}
-        selectedIntegrationForCredentials={selectedIntegrationForCredentials}
+        onIntegrationAdded={handleIntegrationAdded}
       />
 
       {/* Credentials Form Section */}

@@ -1,29 +1,29 @@
 import { AgentFormData } from './types'
 import { DEFAULT_AI_MODEL } from '@/lib/constants'
+import type { OrganizationSettings } from '@/lib/api/services/organization-client'
 
-// Default values for the agent creation form
+// Default values for the agent creation form  
 export const getDefaultValues = (
-  organizationId?: string,
-  initialData?: Partial<AgentFormData>
+  initialData?: Partial<AgentFormData>,
+  orgSettings?: OrganizationSettings
 ): AgentFormData => ({
   // Basic Information (expanded)
   name: initialData?.name || '',
   description: initialData?.description || '',
-  organizationId: organizationId || initialData?.organizationId || 'default-org',
   
   // Instructions & Behavior (now part of Basic Info)
-  systemPrompt: initialData?.systemPrompt || '',
+  systemPrompt: initialData?.systemPrompt || orgSettings?.defaultInstructions || '',
   instructionTemplate: initialData?.instructionTemplate || undefined,
   
-  // Model & Settings (now part of Basic Info)
-  model: initialData?.model || DEFAULT_AI_MODEL, // Updated to use centralized constant
-  temperature: initialData?.temperature ?? 0.7,
-  maxTokens: initialData?.maxTokens ?? 4000,
+  // Model & Settings (now part of Basic Info) - use org settings if available
+  model: initialData?.model || orgSettings?.defaultModel || DEFAULT_AI_MODEL,
+  temperature: initialData?.temperature ?? orgSettings?.defaultTemperature ?? 0.7,
+  maxTokens: initialData?.maxTokens ?? orgSettings?.defaultMaxTokens ?? 4000,
   
-  // Rules & Behavior (includes outputType and toolChoice)
+  // Rules & Behavior (includes outputType and toolChoice) - use org settings
   rules: initialData?.rules || {
-    outputType: 'text',
-    toolChoice: 'auto',
+    outputType: (orgSettings?.defaultOutputType === 'json' ? 'structured' : orgSettings?.defaultOutputType) || 'text',
+    toolChoice: orgSettings?.defaultToolChoice || 'auto',
     handoffs: [],
     guardrails: { input: [], output: [] },
     customInstructions: []
@@ -42,7 +42,7 @@ export const getDefaultValues = (
 
 // Validation rules for each step
 export const stepValidationRules = {
-  basicInfo: ['name', 'organizationId', 'systemPrompt', 'model'],
+  basicInfo: ['name', 'systemPrompt', 'model'],
   integrations: [], // Optional step
   tools: [], // Optional step
   advanced: [], // Optional step

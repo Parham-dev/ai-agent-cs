@@ -25,7 +25,6 @@ interface IntegrationCardProps {
   showToolsButton?: boolean
   showToolsCount?: boolean
   mode?: 'wizard' | 'management'
-  isCredentialsFormOpen?: boolean
 }
 
 export function IntegrationCard({
@@ -36,8 +35,7 @@ export function IntegrationCard({
   onConfigureCredentials,
   onConfigureTools,
   showToolsButton = true,
-  showToolsCount = true,
-  isCredentialsFormOpen = false
+  showToolsCount = true
 }: IntegrationCardProps) {
   const Icon = getIntegrationIcon(integration.type)
   const colors = getIntegrationColors(integration.type)
@@ -85,7 +83,7 @@ export function IntegrationCard({
               
               <Group gap="xs" style={{ marginLeft: showToolsCount ? 'auto' : 0 }}>
                 <Button
-                  variant={isCredentialsFormOpen ? "light" : "subtle"}
+                  variant="subtle"
                   size="xs"
                   leftSection={<Settings size={14} />}
                   onClick={(e) => {
@@ -105,9 +103,9 @@ export function IntegrationCard({
                       e.stopPropagation()
                       onConfigureTools(integration)
                     }}
-                    disabled={isSelected && isTemporary}
+                    disabled={isTemporary}
                     title={
-                      isSelected && isTemporary 
+                      isTemporary 
                         ? "Configure credentials first to enable tool selection" 
                         : "Configure tools for this integration"
                     }

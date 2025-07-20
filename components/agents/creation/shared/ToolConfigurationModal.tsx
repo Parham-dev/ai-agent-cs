@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Modal,
   Stack,
@@ -15,7 +15,7 @@ import {
   ScrollArea,
 } from '@mantine/core'
 import { toast } from 'sonner'
-import { apiClient } from '@/lib/api/client'
+import { api } from '@/lib/api'
 import type { ApiIntegration, IntegrationTool } from '@/lib/types'
 
 interface ToolConfigurationModalProps {
@@ -38,10 +38,10 @@ export function ToolConfigurationModal({
   const [localSelection, setLocalSelection] = useState<string[]>(selectedTools)
 
   // Load available tools when modal opens
-  const loadAvailableTools = async () => {
+  const loadAvailableTools = useCallback(async () => {
     try {
       setLoading(true)
-      const tools = await apiClient.getIntegrationTools()
+      const tools = await api.integrations.getIntegrationTools(integration.type)
       setAvailableTools(tools)
     } catch (error) {
       console.error('Failed to load tools:', error)
@@ -49,14 +49,14 @@ export function ToolConfigurationModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [integration.type])
 
   useEffect(() => {
     if (opened) {
       loadAvailableTools()
       setLocalSelection(selectedTools)
     }
-  }, [opened, selectedTools])
+  }, [opened, selectedTools, loadAvailableTools])
 
   const handleToolToggle = (toolName: string) => {
     setLocalSelection(current => 
@@ -65,6 +65,18 @@ export function ToolConfigurationModal({
         : [...current, toolName]
     )
   }
+
+  const handleToggleAll = () => {
+    if (localSelection.length === availableTools.length) {
+      // All selected -> deselect all
+      setLocalSelection([])
+    } else {
+      // Not all selected -> select all
+      setLocalSelection(availableTools.map(tool => tool.name))
+    }
+  }
+
+  const isAllSelected = localSelection.length === availableTools.length && availableTools.length > 0
 
   const handleSave = () => {
     onToolsChanged(localSelection)
@@ -101,13 +113,26 @@ export function ToolConfigurationModal({
       <LoadingOverlay visible={loading} />
       
       <Stack gap="md">
-        {/* Selection Summary */}
+        {/* Selection Summary & Controls */}
         <Card withBorder p="sm">
           <Group justify="space-between">
-            <Text size="sm" fw={500}>Selected Tools</Text>
-            <Badge variant="light" color="blue">
-              {localSelection.length} of {availableTools.length}
-            </Badge>
+            <div>
+              <Text size="sm" fw={500}>Selected Tools</Text>
+              <Badge variant="light" color="blue" mt={2}>
+                {localSelection.length} of {availableTools.length}
+              </Badge>
+            </div>
+            
+            {availableTools.length > 0 && (
+              <Button
+                variant="subtle"
+                size="xs"
+                onClick={handleToggleAll}
+                disabled={loading}
+              >
+                {isAllSelected ? 'Deselect All' : 'Select All'}
+              </Button>
+            )}
           </Group>
         </Card>
 
@@ -138,6 +163,7 @@ export function ToolConfigurationModal({
                       checked={localSelection.includes(tool.name)}
                       onChange={() => handleToolToggle(tool.name)}
                       size="sm"
+                      onClick={(e) => e.stopPropagation()} // Prevent double-triggering
                     />
                     <Stack gap={2} flex={1}>
                       <Text fw={500} size="sm">{tool.name}</Text>

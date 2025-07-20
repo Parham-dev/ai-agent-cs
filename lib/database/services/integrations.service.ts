@@ -11,10 +11,9 @@ import type {
 class IntegrationsService {
   /**
    * Get all integrations with optional filtering and pagination   */
-  async getIntegrations(filters: IntegrationFilters = {}): Promise<IntegrationWithRelations[]> {
+  async getIntegrations(filters: Omit<IntegrationFilters, 'organizationId'> = {}, organizationId: string): Promise<IntegrationWithRelations[]> {
     try {
       const {
-        organizationId,
         type,
         isActive,
         search,
@@ -23,7 +22,7 @@ class IntegrationsService {
       } = filters
 
       const where = {
-        ...(organizationId && { organizationId }),
+        organizationId,
         ...(type && { type }),
         ...(typeof isActive === 'boolean' && { isActive }),
         ...(search && {
@@ -58,10 +57,13 @@ class IntegrationsService {
 
   /**
    * Get a single integration by ID   */
-  async getIntegrationById(id: string): Promise<IntegrationWithRelations | null> {
+  async getIntegrationById(id: string, organizationId: string): Promise<IntegrationWithRelations | null> {
     try {
-      const integration = await prisma.integration.findUnique({
-        where: { id },
+      const integration = await prisma.integration.findFirst({
+        where: { 
+          id,
+          organizationId 
+        },
         include: {
           organization: {
             select: { name: true, slug: true }
@@ -80,8 +82,8 @@ class IntegrationsService {
 
   /**
    * Get integration by ID or throw error if not found   */
-  async getIntegrationByIdOrThrow(id: string): Promise<IntegrationWithRelations> {
-    const integration = await this.getIntegrationById(id)
+  async getIntegrationByIdOrThrow(id: string, organizationId: string): Promise<IntegrationWithRelations> {
+    const integration = await this.getIntegrationById(id, organizationId)
     if (!integration) {
       throw new NotFoundError('Integration', id)
     }
@@ -112,7 +114,7 @@ class IntegrationsService {
 
   /**
    * Create a new integration   */
-  async createIntegration(data: CreateIntegrationData): Promise<Integration> {
+  async createIntegration(data: Omit<CreateIntegrationData, 'organizationId'>, organizationId: string): Promise<Integration> {
     try {
       // Validate required fields
       if (!data.name?.trim()) {
@@ -121,29 +123,28 @@ class IntegrationsService {
       if (!data.type?.trim()) {
         throw new ValidationError('Integration type is required', 'type')
       }
-      if (!data.organizationId) {
-        throw new ValidationError('Organization ID is required', 'organizationId')
-      }
       if (!data.credentials || Object.keys(data.credentials).length === 0) {
         throw new ValidationError('Integration credentials are required', 'credentials')
       }
 
       // Check if integration of this type already exists for this organization
       const existingIntegration = await this.getIntegrationByOrganizationAndType(
-        data.organizationId, 
+        organizationId, 
         data.type
       )
       
       if (existingIntegration) {
-        throw new ValidationError(
-          `Integration of type '${data.type}' already exists for this organization`, 
-          'type'
-        )
+        // If integration exists, update its credentials instead of creating new one
+        return this.updateIntegration(existingIntegration.id, {
+          credentials: data.credentials,
+          name: data.name,
+          description: data.description
+        }, organizationId)
       }
 
       const integration = await prisma.integration.create({
         data: {
-          organizationId: data.organizationId,
+          organizationId: organizationId,
           name: data.name.trim(),
           type: data.type.trim(),
           description: data.description?.trim() || null,
@@ -163,10 +164,10 @@ class IntegrationsService {
 
   /**
    * Update an existing integration   */
-  async updateIntegration(id: string, data: UpdateIntegrationData): Promise<Integration> {
+  async updateIntegration(id: string, data: UpdateIntegrationData, organizationId: string): Promise<Integration> {
     try {
       // Check if integration exists
-      await this.getIntegrationByIdOrThrow(id)
+      await this.getIntegrationByIdOrThrow(id, organizationId)
 
       const updateData: Record<string, unknown> = {}
       
@@ -176,7 +177,10 @@ class IntegrationsService {
       if (typeof data.isActive === 'boolean') updateData.isActive = data.isActive
 
       const integration = await prisma.integration.update({
-        where: { id },
+        where: { 
+          id,
+          organizationId
+        },
         data: updateData
       })
 
@@ -191,13 +195,16 @@ class IntegrationsService {
 
   /**
    * Delete an integration   */
-  async deleteIntegration(id: string): Promise<void> {
+  async deleteIntegration(id: string, organizationId: string): Promise<void> {
     try {
       // Check if integration exists
-      await this.getIntegrationByIdOrThrow(id)
+      await this.getIntegrationByIdOrThrow(id, organizationId)
 
       await prisma.integration.delete({
-        where: { id }
+        where: { 
+          id,
+          organizationId
+        }
       })
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -210,7 +217,7 @@ class IntegrationsService {
   /**
    * Get integrations by organization   */
   async getIntegrationsByOrganization(organizationId: string): Promise<IntegrationWithRelations[]> {
-    return this.getIntegrations({ organizationId })
+    return this.getIntegrations({}, organizationId)
   }
 }
 

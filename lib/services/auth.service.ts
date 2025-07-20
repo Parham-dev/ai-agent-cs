@@ -4,6 +4,7 @@
  */
 
 import { createClientSupabaseClient } from '@/lib/database/clients';
+import { tokenProvider } from '@/lib/api/base/token-provider';
 import type { Session } from '@supabase/supabase-js';
 import type { LoginRequest, SignupRequest, User, AuthSession } from '@/lib/types/auth';
 
@@ -156,6 +157,10 @@ export class AuthService {
       if (error) {
         return { success: false, error: error.message };
       }
+      
+      // Clear the cached token
+      tokenProvider.clearToken();
+      
       return { success: true };
     } catch (error) {
       return {

@@ -36,7 +36,7 @@ import {
   Wrench,
   Plug
 } from 'lucide-react'
-import { apiClient } from '@/lib/api/client'
+import { api } from '@/lib/api'
 import { AgentIntegrationsManager } from '@/components/agent-integrations'
 import { toast } from 'sonner'
 import type { ApiAgent } from '@/lib/types'
@@ -44,7 +44,7 @@ import type { ApiAgent } from '@/lib/types'
 export default function AgentDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const agentId = params.id as string
+  const agentId = params?.id as string
 
   const [agent, setAgent] = useState<ApiAgent | null>(null)
   const [loading, setLoading] = useState(true)
@@ -55,7 +55,7 @@ export default function AgentDetailPage() {
     try {
       setLoading(true)
       setError(null)
-      const agentData = await apiClient.getAgent(agentId)
+      const agentData = await api.agents.getAgent(agentId)
       setAgent(agentData)
     } catch (err) {
       console.error('Failed to fetch agent:', err)
@@ -70,7 +70,7 @@ export default function AgentDetailPage() {
     
     try {
       setIsTogglingStatus(true)
-      const updatedAgent = await apiClient.updateAgent(agent.id, { 
+      const updatedAgent = await api.agents.updateAgent(agent.id, { 
         isActive: !agent.isActive 
       })
       setAgent(updatedAgent)
@@ -91,7 +91,7 @@ export default function AgentDetailPage() {
     }
 
     try {
-      await apiClient.deleteAgent(agent.id)
+      await api.agents.deleteAgent(agent.id)
       toast.success('Agent deleted successfully')
       router.push('/agents')
     } catch (err) {

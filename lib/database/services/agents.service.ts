@@ -11,10 +11,9 @@ import type {
 class AgentsService {
   /**
    * Get all agents with optional filtering and pagination   */
-  async getAgents(filters: AgentFilters = {}): Promise<AgentWithRelations[]> {
+  async getAgents(filters: Omit<AgentFilters, 'organizationId'> = {}, organizationId: string): Promise<AgentWithRelations[]> {
     try {
       const {
-        organizationId,
         isActive,
         search,
         limit = 20,
@@ -22,7 +21,7 @@ class AgentsService {
       } = filters
 
       const where = {
-        ...(organizationId && { organizationId }),
+        organizationId,
         ...(typeof isActive === 'boolean' && { isActive }),
         ...(search && {
           OR: [
@@ -60,10 +59,13 @@ class AgentsService {
 
   /**
    * Get a single agent by ID   */
-  async getAgentById(id: string): Promise<AgentWithRelations | null> {
+  async getAgentById(id: string, organizationId: string): Promise<AgentWithRelations | null> {
     try {
-      const agent = await prisma.agent.findUnique({
-        where: { id },
+      const agent = await prisma.agent.findFirst({
+        where: { 
+          id,
+          organizationId 
+        },
         include: {
           organization: {
             select: { name: true, slug: true }
@@ -86,8 +88,8 @@ class AgentsService {
 
   /**
    * Get agent by ID or throw error if not found   */
-  async getAgentByIdOrThrow(id: string): Promise<AgentWithRelations> {
-    const agent = await this.getAgentById(id)
+  async getAgentByIdOrThrow(id: string, organizationId: string): Promise<AgentWithRelations> {
+    const agent = await this.getAgentById(id, organizationId)
     if (!agent) {
       throw new NotFoundError('Agent', id)
     }
@@ -96,19 +98,16 @@ class AgentsService {
 
   /**
    * Create a new agent   */
-  async createAgent(data: CreateAgentData): Promise<Agent> {
+  async createAgent(data: Omit<CreateAgentData, 'organizationId'>, organizationId: string): Promise<Agent> {
     try {
       // Validate required fields
       if (!data.name?.trim()) {
         throw new ValidationError('Agent name is required', 'name')
       }
-      if (!data.organizationId) {
-        throw new ValidationError('Organization ID is required', 'organizationId')
-      }
 
       const agent = await prisma.agent.create({
         data: {
-          organizationId: data.organizationId,
+          organizationId: organizationId,
           name: data.name.trim(),
           description: data.description?.trim() || null,
           systemPrompt: data.systemPrompt?.trim() || null,
@@ -132,10 +131,10 @@ class AgentsService {
 
   /**
    * Update an existing agent   */
-  async updateAgent(id: string, data: UpdateAgentData): Promise<Agent> {
+  async updateAgent(id: string, data: UpdateAgentData, organizationId: string): Promise<Agent> {
     try {
       // Check if agent exists
-      await this.getAgentByIdOrThrow(id)
+      await this.getAgentByIdOrThrow(id, organizationId)
 
       const updateData: Record<string, unknown> = {}
       
@@ -150,7 +149,10 @@ class AgentsService {
       if (typeof data.isActive === 'boolean') updateData.isActive = data.isActive
 
       const agent = await prisma.agent.update({
-        where: { id },
+        where: { 
+          id,
+          organizationId
+        },
         data: updateData
       })
 
@@ -165,13 +167,16 @@ class AgentsService {
 
   /**
    * Delete an agent   */
-  async deleteAgent(id: string): Promise<void> {
+  async deleteAgent(id: string, organizationId: string): Promise<void> {
     try {
       // Check if agent exists
-      await this.getAgentByIdOrThrow(id)
+      await this.getAgentByIdOrThrow(id, organizationId)
 
       await prisma.agent.delete({
-        where: { id }
+        where: { 
+          id,
+          organizationId
+        }
       })
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -184,7 +189,35 @@ class AgentsService {
   /**
    * Get agents by organization   */
   async getAgentsByOrganization(organizationId: string): Promise<AgentWithRelations[]> {
-    return this.getAgents({ organizationId })
+    return this.getAgents({}, organizationId)
+  }
+
+  /**
+   * Get agent by ID for public widget access (no organization scoping)
+   * Used by widget routes where organizationId isn't available in auth context
+   */
+  async getAgentByIdPublic(id: string): Promise<AgentWithRelations | null> {
+    try {
+      const agent = await prisma.agent.findUnique({
+        where: { id },
+        include: {
+          organization: {
+            select: { name: true, slug: true }
+          },
+          agentIntegrations: {
+            include: {
+              integration: {
+                select: { id: true, name: true, type: true, isActive: true, credentials: true }
+              }
+            }
+          }
+        }
+      })
+
+      return agent as AgentWithRelations | null
+    } catch (error) {
+      throw new DatabaseError(`Failed to fetch agent ${id} for public access (V2)`, error as Error)
+    }
   }
 }
 

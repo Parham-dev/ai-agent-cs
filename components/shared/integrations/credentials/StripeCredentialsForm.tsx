@@ -7,7 +7,7 @@ import type { ApiIntegration } from '@/lib/types'
 
 interface StripeCredentialsFormProps {
   integration?: ApiIntegration | null
-  onSaved?: (integration: ApiIntegration) => void
+  onSaved?: (integration: ApiIntegration) => Promise<void> | void
   tempIntegrationId?: string
 }
 
@@ -60,7 +60,28 @@ const stripeConfig = {
         Learn how to find your Stripe API keys <ExternalLink size={12} style={{ display: 'inline' }} />
       </Anchor>
     </>
-  )
+  ),
+  testConnection: async (credentials: Record<string, string>) => {
+    try {
+      // Use the existing test connection API endpoint
+      const response = await fetch('/api/v2/integrations/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'stripe',
+          credentials
+        })
+      })
+      
+      const result = await response.json()
+      return result.success || false
+    } catch (error) {
+      console.error('Stripe connection test failed:', error)
+      return false
+    }
+  }
 }
 
 export function StripeCredentialsForm({ 

@@ -15,7 +15,7 @@ import {
 import { Plus } from 'lucide-react'
 import { IntegrationCard } from './IntegrationCard'
 import { AddIntegrationModal } from './AddIntegrationModal'
-import { useIntegrationManagement } from './useIntegrationManagement'
+import { useIntegrations } from './useIntegrations'
 import type { ApiIntegration } from '@/lib/types'
 import { AVAILABLE_INTEGRATIONS, type AvailableIntegrationType } from '@/lib/constants'
 
@@ -26,7 +26,7 @@ interface IntegrationGridProps {
   onIntegrationToggle?: (integration: ApiIntegration) => void
   onConfigureCredentials?: (integration: ApiIntegration) => void
   onConfigureTools?: (integration: ApiIntegration) => void
-  isIntegrationSelected?: (integrationId: string) => boolean
+  isIntegrationSelected?: (integrationId: string, integrationType?: string) => boolean
   getSelectedToolsCount?: (integrationId: string) => number
   selectedIntegrations?: Array<{
     integrationId: string
@@ -38,8 +38,6 @@ interface IntegrationGridProps {
   showToolsButton?: boolean
   showToolsCount?: boolean
   mode?: 'wizard' | 'management' // wizard for agent creation, management for standalone page
-  // Form state props
-  selectedIntegrationForCredentials?: ApiIntegration | null
 }
 
 export function IntegrationGrid({
@@ -56,42 +54,34 @@ export function IntegrationGrid({
   onIntegrationAdded,
   showToolsButton = true,
   showToolsCount = true,
-  mode = 'wizard',
-  selectedIntegrationForCredentials = null
+  mode = 'wizard'
 }: IntegrationGridProps) {
   const [addModalOpened, setAddModalOpened] = useState(false)
 
   const {
-    loading,
-    getAllIntegrations,
-    addIntegrationType,
-  } = useIntegrationManagement()
+    allIntegrations,
+    isLoading,
+    addTempIntegration,
+    getAvailableTypes,
+  } = useIntegrations()
 
-  const allIntegrations = getAllIntegrations()
-  const existingTypes = allIntegrations.map(integration => integration.type)
-  const availableTypes = AVAILABLE_INTEGRATIONS.filter(type => !existingTypes.includes(type))
+  const availableTypes = getAvailableTypes(AVAILABLE_INTEGRATIONS)
 
   const handleIntegrationAdded = (integrationType: AvailableIntegrationType) => {
-    const newTempIntegration = addIntegrationType(integrationType)
+    const newTempIntegration = addTempIntegration(integrationType)
     
-    // Convert temp integration to full ApiIntegration format and notify parent immediately
+    // Notify parent - newTempIntegration is already a complete ApiIntegration
     if (newTempIntegration && onIntegrationAdded) {
-      const fullIntegration: ApiIntegration = {
-        ...newTempIntegration,
-        description: `${newTempIntegration.name} integration`,
-        isActive: true,
-        credentials: {},
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        organizationId: 'temp'
-      }
-      onIntegrationAdded(fullIntegration)
+      onIntegrationAdded(newTempIntegration)
     }
+    
+    // Close the modal
+    setAddModalOpened(false)
   }
 
   return (
     <Stack gap="lg">
-      <LoadingOverlay visible={loading} />
+      <LoadingOverlay visible={isLoading} />
       
       <Stack gap="sm">
         <Group justify="space-between">
@@ -123,21 +113,24 @@ export function IntegrationGrid({
       {/* Integrations Grid */}
       {allIntegrations.length > 0 ? (
         <Grid>
-          {allIntegrations.map(integration => (
-            <IntegrationCard
-              key={integration.id}
-              integration={integration}
-              isSelected={isIntegrationSelected(integration.id)}
-              selectedToolsCount={getSelectedToolsCount(integration.id)}
-              onToggle={onIntegrationToggle || (() => {})}
-              onConfigureCredentials={onConfigureCredentials || (() => {})}
-              onConfigureTools={onConfigureTools || (() => {})}
-              showToolsButton={showToolsButton}
-              showToolsCount={showToolsCount}
-              mode={mode}
-              isCredentialsFormOpen={selectedIntegrationForCredentials?.id === integration.id}
-            />
-          ))}
+          {allIntegrations.map(integration => {
+            const isSelected = isIntegrationSelected(integration.id, integration.type)
+            
+            return (
+              <IntegrationCard
+                key={integration.id}
+                integration={integration}
+                isSelected={isSelected}
+                selectedToolsCount={getSelectedToolsCount(integration.id)}
+                onToggle={onIntegrationToggle || (() => {})}
+                onConfigureCredentials={onConfigureCredentials || (() => {})}
+                onConfigureTools={onConfigureTools || (() => {})}
+                showToolsButton={showToolsButton}
+                showToolsCount={showToolsCount}
+                mode={mode}
+              />
+            )
+          })}
         </Grid>
       ) : (
         <Card withBorder p="xl">

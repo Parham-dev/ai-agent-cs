@@ -6,7 +6,7 @@ import type { ApiIntegration } from '@/lib/types'
 
 interface CredentialsFormSectionProps {
   integration: ApiIntegration
-  onSave: (integration: ApiIntegration) => void
+  onSave: (integration: ApiIntegration) => Promise<void> | void
   onCancel?: () => void
 }
 

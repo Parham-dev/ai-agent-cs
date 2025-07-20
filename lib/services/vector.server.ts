@@ -77,18 +77,15 @@ export class VectorService {
    * Get customer memories - SIMPLE VERSION
    * Returns all memories for customer, most recent first
    */
-  async getCustomerMemories(filters: CustomerMemoryFilters): Promise<CustomerMemory[]> {
+  async getCustomerMemories(filters: Omit<CustomerMemoryFilters, 'organizationId'>, organizationId: string): Promise<CustomerMemory[]> {
     try {
       let query = supabase
         .from('customer_memories')
         .select('*')
+        .eq('organization_id', organizationId)
 
       if (filters.customerId) {
         query = query.eq('customer_id', filters.customerId)
-      }
-      
-      if (filters.organizationId) {
-        query = query.eq('organization_id', filters.organizationId)
       }
 
       if (filters.memoryType) {
@@ -131,9 +128,8 @@ export class VectorService {
       // TODO: Implement actual vector similarity search using _query later
       return await this.getCustomerMemories({
         customerId,
-        organizationId,
         limit
-      })
+      }, organizationId)
     } catch (error) {
       console.error('Failed to search memories:', error)
       throw new Error('Failed to search memories')

@@ -32,6 +32,9 @@ import { IntegrationsStep } from '../steps/IntegrationsStep'
 import { ToolsStep } from '../steps/ToolsStep'
 import { AdvancedStep } from '../steps/AdvancedStep'
 import { ReviewStep } from '../steps/ReviewStep'
+import { usePreloadIntegrations } from '@/components/shared/integrations'
+import { useModels } from '@/components/shared/hooks/useModels'
+import { useOrganizationSettings } from '@/components/shared/hooks/useOrganizationSettings'
 
 // Define wizard steps (updated structure)
 const WIZARD_STEPS = [
@@ -78,7 +81,6 @@ const WIZARD_STEPS = [
 ] as const
 
 interface AgentCreationWizardProps {
-  organizationId?: string
   initialData?: Partial<AgentFormData>
   mode?: 'create' | 'edit'
   onSave?: (data: AgentFormData) => Promise<void>
@@ -86,7 +88,6 @@ interface AgentCreationWizardProps {
 }
 
 export function AgentCreationWizard({
-  organizationId,
   initialData,
   mode = 'create',
   onSave,
@@ -96,10 +97,15 @@ export function AgentCreationWizard({
   const [highestStepVisited, setHighestStepVisited] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Preload data for faster step navigation
+  usePreloadIntegrations()
+  const { models } = useModels()
+  const { settings } = useOrganizationSettings()
+
   // Initialize form with Mantine useForm hook
   const form = useForm<AgentFormData>({
     mode: 'controlled',
-    initialValues: getDefaultValues(organizationId, initialData),
+    initialValues: getDefaultValues(initialData, settings),
     validate: createValidationSchema(),
   })
 
@@ -254,6 +260,8 @@ export function AgentCreationWizard({
               form={form}
               onNext={() => handleStepChange(activeStep + 1)}
               onPrevious={() => handleStepChange(activeStep - 1)}
+              availableModels={models}
+              organizationSettings={settings}
             />
           </Paper>
 

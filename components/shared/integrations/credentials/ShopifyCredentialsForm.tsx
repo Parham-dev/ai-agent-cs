@@ -7,7 +7,7 @@ import type { ApiIntegration } from '@/lib/types'
 
 interface ShopifyCredentialsFormProps {
   integration?: ApiIntegration | null
-  onSaved?: (integration: ApiIntegration) => void
+  onSaved?: (integration: ApiIntegration) => Promise<void> | void
   tempIntegrationId?: string
 }
 
@@ -43,7 +43,28 @@ const shopifyConfig = {
         Learn how to create a Custom App <ExternalLink size={12} style={{ display: 'inline' }} />
       </Anchor>
     </>
-  )
+  ),
+  testConnection: async (credentials: Record<string, string>) => {
+    try {
+      // Use the existing test connection API endpoint
+      const response = await fetch('/api/v2/integrations/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'shopify',
+          credentials
+        })
+      })
+      
+      const result = await response.json()
+      return result.success || false
+    } catch (error) {
+      console.error('Shopify connection test failed:', error)
+      return false
+    }
+  }
 }
 
 export function ShopifyCredentialsForm({ 

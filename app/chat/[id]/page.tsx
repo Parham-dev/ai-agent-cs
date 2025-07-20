@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Bot, Activity, ShieldCheck } from 'lucide-react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { Thread } from '@/components/assistant-ui/thread'
-import { apiClient } from '@/lib/api/client'
+import { api } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAgentChatRuntime } from '@/lib/assistant-ui/runtime'
@@ -16,7 +16,7 @@ import type { ApiAgent } from '@/lib/types'
 
 export default function AgentChatPage() {
   const params = useParams()
-  const agentId = params.id as string
+  const agentId = params?.id as string
 
   console.log('🔥 AgentChatPage render - agentId:', agentId)
 
@@ -38,8 +38,8 @@ export default function AgentChatPage() {
       console.log('🔥 fetchAgent called for agentId:', agentId)
       setAgentLoading(true)
       setError(null)
-      console.log('🔥 Calling apiClient.getAgent...')
-      const agentData = await apiClient.getAgent(agentId)
+      console.log('🔥 Calling api.agents.getAgent...')
+      const agentData = await api.agents.getAgent(agentId)
       console.log('🔥 Agent data received:', agentData)
       setAgent(agentData)
       console.log('🔥 Agent state updated')

@@ -21,13 +21,6 @@ export const createValidationSchema = () => ({
     return null
   },
 
-  organizationId: (value: string) => {
-    if (!value) {
-      return 'Organization is required'
-    }
-    return null
-  },
-
   // Instructions (renamed to systemPrompt to match schema)
   systemPrompt: (value?: string) => {
     if (!value || value.length < FORM_LIMITS.SYSTEM_PROMPT_MIN_LENGTH) {
@@ -89,9 +82,6 @@ export const validateStep = (
     case 'basicInfo':
       if (validationSchema.name(formData.name || '')) {
         errors.push(validationSchema.name(formData.name || '') as string)
-      }
-      if (validationSchema.organizationId(formData.organizationId || '')) {
-        errors.push(validationSchema.organizationId(formData.organizationId || '') as string)
       }
       if (validationSchema.systemPrompt(formData.systemPrompt || '')) {
         errors.push(validationSchema.systemPrompt(formData.systemPrompt || '') as string)

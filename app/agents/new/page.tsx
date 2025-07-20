@@ -3,32 +3,24 @@
 import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { AgentCreationWizard, type AgentFormData } from '@/components/agents/creation'
-import { apiClient } from '@/lib/api/client'
-import { useAuthContext } from '@/components/providers'
+import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { createClientLogger } from '@/lib/utils/client-logger'
 
 export default function NewAgentPage() {
   const router = useRouter()
-  const { user } = useAuthContext()
   const logger = createClientLogger('NewAgentPage')
 
   const handleSave = async (data: AgentFormData) => {
     try {
-      if (!user?.organizationId) {
-        toast.error('Organization ID not found. Please refresh and try again.')
-        return
-      }
-
       logger.info('Creating agent', {
         name: data.name,
-        organizationId: user.organizationId,
         integrationsCount: data.selectedIntegrations?.length || 0,
         action: 'agent-creation'
       });
 
-      // Create the agent using v2 API format with organization ID
-      const agent = await apiClient.createAgent({
+      // Create the agent using v2 API - organization scoping handled by server
+      const agent = await api.agents.createAgent({
         name: data.name,
         description: data.description,
         systemPrompt: data.systemPrompt,
@@ -36,7 +28,6 @@ export default function NewAgentPage() {
         temperature: data.temperature,
         maxTokens: data.maxTokens,
         rules: data.rules,
-        organizationId: user.organizationId,
         tools: data.selectedTools || []
       })
 
@@ -49,7 +40,7 @@ export default function NewAgentPage() {
 
         for (const integration of data.selectedIntegrations) {
           try {
-            await apiClient.createAgentIntegration({
+            await api.agentIntegrations.createAgentIntegration({
               agentId: agent.id,
               integrationId: integration.integrationId,
               selectedTools: integration.selectedTools || []

@@ -185,7 +185,7 @@ export const FORM_LIMITS = {
  * Step validation rules for wizard
  */
 export const STEP_VALIDATION_RULES = {
-  basicInfo: ['name', 'organizationId', 'systemPrompt', 'model'],
+  basicInfo: ['name', 'systemPrompt', 'model'],
   integrations: [], // Optional step
   tools: [], // Optional step
   advanced: [], // Optional step

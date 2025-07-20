@@ -20,7 +20,7 @@ import {
 } from '@mantine/core'
 import { Plus } from 'lucide-react'
 import { AgentIntegrationCard } from './agent-integration-card'
-import { apiClient } from '@/lib/api/client'
+import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import type { ApiIntegration, ApiAgentIntegration } from '@/lib/types'
 
@@ -44,8 +44,8 @@ export function AgentIntegrationsManager({ agentId }: AgentIntegrationsManagerPr
     try {
       setLoading(true)
       const [integrationsData, agentIntegrationsData] = await Promise.all([
-        apiClient.getIntegrations({ isActive: true }),
-        apiClient.getAgentIntegrations(agentId)
+        api.integrations.getIntegrations({ isActive: true }),
+        api.agentIntegrations.getAgentIntegrations(agentId)
       ])
       
       setIntegrations(integrationsData)

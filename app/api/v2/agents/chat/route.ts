@@ -81,7 +81,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
     // Get the agent with its integrations from the database
     logger.debug('Fetching agent by ID');
-    const agentData = await agentsService.getAgentById(agentId);
+    const agentData = await agentsService.getAgentByIdPublic(agentId);
     
     if (!agentData) {
       logger.warn('Agent not found');

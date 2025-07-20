@@ -68,7 +68,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     }
 
     // Get agent with its integrations
-    const agent = await agentsService.getAgentById(agentId);
+    const agent = await agentsService.getAgentByIdPublic(agentId);
     
     if (!agent) {
       logger.warn('Widget auth: agent not found', { agentId });

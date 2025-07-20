@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, ReactNode } from 'react'
+import { useState, useEffect, useMemo, ReactNode } from 'react'
 import {
   Stack,
   TextInput,
@@ -15,8 +15,7 @@ import {
 import { useForm } from '@mantine/form'
 import { AlertCircle, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
-import { useAuthContext } from '@/components/providers'
-import { apiClient } from '@/lib/api/client'
+import { api } from '@/lib/api'
 import type { ApiIntegration } from '@/lib/types'
 
 interface BaseCredentialsConfig {
@@ -32,13 +31,13 @@ interface BaseCredentialsConfig {
     validate?: (value: string) => string | null
   }>
   helpText?: ReactNode
-  testConnection?: (credentials: Record<string, string>) => Promise<boolean>
+  testConnection: (credentials: Record<string, string>) => Promise<boolean>
 }
 
 interface BaseCredentialsFormProps {
   config: BaseCredentialsConfig
   integration?: ApiIntegration | null
-  onSaved?: (integration: ApiIntegration) => void
+  onSaved?: (integration: ApiIntegration) => Promise<void> | void
   tempIntegrationId?: string
 }
 
@@ -47,37 +46,66 @@ export function BaseCredentialsForm({
   integration,
   onSaved
 }: BaseCredentialsFormProps) {
-  const { user } = useAuthContext()
   const [loading, setLoading] = useState(false)
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle')
+  const [fieldsChanged, setFieldsChanged] = useState(false)
 
-  // Initialize form with existing credentials
-  const form = useForm({
-    initialValues: config.fields.reduce((acc, field) => {
+  // Memoize initial values to prevent form recreation
+  const initialValues = useMemo(() => {
+    return config.fields.reduce((acc, field) => {
       acc[field.key] = (integration?.credentials?.[field.key] as string) || ''
       return acc
-    }, {} as Record<string, string>),
-    validate: config.fields.reduce((acc, field) => {
+    }, {} as Record<string, string>)
+  }, [config.fields, integration?.credentials])
+
+  // Memoize validation schema to prevent recreation
+  const validationSchema = useMemo(() => {
+    return config.fields.reduce((acc, field) => {
       if (field.validate) {
         acc[field.key] = field.validate
       }
       return acc
     }, {} as Record<string, (value: string) => string | null>)
+  }, [config.fields])
+
+  // Initialize form with memoized values
+  const form = useForm({
+    mode: 'controlled',
+    initialValues,
+    validate: validationSchema,
+    onValuesChange: () => {
+      // Mark fields as changed when user modifies values
+      if (testStatus === 'success') {
+        setFieldsChanged(true)
+        setTestStatus('idle') // Reset connection status when fields change
+      }
+    }
   })
 
-  // Update form when integration changes
+  const isEditing = integration && !integration.id.startsWith('temp-')  // Update form when integration credentials change
   useEffect(() => {
     if (integration?.credentials) {
       config.fields.forEach(field => {
-        form.setFieldValue(field.key, (integration.credentials[field.key] as string) || '')
+        const newValue = (integration.credentials[field.key] as string) || ''
+        form.setFieldValue(field.key, newValue)
       })
+      // If we have existing credentials, assume they were previously connected
+      if (isEditing) {
+        setTestStatus('success')
+        setFieldsChanged(false)
+      }
+    } else {
+      // Reset status for new integrations
+      setTestStatus('idle')
+      setFieldsChanged(false)
     }
-  }, [integration, config.fields, form])
+    // form is intentionally excluded from dependencies as it's a stable object from useForm
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [integration?.credentials, config.fields, isEditing])
 
   const handleTestConnection = async () => {
-    if (!config.testConnection) return
-
     setTestStatus('testing')
+    setFieldsChanged(false) // Reset the changed flag since we're testing current values
     try {
       const success = await config.testConnection(form.values)
       setTestStatus(success ? 'success' : 'error')
@@ -93,34 +121,33 @@ export function BaseCredentialsForm({
   }
 
   const handleSubmit = async (values: Record<string, string>) => {
-    if (!user?.organizationId) {
-      toast.error('Organization ID is required')
-      return
-    }
-
     setLoading(true)
     try {
       let savedIntegration: ApiIntegration
 
       if (integration?.id && !integration.id.startsWith('temp-')) {
         // Update existing integration
-        savedIntegration = await apiClient.updateIntegration(integration.id, {
+        savedIntegration = await api.integrations.updateIntegration(integration.id, {
           credentials: values
         })
-        toast.success(`${config.displayName} credentials updated successfully!`)
       } else {
-        // Create new integration
-        savedIntegration = await apiClient.createIntegration({
+        // Create new integration - organizationId will be auto-extracted from JWT
+        savedIntegration = await api.integrations.createIntegration({
           name: config.displayName,
           type: config.type,
-          credentials: values,
-          organizationId: user.organizationId
+          credentials: values
         })
-        toast.success(`${config.displayName} integration created successfully!`)
       }
 
-      onSaved?.(savedIntegration)
+      // Reset states after successful save but before calling parent
       setTestStatus('idle')
+      setFieldsChanged(false)
+
+      // Call parent handler and wait for it to complete
+      if (onSaved) {
+        await onSaved(savedIntegration)
+      }
+      
     } catch (error) {
       console.error(`Failed to save ${config.displayName} credentials:`, error)
       toast.error(`Failed to save ${config.displayName} credentials`)
@@ -128,8 +155,6 @@ export function BaseCredentialsForm({
       setLoading(false)
     }
   }
-
-  const isEditing = integration && !integration.id.startsWith('temp-')
 
   return (
     <form onSubmit={form.onSubmit(handleSubmit)}>
@@ -165,7 +190,7 @@ export function BaseCredentialsForm({
                 />
               )}
               {field.description && (
-                <Text size="xs" color="dimmed" mt={4}>
+                <Text size="xs" c="dimmed" mt={4}>
                   {field.description}
                 </Text>
               )}
@@ -175,27 +200,38 @@ export function BaseCredentialsForm({
 
         <Group justify="space-between" align="center">
           <Group>
-            <Button type="submit" loading={loading}>
-              {isEditing ? 'Update' : 'Save'} Credentials
+            <Button
+              variant={testStatus === 'success' && !fieldsChanged ? "filled" : "outline"}
+              onClick={handleTestConnection}
+              loading={testStatus === 'testing'}
+              disabled={loading || (testStatus === 'success' && !fieldsChanged)}
+              color={testStatus === 'success' && !fieldsChanged ? "green" : "blue"}
+            >
+              {testStatus === 'success' && <CheckCircle size={16} />}
+              {testStatus === 'error' && <AlertCircle size={16} />}
+              {testStatus === 'success' && !fieldsChanged ? 'Connected' : 'Connect'}
             </Button>
             
-            {config.testConnection && (
-              <Button
-                variant="outline"
-                onClick={handleTestConnection}
-                loading={testStatus === 'testing'}
-              >
-                {testStatus === 'success' && <CheckCircle size={16} />}
-                {testStatus === 'error' && <AlertCircle size={16} />}
-                Test Connection
-              </Button>
-            )}
+            <Button 
+              type="submit" 
+              loading={loading}
+              disabled={testStatus !== 'success' || fieldsChanged}
+            >
+              {isEditing ? 'Update Configuration' : 'Save Configuration'}
+            </Button>
           </Group>
 
           {testStatus === 'success' && (
             <Group>
               <CheckCircle size={16} />
-              <Text size="sm">Connected successfully</Text>
+              <Text size="sm" c="green">Connected successfully</Text>
+            </Group>
+          )}
+          
+          {testStatus === 'error' && (
+            <Group>
+              <AlertCircle size={16} />
+              <Text size="sm" c="red">Connection failed</Text>
             </Group>
           )}
         </Group>
