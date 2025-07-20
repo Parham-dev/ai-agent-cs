@@ -118,28 +118,8 @@ export function useAgentChatRuntimeBase(agent: ApiAgent | null) {
 
   // Initialize with welcome message when agent loads
   const initializeChat = useCallback(() => {
-    if (agent && messages.length === 0) {
-      const welcomeMessage: ThreadMessage = {
-        id: 'welcome',
-        role: 'assistant',
-        content: [
-          {
-            type: 'text',
-            text: `👋 Hello! I'm **${agent.name}**.
-
-${agent.systemPrompt || "I'm here to help you!"}
-
-How can I help you today?`,
-          },
-        ],
-        createdAt: new Date(),
-        metadata: { 
-          custom: {}
-        },
-        status: { type: 'complete', reason: 'stop' },
-      } as unknown as ThreadMessage
-      setMessages([welcomeMessage])
-    }
+    // Don't auto-send welcome message - let assistant-ui handle empty state
+    // The ThreadPrimitive.Empty component will show the proper welcome UI
   }, [agent, messages.length])
 
   // Handle new messages from user

@@ -7,6 +7,7 @@ import {
 import type { FC } from "react";
 import {
   ArrowDownIcon,
+  Bot,
   CheckIcon,
   CopyIcon,
   RefreshCwIcon,
@@ -15,12 +16,17 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import type { ApiAgent } from "@/lib/types";
 
 /**
  * Chat Thread Component
  * Optimized for two-column layout within DashboardLayout
  */
-export const ChatThread: FC = () => {
+interface ChatThreadProps {
+  agent?: ApiAgent | null;
+}
+
+export const ChatThread: FC<ChatThreadProps> = ({ agent }) => {
   return (
     <ThreadPrimitive.Root
       className="bg-background flex flex-col h-full max-h-full relative overflow-hidden"
@@ -34,7 +40,7 @@ export const ChatThread: FC = () => {
         autoScroll
       >
         <div className="flex flex-col px-4 py-6 min-h-full max-w-4xl mx-auto">
-          <ThreadWelcome />
+          <ThreadWelcome agent={agent} />
 
           <ThreadPrimitive.Messages
             components={{
@@ -84,14 +90,36 @@ const ThreadScrollToBottom: FC = () => {
   );
 };
 
-const ThreadWelcome: FC = () => {
+const ThreadWelcome: FC<{ agent?: ApiAgent | null }> = ({ agent }) => {
+  // Create a friendly greeting based on agent name
+  const getGreeting = () => {
+    if (agent?.name) {
+      return `Hi! I'm ${agent.name} 👋`;
+    }
+    return "How can I help you today?";
+  };
+
+  // Get description or fallback message
+  const getDescription = () => {
+    if (agent?.description) {
+      return agent.description;
+    }
+    return "I'm here to assist you with any questions or concerns you may have.";
+  };
+
   return (
     <ThreadPrimitive.Empty>
       <div className="flex w-full flex-col items-center justify-center min-h-[50vh] px-4">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            How can I help you today?
+          <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 mb-6 mx-auto">
+            <Bot className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100 mb-3">
+            {getGreeting()}
           </h1>
+          <p className="text-gray-600 dark:text-gray-400 text-base max-w-lg mx-auto leading-relaxed">
+            {getDescription()}
+          </p>
         </div>
         <ThreadWelcomeSuggestions />
       </div>
@@ -101,25 +129,35 @@ const ThreadWelcome: FC = () => {
 
 const ThreadWelcomeSuggestions: FC = () => {
   return (
-    <div className="mt-8 flex w-full items-stretch justify-center gap-3 max-w-2xl">
+    <div className="mt-8 flex w-full items-stretch justify-center gap-3 max-w-3xl flex-wrap">
       <ThreadPrimitive.Suggestion
-        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 flex flex-1 flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 p-4 transition-colors ease-in cursor-pointer"
-        prompt="What services do you offer?"
+        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 flex flex-1 flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 p-4 transition-colors ease-in cursor-pointer min-w-[200px]"
+        prompt="I need help with my order"
         method="replace"
         autoSend
       >
         <span className="text-sm text-center font-medium text-gray-700 dark:text-gray-300">
-          What services do you offer?
+          Help with my order
         </span>
       </ThreadPrimitive.Suggestion>
       <ThreadPrimitive.Suggestion
-        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 flex flex-1 flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 p-4 transition-colors ease-in cursor-pointer"
-        prompt="How can I get support?"
+        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 flex flex-1 flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 p-4 transition-colors ease-in cursor-pointer min-w-[200px]"
+        prompt="What products do you offer?"
         method="replace"
         autoSend
       >
         <span className="text-sm text-center font-medium text-gray-700 dark:text-gray-300">
-          How can I get support?
+          Browse products
+        </span>
+      </ThreadPrimitive.Suggestion>
+      <ThreadPrimitive.Suggestion
+        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 flex flex-1 flex-col items-center justify-center rounded-2xl border border-gray-200 dark:border-gray-700 p-4 transition-colors ease-in cursor-pointer min-w-[200px]"
+        prompt="I have a question about returns"
+        method="replace"
+        autoSend
+      >
+        <span className="text-sm text-center font-medium text-gray-700 dark:text-gray-300">
+          Returns & refunds
         </span>
       </ThreadPrimitive.Suggestion>
     </div>

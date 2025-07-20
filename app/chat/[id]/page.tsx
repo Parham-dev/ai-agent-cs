@@ -254,7 +254,7 @@ How can I help you today?`,
           <div className="flex-1 min-h-0 max-h-full relative overflow-hidden">
             {runtime ? (
               <AssistantRuntimeProvider runtime={runtime}>
-                <ChatThread />
+                <ChatThread agent={agent} />
               </AssistantRuntimeProvider>
             ) : (
               <div className="flex items-center justify-center h-full">
