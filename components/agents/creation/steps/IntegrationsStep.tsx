@@ -86,13 +86,13 @@ export function IntegrationsStep({ form }: StepProps) {
   }
 
   // Handle credentials saved - simplified without state synchronization complexity
-  const handleCredentialsSaved = async (integrationData: Partial<ApiIntegration>) => {
+  const handleCredentialsSaved = async (savedIntegration: ApiIntegration) => {
     setIntegrationSaving(true)
     try {
       const tempId = selectedIntegrationForCredentials?.id
       
-      // Save integration credentials (will handle temp→real promotion internally)
-      const savedIntegration = await saveIntegrationCredentials(integrationData, tempId)
+      // Process the saved integration (will handle temp→real promotion internally)
+      await saveIntegrationCredentials(savedIntegration, tempId)
       
       // Update form to use the new real integration ID if this was a temp integration
       if (tempId?.startsWith('temp-')) {

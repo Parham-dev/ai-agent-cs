@@ -63,7 +63,7 @@ export function useIntegrations() {
   }
 
   const saveIntegrationCredentials = async (
-    integrationData: Partial<ApiIntegration>,
+    integrationData: ApiIntegration | { name: string; type: string; credentials: Record<string, unknown>; description?: string },
     tempId?: string
   ): Promise<ApiIntegration> => {
     try {
@@ -72,7 +72,19 @@ export function useIntegrations() {
         setTempIntegrations(prev => prev.filter(temp => temp.id !== tempId))
       }
 
-      const savedIntegration = await api.integrations.createIntegration(integrationData)
+      // If integrationData is already a saved integration, just return it
+      if ('id' in integrationData && !integrationData.id.startsWith('temp-')) {
+        await mutate() // Refresh SWR cache
+        return integrationData
+      }
+
+      // Otherwise, create new integration
+      const savedIntegration = await api.integrations.createIntegration({
+        name: integrationData.name,
+        type: integrationData.type,
+        credentials: integrationData.credentials,
+        description: integrationData.description || undefined
+      })
       
       // SWR automatically refreshes data, ensuring all components get updated
       await mutate()

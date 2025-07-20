@@ -106,10 +106,10 @@ export default function IntegrationsPage() {
   }
 
   // Handle credentials saved
-  const handleCredentialsSaved = async (integrationData: Partial<ApiIntegration>) => {
+  const handleCredentialsSaved = async (savedIntegration: ApiIntegration) => {
     try {
       const tempId = selectedIntegrationForCredentials?.id
-      await saveIntegrationCredentials(integrationData, tempId)
+      await saveIntegrationCredentials(savedIntegration, tempId)
       
       setCredentialsFormOpened(false)
       setSelectedIntegrationForCredentials(null)
