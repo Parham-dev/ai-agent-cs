@@ -407,57 +407,72 @@
     open: async () => {
       utils.log('Opening chat interface...');
       
-      if (!widgetLoaded) {
-        await widget.loadCore();
-      }
-      
-      // Let the core handle the opening
-      if (window.CustomerAgentCore) {
-        window.CustomerAgentCore.open();
+      try {
+        if (!widgetLoaded) {
+          await widget.loadCore();
+        }
+        
+        // Core should be ready now, try to open
+        if (window.CustomerAgentCore) {
+          window.CustomerAgentCore.open();
+        } else {
+          throw new Error('CustomerAgentCore not available after loading');
+        }
+      } catch (error) {
+        console.error('[CustomerAgent] Failed to open chat:', error);
+        // Show bubble again if opening failed
+        widget.show();
       }
     },
 
     // Load the core chat interface
     loadCore: async () => {
-      if (widgetLoaded) return;
+      if (widgetLoaded) return Promise.resolve();
       
       utils.log('Loading core chat interface...');
       
-      try {
-        // Load CSS first
-        const cssLink = document.createElement('link');
-        cssLink.rel = 'stylesheet';
-        cssLink.href = '/widget/widget.css';
-        document.head.appendChild(cssLink);
+      return new Promise((resolve, reject) => {
+        try {
+          // Load CSS first
+          const cssLink = document.createElement('link');
+          cssLink.rel = 'stylesheet';
+          cssLink.href = '/widget/widget.css';
+          document.head.appendChild(cssLink);
 
-        // Load core JavaScript
-        const script = document.createElement('script');
-        script.src = '/widget/widget-core.js';
-        
-        utils.log('Loading core script from:', script.src);
-        
-        script.onload = () => {
-          widgetLoaded = true;
-          utils.log('Core loaded successfully');
+          // Load core JavaScript
+          const script = document.createElement('script');
+          script.src = '/widget/widget-core.js';
           
-          // Initialize core with configuration
-          if (window.CustomerAgentCore) {
-            window.CustomerAgentCore.init({
-              config: widgetConfig,
-              sessionToken: auth.getToken(),
-              utils: utils
-            });
-          }
-        };
-        
-        script.onerror = () => {
-          console.error('[CustomerAgent] Failed to load core interface');
-        };
-        
-        document.head.appendChild(script);
-      } catch (error) {
-        console.error('[CustomerAgent] Error loading core:', error);
-      }
+          utils.log('Loading core script from:', script.src);
+          
+          script.onload = () => {
+            widgetLoaded = true;
+            utils.log('Core loaded successfully');
+            
+            // Initialize core with configuration
+            if (window.CustomerAgentCore) {
+              window.CustomerAgentCore.init({
+                config: widgetConfig,
+                sessionToken: auth.getToken(),
+                utils: utils
+              });
+              resolve();
+            } else {
+              reject(new Error('CustomerAgentCore not available after loading'));
+            }
+          };
+          
+          script.onerror = (error) => {
+            console.error('[CustomerAgent] Failed to load core interface');
+            reject(error);
+          };
+          
+          document.head.appendChild(script);
+        } catch (error) {
+          console.error('[CustomerAgent] Error loading core:', error);
+          reject(error);
+        }
+      });
     }
   };
 

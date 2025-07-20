@@ -604,16 +604,22 @@
       // Initialize events
       events.init();
       
-      // Hide bubble when chat is open
-      const bubble = document.getElementById('customer-agent-bubble');
-      if (bubble) {
-        bubble.style.display = 'none';
-      }
+      // Don't hide bubble yet - wait until chat actually opens
+      utils.log('Core initialization complete');
     },
 
     // Open chat
     open: () => {
-      if (!chatContainer) return;
+      if (!chatContainer) {
+        utils.log('Error: chatContainer not found when trying to open');
+        return;
+      }
+      
+      // Hide bubble when chat opens successfully
+      const bubble = document.getElementById('customer-agent-bubble');
+      if (bubble) {
+        bubble.style.display = 'none';
+      }
       
       chatContainer.style.display = 'flex';
       isOpen = true;
@@ -621,10 +627,14 @@
       // Focus input
       setTimeout(() => {
         const input = chatContainer.querySelector('.chat-input');
-        if (input) input.focus();
+        if (input) {
+          input.focus();
+        } else {
+          utils.log('Warning: chat input not found');
+        }
       }, 300);
       
-      utils.log('Chat opened');
+      utils.log('Chat opened successfully');
     },
 
     // Close chat

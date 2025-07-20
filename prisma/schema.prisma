@@ -82,6 +82,7 @@ model Agent {
   organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   conversations     Conversation[]
   usageRecords      UsageRecord[]
+  widgetConfig      WidgetConfig?
 
   @@map("agents")
 }
@@ -101,6 +102,46 @@ model AgentIntegration {
 
   @@unique([agentId, integrationId])
   @@map("agent_integrations")
+}
+
+model WidgetConfig {
+  id               String    @id @default(cuid())
+  agentId          String    @unique
+  
+  // Widget display settings
+  position         String    @default("bottom-right")
+  theme            String    @default("auto")
+  primaryColor     String    @default("#007bff")
+  
+  // Widget behavior
+  greeting         String?
+  placeholder      String    @default("Type your message...")
+  showPoweredBy    Boolean   @default(true)
+  
+  // Domain security
+  allowedDomains   String[]  @default(["*"])
+  
+  // Advanced configuration
+  /// [WidgetTheme]
+  customTheme      Json?     @default("{}")
+  /// [WidgetTriggers]
+  triggers         Json      @default("{}")
+  /// [WidgetFeatures]
+  features         String[]  @default(["chat", "typing-indicator"])
+  customCSS        String?
+  
+  // Widget deployment
+  deployedAt       DateTime?
+  lastAccessedAt   DateTime?
+  
+  // Timestamps
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  agent            Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  @@map("widget_configs")
 }
 
 model Conversation {

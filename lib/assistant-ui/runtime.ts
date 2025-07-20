@@ -120,7 +120,7 @@ export function useAgentChatRuntimeBase(agent: ApiAgent | null) {
   const initializeChat = useCallback(() => {
     // Don't auto-send welcome message - let assistant-ui handle empty state
     // The ThreadPrimitive.Empty component will show the proper welcome UI
-  }, [agent, messages.length])
+  }, [])
 
   // Handle new messages from user
   const onNew = useCallback(

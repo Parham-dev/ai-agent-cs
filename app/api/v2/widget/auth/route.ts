@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { agentsService } from '@/lib/database/services';
+import { agentsService, widgetConfigsService } from '@/lib/database/services';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
 import { sign } from 'jsonwebtoken';
@@ -88,9 +88,8 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       return Api.error('VALIDATION_ERROR', 'Agent is not active');
     }
 
-    // Domain validation (for now, allow all domains - in production you'd validate against allowed domains)
-    // TODO: Implement domain allowlist validation from agent/organization settings
-    const isValidDomain = validateDomain(domain);
+    // Domain validation using widget configuration
+    const isValidDomain = await widgetConfigsService.validateDomain(agentId, domain);
     if (!isValidDomain) {
       logger.warn('Widget auth: domain not allowed', { domain, agentId });
       return Api.error('VALIDATION_ERROR', 'Domain not authorized for this agent');
@@ -153,32 +152,6 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     );
   }
 });
-
-/**
- * Validate if domain is allowed for the agent
- * TODO: Implement proper domain validation against agent/organization settings
- */
-function validateDomain(domain: string): boolean {
-  // For now, allow all domains for development
-  // In production, you would check against a whitelist stored in the database
-  
-  // Basic validation - reject obviously invalid domains
-  if (!domain || domain.length < 3) {
-    return false;
-  }
-  
-  // Reject localhost for production (allow for development)
-  if (process.env.NODE_ENV === 'production' && 
-      (domain === 'localhost' || domain.startsWith('127.0.0.') || domain.startsWith('192.168.'))) {
-    return false;
-  }
-  
-  // TODO: Check against organization's allowed domains
-  // const allowedDomains = await getOrganizationAllowedDomains(organizationId);
-  // return allowedDomains.includes(domain) || allowedDomains.includes('*');
-  
-  return true;
-}
 
 /**
  * Generate a signed JWT session token for widget authentication

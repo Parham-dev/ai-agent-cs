@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useParams } from 'next/navigation'
+import Script from 'next/script'
 
 export default function WidgetDemoPage() {
   const params = useParams()
@@ -22,51 +23,26 @@ export default function WidgetDemoPage() {
       }
     }
 
-    // Initialize widget
-    async function initWidget() {
-      if (!agentId) {
-        showStatus('No agent ID provided in URL', 'error');
-        return;
-      }
-
-      showStatus('Loading demo...', 'info');
-      
-      // Wait a moment to ensure DOM is ready
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Configure widget with the agent ID from URL - MUST be set before script loads
-      (window as { CustomerAgent?: Record<string, unknown> }).CustomerAgent = {
-        agentId: agentId,
-        position: 'bottom-right',
-        theme: 'auto',
-        primaryColor: '#007bff',
-        greeting: 'Hello! Welcome to our demo. I can help you find products and answer questions about our store.',
-        triggers: {
-          showAfter: 3000,
-          showOnScroll: 30
-        },
-        debug: true
-      };
-      
-      console.log('Widget config set:', (window as { CustomerAgent?: Record<string, unknown> }).CustomerAgent);
-      
-      showStatus('Configuration set, loading widget...', 'info');
-      
-      // Load the widget script
-      const script = document.createElement('script');
-      script.src = '/widget/widget.js';
-      script.onload = () => {
-        showStatus('Widget loaded successfully!', 'success');
-      };
-      script.onerror = (error) => {
-        console.error('Script load error:', error);
-        showStatus('Failed to load widget script', 'error');
-      };
-      
-      document.head.appendChild(script);
+    if (!agentId) {
+      showStatus('No agent ID provided in URL', 'error');
+      return;
     }
 
-    initWidget();
+    showStatus('Loading third-party demo...', 'info');
+    
+    // Configure widget before script loads
+    (window as unknown as Record<string, unknown>).CustomerAgent = {
+      agentId: agentId,
+      position: 'bottom-right',
+      theme: 'auto', 
+      primaryColor: '#007bff',
+      greeting: 'Hello! Welcome to our demo store. How can I help you today?',
+      debug: true // Enable debug to see what's happening
+    };
+    
+    setTimeout(() => {
+      showStatus('Demo configured - widget should appear automatically', 'success');
+    }, 1000);
   }, [agentId]);
 
   const openWidget = () => {
@@ -85,7 +61,31 @@ export default function WidgetDemoPage() {
           margin: 0;
           padding: 0;
         }
+        .status {
+          padding: 1rem;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          margin-bottom: 1rem;
+        }
+        .status.info {
+          background: rgba(59, 130, 246, 0.2);
+          border: 1px solid rgba(59, 130, 246, 0.5);
+        }
+        .status.success {
+          background: rgba(34, 197, 94, 0.2);
+          border: 1px solid rgba(34, 197, 94, 0.5);
+        }
+        .status.error {
+          background: rgba(239, 68, 68, 0.2);
+          border: 1px solid rgba(239, 68, 68, 0.5);
+        }
       `}</style>
+      
+      {/* AI Customer Support Widget */}
+      <Script 
+        src="http://localhost:3000/widget/widget.js" 
+        strategy="afterInteractive"
+      />
       
       <div style={{
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -99,21 +99,21 @@ export default function WidgetDemoPage() {
               marginBottom: '1rem', 
               fontWeight: 700 
             }}>
-              🤖 AI Customer Service Widget Demo
+              🛍️ Demo E-commerce Store
             </h1>
             <p style={{ 
               fontSize: '1.2rem', 
               opacity: 0.9, 
               marginBottom: '1rem' 
             }}>
-              Experience intelligent customer support powered by AI agents
+              Welcome to our online store! Browse our products and get instant AI-powered support.
             </p>
             <p style={{ 
               fontSize: '1rem', 
               opacity: 0.7, 
               marginBottom: '2rem' 
             }}>
-              Agent ID: {agentId}
+              This is a third-party website simulation with AI customer service widget
             </p>
             <button 
               onClick={openWidget}
@@ -125,11 +125,20 @@ export default function WidgetDemoPage() {
                 borderRadius: '8px',
                 fontSize: '1.1rem',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
+                marginBottom: '1rem'
               }}
             >
-              💬 Try the Chat Widget
+              💬 Need Help? Chat with us!
             </button>
+            <div 
+              id="status" 
+              style={{
+                maxWidth: '400px',
+                margin: '0 auto',
+                display: 'none'
+              }}
+            />
           </div>
 
           <div style={{
@@ -140,16 +149,27 @@ export default function WidgetDemoPage() {
             backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255, 255, 255, 0.2)'
           }}>
-            <h3 style={{ marginBottom: '1rem' }}>🎯 Demo Instructions</h3>
+            <h3 style={{ marginBottom: '1rem' }}>🛒 Our Products</h3>
             <p style={{ marginBottom: '1rem', opacity: 0.9 }}>
-              This demo shows the widget in action. Here&apos;s what you can try:
+              Browse our featured products and get instant support from our AI assistant:
             </p>
-            <ol style={{ paddingLeft: '1.5rem', opacity: 0.9 }}>
-              <li style={{ marginBottom: '0.5rem' }}>Wait for the chat bubble to appear (bottom-right corner)</li>
-              <li style={{ marginBottom: '0.5rem' }}>Click the bubble or the button above to open the chat</li>
-              <li style={{ marginBottom: '0.5rem' }}>Ask questions like &quot;What products do you have?&quot; or &quot;Tell me about your store&quot;</li>
-              <li style={{ marginBottom: '0.5rem' }}>The AI agent will respond using real integration data</li>
-            </ol>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.15)', padding: '1rem', borderRadius: '8px' }}>
+                <h4>📱 Smartphones</h4>
+                <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>Latest models with advanced features</p>
+              </div>
+              <div style={{ background: 'rgba(255, 255, 255, 0.15)', padding: '1rem', borderRadius: '8px' }}>
+                <h4>💻 Laptops</h4>
+                <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>High-performance computers for work</p>
+              </div>
+              <div style={{ background: 'rgba(255, 255, 255, 0.15)', padding: '1rem', borderRadius: '8px' }}>
+                <h4>🎧 Headphones</h4>
+                <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>Premium audio experience</p>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+              💡 <strong>Try asking our AI:</strong> &quot;What&apos;s your return policy?&quot; or &quot;Do you have any smartphone deals?&quot;
+            </p>
           </div>
           
           <div style={{
@@ -165,9 +185,9 @@ export default function WidgetDemoPage() {
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255, 255, 255, 0.2)'
             }}>
-              <h3 style={{ marginBottom: '1rem' }}>🚀 Instant Setup</h3>
+              <h3 style={{ marginBottom: '1rem' }}>🚚 Fast Delivery</h3>
               <p style={{ opacity: 0.9, lineHeight: 1.6 }}>
-                Add powerful AI customer service to your website with just one line of code.
+                Free shipping on orders over $50. Same-day delivery available in select areas.
               </p>
             </div>
             
@@ -178,9 +198,9 @@ export default function WidgetDemoPage() {
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255, 255, 255, 0.2)'
             }}>
-              <h3 style={{ marginBottom: '1rem' }}>🎨 Fully Customizable</h3>
+              <h3 style={{ marginBottom: '1rem' }}>🛡️ Secure Payment</h3>
               <p style={{ opacity: 0.9, lineHeight: 1.6 }}>
-                Match your brand with custom themes, colors, and positioning options.
+                Your transactions are protected with industry-leading security measures.
               </p>
             </div>
             
@@ -191,9 +211,9 @@ export default function WidgetDemoPage() {
               backdropFilter: 'blur(10px)',
               border: '1px solid rgba(255, 255, 255, 0.2)'
             }}>
-              <h3 style={{ marginBottom: '1rem' }}>📱 Mobile Ready</h3>
+              <h3 style={{ marginBottom: '1rem' }}>🔄 Easy Returns</h3>
               <p style={{ opacity: 0.9, lineHeight: 1.6 }}>
-                Responsive design that works perfectly on desktop and mobile devices.
+                30-day return policy with hassle-free exchanges and refunds.
               </p>
             </div>
           </div>
@@ -206,50 +226,38 @@ export default function WidgetDemoPage() {
             backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255, 255, 255, 0.2)'
           }}>
-            <h2 style={{ marginBottom: '1rem' }}>Integration Code</h2>
+            <h2 style={{ marginBottom: '1rem' }}>💬 Customer Support</h2>
             <p style={{ marginBottom: '2rem', opacity: 0.9 }}>
-              Copy and paste this code into your website:
+              Need help? Our AI assistant is here 24/7 to answer your questions!
             </p>
             <div style={{
               background: 'rgba(0, 0, 0, 0.3)',
               padding: '1.5rem',
               borderRadius: '8px',
               margin: '2rem 0',
-              fontFamily: 'Monaco, Consolas, monospace',
-              fontSize: '0.9rem',
-              overflowX: 'auto'
+              fontSize: '0.9rem'
             }}>
-{`<script>
-  window.CustomerAgent = {
-    agentId: '${agentId}',
-    position: 'bottom-right',
-    theme: 'auto',
-    primaryColor: '#007bff'
-  };
-</script>
-<script src="/widget/widget.js"></script>`}
+              <p style={{ marginBottom: '1rem' }}>✨ <strong>Powered by AI</strong></p>
+              <p style={{ marginBottom: '1rem' }}>🕐 Available 24/7</p>
+              <p style={{ marginBottom: '0' }}>⚡ Instant responses</p>
             </div>
             <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-              This demo is using agent ID: {agentId}
+              Look for the chat bubble in the bottom-right corner!
             </p>
           </div>
         </div>
         
-        <div 
-          id="status" 
-          style={{
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            background: 'rgba(0, 0, 0, 0.8)',
-            color: 'white',
-            padding: '1rem',
-            borderRadius: '8px',
-            fontSize: '0.9rem',
-            maxWidth: '300px',
-            display: 'none'
-          }}
-        />
+        {/* Footer */}
+        <div style={{
+          textAlign: 'center',
+          padding: '2rem 0',
+          opacity: 0.6,
+          fontSize: '0.9rem',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          marginTop: '3rem'
+        }}>
+          <p>© 2024 Demo Store - This is a simulation for testing the AI customer service widget</p>
+        </div>
       </div>
     </>
   );

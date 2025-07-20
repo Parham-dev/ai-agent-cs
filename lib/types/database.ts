@@ -447,5 +447,61 @@ export interface ConversationStats {
   }>
 }
 
+// Widget Configuration Types
+export interface WidgetConfig {
+  id: string
+  agentId: string
+  position: string
+  theme: string
+  primaryColor: string
+  greeting?: string | null
+  placeholder: string
+  showPoweredBy: boolean
+  allowedDomains: string[]
+  customTheme?: PrismaJson.WidgetTheme | null
+  triggers: PrismaJson.WidgetTriggers
+  features: string[]
+  customCSS?: string | null
+  deployedAt?: Date | null
+  lastAccessedAt?: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface WidgetConfigWithRelations extends WidgetConfig {
+  agent?: Pick<Agent, 'id' | 'name' | 'isActive' | 'organizationId'>
+}
+
+export interface CreateWidgetConfigData {
+  agentId: string
+  position?: string
+  theme?: string
+  primaryColor?: string
+  greeting?: string
+  placeholder?: string
+  showPoweredBy?: boolean
+  allowedDomains?: string[]
+  customTheme?: PrismaJson.WidgetTheme
+  triggers?: PrismaJson.WidgetTriggers
+  features?: string[]
+  customCSS?: string
+}
+
+export interface UpdateWidgetConfigData {
+  position?: string
+  theme?: string
+  primaryColor?: string
+  greeting?: string | null
+  placeholder?: string
+  showPoweredBy?: boolean
+  allowedDomains?: string[]
+  customTheme?: PrismaJson.WidgetTheme | null
+  triggers?: PrismaJson.WidgetTriggers
+  features?: string[]
+  customCSS?: string | null
+  deployedAt?: Date | null
+  lastAccessedAt?: Date | null
+}
+
 // This file must be a module
 export {}

@@ -183,6 +183,39 @@ declare global {
       }
       [key: string]: unknown
     }
+
+    // Widget theme configuration
+    interface WidgetTheme {
+      background?: string
+      foreground?: string
+      primary?: string
+      secondary?: string
+      accent?: string
+      border?: string
+      chatBackground?: string
+      fontFamily?: string
+      fontSize?: string
+      borderRadius?: string
+      boxShadow?: string
+      userMessageColor?: string
+      botMessageColor?: string
+      [key: string]: string | undefined
+    }
+
+    // Widget trigger configuration
+    interface WidgetTriggers {
+      showAfter?: number         // Show after X milliseconds
+      showOnScroll?: number      // Show after scrolling X percent
+      showOnExit?: boolean       // Show on exit intent
+      hideOnMobile?: boolean     // Hide on mobile devices
+      showOnPages?: string[]     // Show only on specific pages
+      hideOnPages?: string[]     // Hide on specific pages
+      customTriggers?: {
+        event: string
+        action: 'show' | 'hide' | 'toggle'
+        condition?: string
+      }[]
+    }
   }
 }
 

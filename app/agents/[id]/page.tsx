@@ -34,10 +34,12 @@ import {
   Calendar,
   Brain,
   Wrench,
-  Plug
+  Plug,
+  Code2
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { AgentIntegrationsManager } from '@/components/agent-integrations'
+import { DeployWidgetModal } from '@/components/agents/DeployWidgetModal'
 import { toast } from 'sonner'
 import { useAgent } from '@/components/shared/hooks'
 
@@ -49,6 +51,7 @@ export default function AgentDetailPage() {
   // Use SWR for agent data with automatic retries and caching
   const { agent, isLoading, error, refreshAgent } = useAgent(agentId)
   const [isTogglingStatus, setIsTogglingStatus] = useState(false)
+  const [showDeployModal, setShowDeployModal] = useState(false)
 
   const handleToggleStatus = async () => {
     if (!agent) return
@@ -314,6 +317,18 @@ export default function AgentDetailPage() {
                     >
                       Test Chat
                     </Button>
+
+                    <Button 
+                      variant="filled" 
+                      size="md" 
+                      fullWidth 
+                      justify="flex-start"
+                      onClick={() => setShowDeployModal(true)}
+                      leftSection={<Code2 size={18} />}
+                      radius="md"
+                    >
+                      Deploy on My Site
+                    </Button>
                     
                     <Button 
                       variant="light" 
@@ -382,6 +397,15 @@ export default function AgentDetailPage() {
           </Grid>
         </Stack>
       </Container>
+
+      {/* Deploy Widget Modal */}
+      {agent && (
+        <DeployWidgetModal
+          opened={showDeployModal}
+          onClose={() => setShowDeployModal(false)}
+          agent={agent}
+        />
+      )}
     </DashboardLayout>
   )
 }
