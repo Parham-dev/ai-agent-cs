@@ -6,254 +6,389 @@
 graph TB
     %% User Layer
     subgraph "👥 User Interface Layer"
-        UI[Web Dashboard<br/>Next.js 14 + TypeScript]
-        Mobile[Mobile Responsive<br/>Tailwind CSS]
-        Widget[Embeddable Widget<br/>iframe/JS SDK]
+        Dashboard[Web Dashboard<br/>Next.js 15 + React 19]
+        Widget[Embeddable Widget<br/>Cross-domain JWT Auth]
+        Mobile[Mobile Responsive<br/>Tailwind + Mantine]
     end
 
-    %% API Gateway
+    %% API Layer
     subgraph "🚪 API Gateway"
-        API[Next.js API Routes<br/>REST + WebSocket]
-        Auth[Authentication<br/>Supabase Auth]
-        MW[Middleware<br/>Rate Limiting + CORS]
+        API[Next.js API Routes v2<br/>RESTful Endpoints]
+        Auth[Supabase Auth<br/>JWT + Session Management]
+        MW[Custom Middleware<br/>CORS + Domain Validation]
     end
 
-    %% Core Services
-    subgraph "🧠 Core AI Services"
-        Agent[AI Agent Engine<br/>OpenAI GPT-4]
-        Runtime[Assistant-UI Runtime<br/>Message Management]
-        Tools[AI Tools & Functions<br/>Database Queries]
+    %% Core AI Layer
+    subgraph "🧠 AI Agent Engine"
+        AgentRuntime[OpenAI Agents SDK<br/>@openai/agents]
+        AssistantUI[Assistant-UI Runtime<br/>Message Management]
+        MCPClient[MCP Client<br/>Tool Orchestration]
+    end
+
+    %% MCP Integration Layer
+    subgraph "🔧 MCP Server Ecosystem"
+        ShopifyMCP[Shopify MCP Server<br/>12 E-commerce Tools]
+        StripeMCP[Stripe MCP Server<br/>Payment Processing]
+        CustomMCP[Custom MCP Server<br/>Business Logic Tools]
     end
 
     %% Business Logic
-    subgraph "⚙️ Business Logic Layer"
+    subgraph "⚙️ Application Services"
         AgentMgmt[Agent Management<br/>CRUD + Configuration]
-        ConvMgmt[Conversation Engine<br/>Session Management]
-        IntMgmt[Integration Manager<br/>External APIs]
+        IntegrationMgmt[Integration Manager<br/>MCP Server Registry]
+        GuardrailEngine[Guardrails System<br/>Safety + Quality]
     end
 
     %% Data Layer
     subgraph "💾 Data Persistence"
-        PG[(PostgreSQL<br/>Primary Database)]
-        Supabase[(Supabase<br/>Auth + Storage)]
-        Cache[(Redis Cache<br/>Session Storage)]
+        Supabase[(Supabase PostgreSQL<br/>Primary Database + Auth)]
+        PGVector[(pgvector Extension<br/>AI Memory + Knowledge)]
+        FileStorage[(Supabase Storage<br/>File Management)]
     end
 
-    %% External Integrations
-    subgraph "🔌 External Services"
-        OpenAI[OpenAI API<br/>GPT-4 Models]
-        Email[Email Service<br/>SMTP/SendGrid]
-        Analytics[Analytics<br/>Tracking & Metrics]
+    %% External Services
+    subgraph "🔌 External APIs"
+        OpenAI[OpenAI API<br/>Multiple Model Support]
+        ShopifyAPI[Shopify Admin API<br/>E-commerce Integration]
+        StripeAPI[Stripe API<br/>Payment Processing]
     end
 
     %% Connections
-    UI --> API
-    Mobile --> API
+    Dashboard --> API
     Widget --> API
+    Mobile --> API
     
     API --> Auth
     API --> MW
     API --> AgentMgmt
-    API --> ConvMgmt
-    API --> IntMgmt
+    API --> IntegrationMgmt
+    API --> GuardrailEngine
     
-    AgentMgmt --> Agent
-    ConvMgmt --> Runtime
-    Runtime --> Agent
-    Agent --> Tools
+    AgentMgmt --> AgentRuntime
+    AgentRuntime --> AssistantUI
+    AgentRuntime --> MCPClient
     
-    Agent --> OpenAI
-    IntMgmt --> Email
-    IntMgmt --> Analytics
+    MCPClient --> ShopifyMCP
+    MCPClient --> StripeMCP
+    MCPClient --> CustomMCP
     
-    AgentMgmt --> PG
-    ConvMgmt --> PG
+    ShopifyMCP --> ShopifyAPI
+    StripeMCP --> StripeAPI
+    AgentRuntime --> OpenAI
+    
+    AgentMgmt --> Supabase
+    IntegrationMgmt --> Supabase
+    AssistantUI --> PGVector
     Auth --> Supabase
-    Runtime --> Cache
     
     %% Styling
     classDef userLayer fill:#e1f5fe
     classDef apiLayer fill:#f3e5f5
-    classDef coreLayer fill:#e8f5e8
-    classDef businessLayer fill:#fff3e0
-    classDef dataLayer fill:#fce4ec
-    classDef externalLayer fill:#f1f8e9
+    classDef aiLayer fill:#e8f5e8
+    classDef mcpLayer fill:#fff3e0
+    classDef businessLayer fill:#fce4ec
+    classDef dataLayer fill:#f1f8e9
+    classDef externalLayer fill:#ffebee
     
-    class UI,Mobile,Widget userLayer
+    class Dashboard,Widget,Mobile userLayer
     class API,Auth,MW apiLayer
-    class Agent,Runtime,Tools coreLayer
-    class AgentMgmt,ConvMgmt,IntMgmt businessLayer
-    class PG,Supabase,Cache dataLayer
-    class OpenAI,Email,Analytics externalLayer
+    class AgentRuntime,AssistantUI,MCPClient aiLayer
+    class ShopifyMCP,StripeMCP,CustomMCP mcpLayer
+    class AgentMgmt,IntegrationMgmt,GuardrailEngine businessLayer
+    class Supabase,PGVector,FileStorage dataLayer
+    class OpenAI,ShopifyAPI,StripeAPI externalLayer
 ```
 
 ## Technology Stack
 
 ```mermaid
 graph LR
-    subgraph "🎨 Frontend"
-        NextJS[Next.js 14]
-        React[React 18]
+    subgraph "🎨 Frontend Stack"
+        NextJS[Next.js 15]
+        React[React 19]
         TypeScript[TypeScript]
+        Mantine[Mantine UI 8]
         Tailwind[Tailwind CSS]
-        AssistantUI[Assistant-UI]
-        Mantine[Mantine UI]
+        AssistantUI[Assistant-UI React]
     end
 
-    subgraph "⚡ Backend"
-        NextAPI[Next.js API Routes]
+    subgraph "⚡ Backend Stack"
+        NextAPI[Next.js API Routes v2]
+        OpenAIAgents[OpenAI Agents SDK]
+        MCPFramework[MCP Framework]
         Prisma[Prisma ORM]
-        Zod[Zod Validation]
         Middleware[Custom Middleware]
     end
 
-    subgraph "🗄️ Database"
-        PostgreSQL[(PostgreSQL)]
-        Supabase[(Supabase)]
-        Redis[(Redis)]
+    subgraph "🗄️ Database Stack"
+        SupabaseDB[(Supabase PostgreSQL)]
+        Vector[(pgvector Extension)]
+        Auth[(Supabase Auth)]
+        RLS[(Row Level Security)]
     end
 
-    subgraph "🤖 AI & ML"
-        OpenAI[OpenAI GPT-4]
-        Embeddings[Text Embeddings]
-        VectorDB[Vector Database]
-    end
-
-    subgraph "🚀 Deployment"
-        Vercel[Vercel]
-        Docker[Docker]
-        GitHub[GitHub Actions]
+    subgraph "🤖 AI & Integration Stack"
+        OpenAI[OpenAI Multiple Models]
+        MCP[Model Context Protocol]
+        Shopify[Shopify MCP Server]
+        Stripe[Stripe MCP Server]
+        CustomMCP[Custom MCP Server]
+        Guardrails[Custom Guardrails]
     end
 
     NextJS --> NextAPI
+    NextAPI --> OpenAIAgents
+    OpenAIAgents --> OpenAI
+    NextAPI --> MCPFramework
+    MCPFramework --> MCP
+    MCP --> Shopify
+    MCP --> Stripe
+    MCP --> CustomMCP
     NextAPI --> Prisma
-    Prisma --> PostgreSQL
-    NextAPI --> OpenAI
-    NextJS --> Vercel
+    Prisma --> SupabaseDB
+    SupabaseDB --> Vector
+    SupabaseDB --> Auth
+    Auth --> RLS
 ```
+
+### Detailed Technology Breakdown
+
+#### Frontend Framework
+- **Next.js 15**: React-based full-stack framework with App Router and Server Components
+- **React 19**: Latest React with concurrent features and streaming SSR
+- **TypeScript**: Full type safety across frontend and backend
+
+#### UI/UX Libraries  
+- **Mantine UI 8**: Modern React component library with dark/light theme support
+- **Tailwind CSS**: Utility-first CSS framework for custom styling
+- **Assistant-UI React**: Specialized chat interface components optimized for AI conversations
+
+#### AI Agent Runtime
+- **OpenAI Agents SDK**: Official agent runtime using `@openai/agents` package
+- **Model Context Protocol (MCP)**: Standardized tool integration framework
+- **Custom MCP Servers**: Shopify, Stripe, and business-specific tool implementations
+
+#### Database & Storage
+- **Supabase PostgreSQL**: Managed PostgreSQL with built-in authentication
+- **pgvector Extension**: Vector storage for AI embeddings and semantic search
+- **Row Level Security**: Database-level access controls and multi-tenancy
+
+#### API & Backend
+- **Next.js API Routes v2**: Modern RESTful API endpoints in `/app/api/v2/`
+- **Streaming Responses**: Real-time message delivery for chat interfaces
+- **Custom Middleware**: Authentication, rate limiting, and security layers
 
 ## Data Flow Architecture
 
 ```mermaid
 sequenceDiagram
-    participant U as User
-    participant UI as Dashboard
-    participant API as API Layer
-    participant Agent as AI Agent
-    participant DB as Database
+    participant User as User
+    participant Dashboard as Dashboard
+    participant API as API Routes v2
+    participant Agent as OpenAI Agents SDK
+    participant MCP as MCP Client
+    participant Shopify as Shopify MCP Server
+    participant DB as Supabase DB
     participant OpenAI as OpenAI API
 
-    U->>UI: Access Chat Interface
-    UI->>API: Request Agent Data
+    User->>Dashboard: Access Agent Chat
+    Dashboard->>API: GET /api/v2/agents/{id}
     API->>DB: Fetch Agent Config
-    DB-->>API: Agent Settings
-    API-->>UI: Agent Info
+    DB-->>API: Agent Settings + MCP Config
+    API-->>Dashboard: Agent Data
     
-    U->>UI: Send Message
-    UI->>API: POST /api/v2/chat
+    User->>Dashboard: Send Message
+    Dashboard->>API: POST /api/v2/agents/chat
     API->>DB: Store User Message
-    API->>Agent: Process Message
-    Agent->>OpenAI: Generate Response
+    API->>Agent: Process with Agent Runtime
+    
+    Agent->>MCP: Request Tool Execution
+    MCP->>Shopify: Execute Business Tool
+    Shopify-->>MCP: Tool Result
+    MCP-->>Agent: Processed Result
+    
+    Agent->>OpenAI: Generate AI Response
     OpenAI-->>Agent: AI Response
-    Agent->>DB: Store AI Response
+    Agent->>DB: Store AI Response + Metadata
     Agent-->>API: Response Data
-    API-->>UI: Stream Response
-    UI-->>U: Display Message
+    API-->>Dashboard: Stream Response
+    Dashboard-->>User: Display Message
+```
+
+## Application Structure
+
+```mermaid
+graph TD
+    subgraph "📱 App Directory Structure"
+        App[app/]
+        AppRoutes[API Routes v2]
+        Pages[Page Components]
+        Layout[Layout Components]
+    end
+
+    subgraph "🧩 Components Layer"
+        Dashboard[Dashboard Components]
+        Agents[Agent Management]
+        Chat[Chat Interface]
+        Widget[Widget Components]
+    end
+
+    subgraph "� Library Layer"
+        AgentLib[lib/agents/]
+        MCPLib[lib/mcp/]
+        AuthLib[lib/auth/]
+        GuardrailLib[lib/guardrails/]
+        TypesLib[lib/types/]
+    end
+
+    subgraph "🔧 MCP Ecosystem"
+        MCPClient[MCP Client]
+        ShopifyServer[Shopify MCP Server]
+        StripeServer[Stripe MCP Server]
+        CustomServer[Custom Tools MCP Server]
+    end
+
+    subgraph "�️ Database Schema"
+        UserModel[User Model]
+        AgentModel[Agent Model]
+        ConversationModel[Conversation Model]
+        IntegrationModel[Integration Model]
+    end
+
+    App --> AppRoutes
+    App --> Pages
+    App --> Layout
+    
+    Pages --> Dashboard
+    Pages --> Agents
+    Pages --> Chat
+    Pages --> Widget
+    
+    Dashboard --> AgentLib
+    Chat --> MCPLib
+    Widget --> AuthLib
+    Agents --> GuardrailLib
+    
+    MCPLib --> MCPClient
+    MCPClient --> ShopifyServer
+    MCPClient --> StripeServer
+    MCPClient --> CustomServer
+    
+    AgentLib --> UserModel
+    AgentLib --> AgentModel
+    Chat --> ConversationModel
+    MCPLib --> IntegrationModel
 ```
 
 ## Component Architecture
 
 ```mermaid
 graph TD
-    subgraph "🎯 Core Components"
-        Dashboard[Dashboard Layout]
-        AgentList[Agent Management]
-        ChatInterface[Chat Interface]
-        Integrations[Integration Manager]
+    subgraph "🎯 Dashboard Layout"
+        DashboardLayout[components/dashboard/layout.tsx]
+        Header[components/dashboard/header.tsx]
+        Sidebar[components/dashboard/sidebar.tsx]
+        Footer[components/dashboard/footer.tsx]
     end
 
-    subgraph "💬 Chat Components"
-        ThreadList[Thread List Sidebar]
-        ChatThread[Chat Thread]
-        MessageBubble[Message Components]
-        Composer[Message Composer]
+    subgraph "🤖 Agent Components"
+        AgentCard[components/agents/creation/agent-card.tsx]
+        AgentForm[components/agents/creation/agent-form.tsx]
+        AgentIntegrations[components/agent-integrations/]
+        AgentManager[components/agent-integrations/agent-integrations-manager.tsx]
     end
 
-    subgraph "⚙️ Agent Components"
-        AgentCard[Agent Card]
-        AgentForm[Agent Creation Form]
-        AgentConfig[Configuration Panel]
-        AgentStats[Analytics Dashboard]
+    subgraph "� Chat Interface"
+        ThreadSidebar[components/assistant-ui/thread-list-sidebar.tsx]
+        ChatThread[components/assistant-ui/chat-thread.tsx]
+        ThreadComponent[components/assistant-ui/thread.tsx]
+        MarkdownText[components/assistant-ui/markdown-text.tsx]
     end
 
-    subgraph "🔧 Shared Components"
-        AuthProvider[Auth Provider]
-        ThemeProvider[Theme Provider]
-        UIComponents[UI Component Library]
-        Hooks[Custom Hooks]
+    subgraph "🔧 Core Libraries"
+        AgentFactory[lib/agents/agent-factory.ts]
+        MCPClient[lib/mcp/client.ts]
+        AuthProvider[lib/auth/index.ts]
+        RuntimeAdapter[lib/assistant-ui/runtime.ts]
     end
 
-    Dashboard --> AgentList
-    Dashboard --> ChatInterface
-    Dashboard --> Integrations
+    subgraph "🌐 Widget System"
+        WidgetDemo[components/widget/demo/]
+        WidgetPublic[public/widget/]
+        WidgetPage[app/widget/demo/page.tsx]
+    end
+
+    DashboardLayout --> Header
+    DashboardLayout --> Sidebar
+    DashboardLayout --> Footer
     
-    ChatInterface --> ThreadList
-    ChatInterface --> ChatThread
-    ChatThread --> MessageBubble
-    ChatThread --> Composer
-    
-    AgentList --> AgentCard
+    Sidebar --> AgentCard
     AgentCard --> AgentForm
-    AgentForm --> AgentConfig
-    AgentList --> AgentStats
+    AgentForm --> AgentIntegrations
+    AgentIntegrations --> AgentManager
     
-    Dashboard --> AuthProvider
-    Dashboard --> ThemeProvider
-    ChatInterface --> UIComponents
-    AgentList --> Hooks
+    DashboardLayout --> ThreadSidebar
+    DashboardLayout --> ChatThread
+    ChatThread --> ThreadComponent
+    ThreadComponent --> MarkdownText
+    
+    AgentCard --> AgentFactory
+    ChatThread --> MCPClient
+    DashboardLayout --> AuthProvider
+    ChatThread --> RuntimeAdapter
+    
+    WidgetDemo --> WidgetPublic
+    WidgetPublic --> WidgetPage
 ```
 
 ## Security Architecture
 
 ```mermaid
 graph TB
-    subgraph "🔐 Authentication Layer"
-        Login[User Login]
-        JWT[JWT Tokens]
-        Session[Session Management]
+    subgraph "� Authentication Layer"
+        Auth[Supabase Auth]
+        Session[lib/session/]
+        AuthProvider[components/providers/auth-provider.tsx]
+        ProtectedRoute[components/auth/protected-route.tsx]
     end
 
-    subgraph "🛡️ Authorization Layer"
-        RBAC[Role-Based Access]
-        OrgScope[Organization Scoping]
-        APIKeys[API Key Management]
+    subgraph "🛡️ Guardrails System"
+        GuardCore[lib/guardrails/]
+        SecurityLib[lib/security/]
+        ValidationLayer[Input Validation]
+        OutputFilter[Response Filtering]
     end
 
-    subgraph "🔒 Data Protection"
-        Encryption[Data Encryption]
-        Sanitization[Input Sanitization]
+    subgraph "🔑 API Security"
+        Middleware[middleware.ts]
+        APIRoutes[app/api/v2/]
         RateLimit[Rate Limiting]
+        CORS[CORS Headers]
     end
 
-    subgraph "🚨 Security Monitoring"
-        Logging[Security Logging]
-        Audit[Audit Trail]
-        Alerts[Security Alerts]
+    subgraph "🏰 Data Protection"
+        SupabaseRLS[Row Level Security]
+        EncryptedStorage[Encrypted Session Storage]
+        VectorSecurity[pgvector Access Control]
+        BackupSecurity[Automated Backups]
     end
 
-    Login --> JWT
-    JWT --> Session
-    Session --> RBAC
-    RBAC --> OrgScope
-    OrgScope --> APIKeys
+    Auth --> Session
+    Session --> AuthProvider
+    AuthProvider --> ProtectedRoute
     
-    APIKeys --> Encryption
-    Encryption --> Sanitization
-    Sanitization --> RateLimit
+    GuardCore --> SecurityLib
+    SecurityLib --> ValidationLayer
+    ValidationLayer --> OutputFilter
     
-    RateLimit --> Logging
-    Logging --> Audit
-    Audit --> Alerts
+    Middleware --> APIRoutes
+    APIRoutes --> RateLimit
+    RateLimit --> CORS
+    
+    Auth --> SupabaseRLS
+    Session --> EncryptedStorage
+    SupabaseRLS --> VectorSecurity
+    VectorSecurity --> BackupSecurity
 ```
 
 ## Deployment Architecture
