@@ -25,3 +25,46 @@
     @apply bg-gray-400 dark:bg-gray-500;
   }
 }
+
+@layer utilities {
+  /* Hide scrollbar but keep functionality - UX best practice */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
+  }
+  
+  /* Show scrollbar on hover for better UX */
+  .hover\:scrollbar-show:hover {
+    -ms-overflow-style: auto;  /* IE and Edge */
+    scrollbar-width: thin;  /* Firefox */
+  }
+  
+  .hover\:scrollbar-show:hover::-webkit-scrollbar {
+    display: block;  /* Chrome, Safari, Opera */
+    @apply w-2;
+  }
+  
+  .hover\:scrollbar-show:hover::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+  
+  .hover\:scrollbar-show:hover::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+  
+  .hover\:scrollbar-show:hover::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+  
+  /* Chat page specific - constrain DashboardLayout for proper component scrollbars */
+  body:has([data-chat-page]) [style*="marginLeft: 280px"] {
+    overflow: hidden !important;
+    height: calc(100vh - 120px) !important;
+    max-height: calc(100vh - 120px) !important;
+    padding: 0 !important;
+  }
+}

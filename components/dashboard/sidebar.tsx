@@ -65,8 +65,16 @@ export function Sidebar() {
         })}
       </div>
 
-      {/* Bottom section */}
-      <Group justify="center" p="md" style={{ borderTop: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))' }}>
+      {/* Bottom section - aligned with chat area composer */}
+      <div style={{ 
+        height: '80px',
+        padding: '16px', 
+        borderTop: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
+      }}>
         <div style={{ textAlign: 'center' }}>
           <Text size="xs" c="dimmed">
             Demo Store
@@ -78,7 +86,7 @@ export function Sidebar() {
             </Text>
           </Group>
         </div>
-      </Group>
+      </div>
     </div>
   )
 
@@ -123,29 +131,54 @@ export function Sidebar() {
                 <X size={18} />
               </ActionIcon>
             </Group>
-            <div style={{ padding: '16px', flex: 1 }}>
-              {navigation.map((item) => {
-                const isActive = pathname === item.href
-                return (
-                  <NavLink
-                    key={item.name}
-                    component={Link}
-                    href={item.href}
-                    label={item.name}
-                    leftSection={<item.icon size={18} />}
-                    rightSection={
-                      item.badge ? (
-                        <Text size="xs" c="blue" fw={500}>
-                          {item.badge}
-                        </Text>
-                      ) : undefined
-                    }
-                    active={isActive}
-                    variant="filled"
-                    onClick={closeMobile}
-                  />
-                )
-              })}
+            <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1 }}>
+                {navigation.map((item) => {
+                  const isActive = pathname === item.href
+                  return (
+                    <NavLink
+                      key={item.name}
+                      component={Link}
+                      href={item.href}
+                      label={item.name}
+                      leftSection={<item.icon size={18} />}
+                      rightSection={
+                        item.badge ? (
+                          <Text size="xs" c="blue" fw={500}>
+                            {item.badge}
+                          </Text>
+                        ) : undefined
+                      }
+                      active={isActive}
+                      variant="filled"
+                      onClick={closeMobile}
+                    />
+                  )
+                })}
+              </div>
+              
+              {/* Mobile footer - aligned with chat area composer */}
+              <div style={{ 
+                height: '80px',
+                borderTop: '1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                marginTop: '16px'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <Text size="xs" c="dimmed">
+                    Demo Store
+                  </Text>
+                  <Group justify="center" gap="xs" mt={4}>
+                    <Indicator color="green" size={6} />
+                    <Text size="xs" c="green">
+                      Online
+                    </Text>
+                  </Group>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -41,7 +41,6 @@ export class SessionThreadListAdapter {
    */
   async list(): Promise<RemoteThreadListResponse> {
     try {
-      console.log('🚀 Fetching threads from database for agent:', this.agentId)
       
       // Fetch conversations from database
       const response = await fetch(`/api/v2/agents/${this.agentId}/conversations`, {
@@ -57,7 +56,6 @@ export class SessionThreadListAdapter {
       }
 
       const data = await response.json()
-      console.log('🚀 Fetched conversations from API:', data)
       
       if (!data.success || !data.data?.threads) {
         console.error('Invalid response format:', data)
@@ -72,7 +70,7 @@ export class SessionThreadListAdapter {
         this.sessions.set(thread.remoteId, thread)
       })
       
-      console.log('🚀 Loaded threads from database:', dbThreads.length)
+      // Update local cache with database data
       
       return {
         threads: dbThreads
@@ -288,18 +286,9 @@ export class SessionThreadListAdapter {
   /**
    * Switch to a specific thread (required by assistant-ui)
    */
-  async switchToThread(remoteId: string): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async switchToThread(_remoteId: string): Promise<void> {
     try {
-      console.log('🚀 Switching to thread:', remoteId)
-      
-      // Update the current session metadata if needed
-      const session = this.sessions.get(remoteId)
-      if (session) {
-        console.log('🚀 Found session for thread:', session.title)
-      } else {
-        console.log('🚀 Session not found for thread:', remoteId)
-      }
-      
       // The actual thread switching is handled by the assistant-ui runtime
       // This method is called to notify the adapter about the switch
     } catch (error) {
@@ -313,7 +302,6 @@ export class SessionThreadListAdapter {
    */
   async createThread(): Promise<{ remoteId: string }> {
     try {
-      console.log('🚀 Creating new thread')
       
       // Generate a unique session ID for the new thread
       const remoteId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
@@ -327,8 +315,6 @@ export class SessionThreadListAdapter {
       
       // Store in local cache
       this.sessions.set(remoteId, sessionMetadata)
-      
-      console.log('🚀 Created new thread:', remoteId)
       
       return { remoteId }
     } catch (error) {

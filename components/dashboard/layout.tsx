@@ -9,9 +9,10 @@ interface DashboardLayoutProps {
   children: ReactNode
   title?: string
   subtitle?: string
+  disableContentScrolling?: boolean // Add prop to disable scrolling for chat pages
 }
 
-export function DashboardLayout({ children, title, subtitle }: DashboardLayoutProps) {
+export function DashboardLayout({ children, title, subtitle, disableContentScrolling = false }: DashboardLayoutProps) {
   return (
     <div 
       style={{
@@ -48,10 +49,11 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
           style={{ 
             flex: 1,
             marginLeft: '280px',
-            padding: 'var(--mantine-spacing-lg)',
-            paddingBottom: '2rem', // Additional padding for content spacing
+            padding: disableContentScrolling ? 0 : 'var(--mantine-spacing-lg)',
+            paddingBottom: disableContentScrolling ? 0 : '2rem', // Additional padding for content spacing
             minHeight: 'calc(100vh - 120px)', // Full height minus header (80px) and footer (40px)
-            overflowY: 'auto'
+            maxHeight: 'calc(100vh - 120px)', // Prevent growing beyond viewport
+            overflow: disableContentScrolling ? 'hidden' : 'auto'
           }}
           className="lg:ml-[280px] ml-0"
         >

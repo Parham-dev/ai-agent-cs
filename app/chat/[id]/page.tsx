@@ -19,28 +19,100 @@ import { useAuthContext } from '@/components/providers/auth-provider'
 export default function AgentChatPage() {
   const params = useParams()
   const agentId = params?.id as string
-  
-  console.log('🚀 AgentChatPage params:', params)
-  console.log('🚀 AgentChatPage agentId:', agentId)
 
   // Check authentication
   const { isAuthenticated, loading: authLoading } = useAuthContext()
-  
-  console.log('🚀 Auth state:', { isAuthenticated, authLoading })
 
   // Use SWR for agent data with automatic caching and error handling
   const { agent, isLoading: agentLoading, error } = useAgent(agentId)
-  
-  console.log('🚀 Agent state:', { agent: agent?.name, isLoading: agentLoading, error })
+
 
   // Initialize assistant-ui runtime with thread list support (always call hooks)
   // Pass agent even if null - the runtime will handle the null case
   const { runtime, setMessages, initializeChat } = useAgentChatRuntimeWithThreadList(agent || null)
   
+  // Handle thread selection from sidebar - must be defined before early returns
+  const handleThreadSelect = React.useCallback(async (_sessionId: string, conversationId: string) => {
+    if (!agent) return
+    
+    try {
+      // Fetch conversation messages from the database
+      const response = await fetch(`/api/v2/conversations/${conversationId}/messages`)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load conversation: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success && data.data?.messages) {
+        // Convert database messages to assistant-ui format using the same converter from runtime
+        const threadMessages = data.data.messages.map((msg: { id: string; role: string; content: string; createdAt: string }) => ({
+          id: msg.id,
+          role: msg.role.toLowerCase() as 'user' | 'assistant',
+          content: [
+            {
+              type: 'text' as const,
+              text: msg.content,
+            },
+          ],
+          createdAt: new Date(msg.createdAt),
+          metadata: { 
+            custom: {}
+          },
+          status: { type: 'complete' as const, reason: 'stop' as const },
+        } as any)) // eslint-disable-line @typescript-eslint/no-explicit-any
+        
+        setMessages(threadMessages)
+      } else {
+        // If no messages, start with welcome message
+        const welcomeMessage = {
+          id: 'welcome',
+          role: 'assistant' as const,
+          content: [
+            {
+              type: 'text' as const,
+              text: `👋 Hello! I'm **${agent.name}**.
+
+${agent.systemPrompt || "I'm here to help you!"}
+
+How can I help you today?`,
+            },
+          ],
+          createdAt: new Date(),
+          metadata: { 
+            custom: {}
+          },
+          status: { type: 'complete' as const, reason: 'stop' as const },
+        } as any // eslint-disable-line @typescript-eslint/no-explicit-any
+        setMessages([welcomeMessage])
+      }
+      
+    } catch (error) {
+      console.error('Failed to load conversation:', error)
+      // Show error message to user
+      const errorMessage = {
+        id: 'error',
+        role: 'assistant' as const,
+        content: [
+          {
+            type: 'text' as const,
+            text: '❌ Sorry, there was an error loading this conversation. Please try again.'
+          }
+        ],
+        createdAt: new Date(),
+        metadata: { 
+          custom: {}
+        },
+        status: { type: 'complete' as const, reason: 'stop' as const },
+      } as any // eslint-disable-line @typescript-eslint/no-explicit-any
+      setMessages([errorMessage])
+    }
+  }, [agent, setMessages])
+
   // Initialize chat when agent becomes available
   React.useEffect(() => {
     if (agent && runtime) {
-      console.log('🚀 Agent loaded, initializing chat:', agent.name)
       initializeChat()
     }
   }, [agent, runtime, initializeChat])
@@ -75,92 +147,6 @@ export default function AgentChatPage() {
       </div>
     )
   }
-  
-  // Handle thread selection from sidebar
-  const handleThreadSelect = React.useCallback(async (sessionId: string, conversationId: string) => {
-    console.log('🚀 Thread selected:', { sessionId, conversationId })
-    
-    if (!agent) return
-    
-    try {
-      console.log('🚀 Loading conversation messages:', conversationId)
-      
-      // Fetch conversation messages from the database
-      const response = await fetch(`/api/v2/conversations/${conversationId}/messages`)
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load conversation: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      console.log('🚀 Loaded conversation data:', data)
-      
-      if (data.success && data.data?.messages) {
-        // Convert database messages to assistant-ui format using the same converter from runtime
-        const threadMessages = data.data.messages.map((msg: { id: string; role: string; content: string; createdAt: string }) => ({
-          id: msg.id,
-          role: msg.role.toLowerCase() as 'user' | 'assistant',
-          content: [
-            {
-              type: 'text' as const,
-              text: msg.content,
-            },
-          ],
-          createdAt: new Date(msg.createdAt),
-          metadata: { 
-            custom: {}
-          },
-          status: { type: 'complete' as const, reason: 'stop' as const },
-        } as any)) // eslint-disable-line @typescript-eslint/no-explicit-any
-        
-        console.log('🚀 Setting messages for thread:', threadMessages.length)
-        setMessages(threadMessages)
-      } else {
-        // If no messages, start with welcome message
-        console.log('🚀 No messages found, showing welcome message')
-        const welcomeMessage = {
-          id: 'welcome',
-          role: 'assistant' as const,
-          content: [
-            {
-              type: 'text' as const,
-              text: `👋 Hello! I'm **${agent.name}**.
-
-${agent.systemPrompt || "I'm here to help you!"}
-
-How can I help you today?`,
-            },
-          ],
-          createdAt: new Date(),
-          metadata: { 
-            custom: {}
-          },
-          status: { type: 'complete' as const, reason: 'stop' as const },
-        } as any // eslint-disable-line @typescript-eslint/no-explicit-any
-        setMessages([welcomeMessage])
-      }
-      
-    } catch (error) {
-      console.error('🚀 Failed to load conversation:', error)
-      // Show error message to user
-      const errorMessage = {
-        id: 'error',
-        role: 'assistant' as const,
-        content: [
-          {
-            type: 'text' as const,
-            text: '❌ Sorry, there was an error loading this conversation. Please try again.'
-          }
-        ],
-        createdAt: new Date(),
-        metadata: { 
-          custom: {}
-        },
-        status: { type: 'complete' as const, reason: 'stop' as const },
-      } as any // eslint-disable-line @typescript-eslint/no-explicit-any
-      setMessages([errorMessage])
-    }
-  }, [agent, setMessages])
 
   if (agentLoading) {
     return (
@@ -197,24 +183,25 @@ How can I help you today?`,
     <DashboardLayout 
       title={agent ? `Chat with ${agent.name}` : 'Agent Chat'}
       subtitle={agent ? agent.description || 'AI Customer Service Agent' : undefined}
+      disableContentScrolling={true}
     >
-      {/* Chat container with two-column layout inside DashboardLayout */}
-      <div className="flex h-full">
+      {/* Chat container with two-column layout inside DashboardLayout - fixed height */}
+      <div className="flex h-full max-h-full overflow-hidden" data-chat-page>
         {/* Thread List Sidebar (left column within content area) */}
         {runtime ? (
           <AssistantRuntimeProvider runtime={runtime}>
             <ThreadListSidebar onThreadSelect={handleThreadSelect} />
           </AssistantRuntimeProvider>
         ) : (
-          <div className="w-80 h-full bg-background border-r border-gray-200 dark:border-gray-700 flex items-center justify-center">
+          <div className="w-80 h-full max-h-full bg-background border-r border-gray-200 dark:border-gray-700 flex items-center justify-center overflow-hidden flex-shrink-0">
             <p className="text-muted-foreground text-sm">Loading sessions...</p>
           </div>
         )}
 
         {/* Main Chat Area (right column within content area) */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 max-h-full overflow-hidden">
           {/* Chat Header */}
-          <div className="bg-background border-b border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-background border-b border-gray-200 dark:border-gray-700 p-4 flex-shrink-0">
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm" asChild>
                 <Link href="/agents" className="flex items-center gap-2 text-sm">
@@ -264,7 +251,7 @@ How can I help you today?`,
           </div>
 
           {/* Chat Interface */}
-          <div className="flex-1 min-h-0 relative">
+          <div className="flex-1 min-h-0 max-h-full relative overflow-hidden">
             {runtime ? (
               <AssistantRuntimeProvider runtime={runtime}>
                 <ChatThread />
@@ -277,7 +264,7 @@ How can I help you today?`,
           </div>
           
           {!agent.isActive && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-200 dark:border-yellow-800 p-3">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-t border-yellow-200 dark:border-yellow-800 p-3 flex-shrink-0">
               <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
                 This agent is currently inactive. Please activate it to start chatting.
               </p>

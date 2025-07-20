@@ -4,15 +4,9 @@ import { createApiLogger } from '@/lib/utils/logger';
 import { conversationsService } from '@/lib/database/services/conversations.service';
 import { prisma } from '@/lib/database/database';
 
-interface GetMessagesParams {
-  params: {
-    id: string;
-  };
-}
-
 export const GET = withErrorHandling(async (
   request: NextRequest,
-  { params }: GetMessagesParams
+  context: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> => {
   // Validate HTTP method
   const methodError = validateMethod(request, ['GET']);
@@ -25,6 +19,7 @@ export const GET = withErrorHandling(async (
   });
 
   try {
+    const params = await context.params;
     const conversationId = params.id;
     
     logger.info('Fetching messages for conversation', { conversationId });
@@ -62,8 +57,7 @@ export const GET = withErrorHandling(async (
         id: msg.id,
         role: msg.role,
         content: msg.content,
-        createdAt: msg.createdAt,
-        updatedAt: msg.updatedAt
+        createdAt: msg.createdAt
       }))
     });
 

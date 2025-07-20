@@ -101,6 +101,7 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
   const agentConfig = agentData.rules && typeof agentData.rules === 'object' ? agentData.rules : {}
   
   // Remove tools and guardrails from agentConfig to avoid conflict
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { tools: _tools, guardrails: guardrailsConfig, ...cleanAgentConfig } = agentConfig as {
     tools?: unknown
     guardrails?: { input?: string[], output?: string[] }

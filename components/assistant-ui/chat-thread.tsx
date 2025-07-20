@@ -23,17 +23,17 @@ import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 export const ChatThread: FC = () => {
   return (
     <ThreadPrimitive.Root
-      className="bg-background flex flex-col h-full relative"
+      className="bg-background flex flex-col h-full max-h-full relative overflow-hidden"
       style={{
         ["--thread-max-width" as string]: "100%", // Full width within container
       }}
     >
       {/* Chat Messages Area */}
       <ThreadPrimitive.Viewport 
-        className="flex-1 overflow-y-auto bg-inherit"
+        className="flex-1 min-h-0 overflow-y-auto bg-inherit scrollbar-hide hover:scrollbar-show scroll-smooth"
         autoScroll
       >
-        <div className="flex flex-col px-4 py-6 pb-28 min-h-full max-w-4xl mx-auto">
+        <div className="flex flex-col px-4 py-6 min-h-full max-w-4xl mx-auto">
           <ThreadWelcome />
 
           <ThreadPrimitive.Messages
@@ -59,8 +59,8 @@ export const ChatThread: FC = () => {
       <ThreadScrollToBottom />
 
       {/* Composer at Bottom - positioned within container, aligned with sidebar footer */}
-      <div className="absolute bottom-0 left-0 right-0 z-50 bg-background/98 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700">
-        <div className="p-4">
+      <div className="flex-shrink-0 bg-background border-t border-gray-200 dark:border-gray-700" style={{ height: '80px' }}>
+        <div className="p-4 h-full flex items-center">
           <div className="w-full max-w-4xl mx-auto">
             <Composer />
           </div>
@@ -76,7 +76,7 @@ const ThreadScrollToBottom: FC = () => {
       <Button
         variant="outline"
         size="icon"
-        className="absolute bottom-24 right-4 z-40 rounded-full disabled:invisible shadow-lg bg-background border-2 w-10 h-10"
+        className="absolute bottom-20 right-4 z-40 rounded-full disabled:invisible shadow-lg bg-background border-2 w-10 h-10"
       >
         <ArrowDownIcon className="h-4 w-4" />
       </Button>

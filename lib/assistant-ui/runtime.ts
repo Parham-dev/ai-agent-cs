@@ -57,13 +57,12 @@ function convertFromAssistantUI(message: AppendMessage | ThreadMessage): ChatMes
 }
 
 export function useAgentChatRuntimeWithThreadList(agent: ApiAgent | null) {
-  console.log('🚀 useAgentChatRuntimeWithThreadList called with agent:', agent?.name)
   
   // Create thread list adapter for this agent
   const threadListAdapter = useMemo(() => {
     if (!agent) return null
     try {
-      console.log('🚀 Creating SessionThreadListAdapter for agent:', agent.id)
+      // Create SessionThreadListAdapter for agent
       return new SessionThreadListAdapter(agent.id)
     } catch (error) {
       console.error('Failed to create SessionThreadListAdapter:', error)
@@ -75,7 +74,6 @@ export function useAgentChatRuntimeWithThreadList(agent: ApiAgent | null) {
   const { messages, setMessages, isRunning, onNew, onReload, initializeChat } = useAgentChatRuntimeBase(agent)
   
   // Create runtime with thread list adapter using the correct pattern
-  console.log('🚀 Creating useExternalStoreRuntime with thread list adapter')
   
   // Try a simpler approach - create the runtime without adapters first
   const runtime = useExternalStoreRuntime({
@@ -88,28 +86,21 @@ export function useAgentChatRuntimeWithThreadList(agent: ApiAgent | null) {
   // Then try to manually connect the adapter to the runtime
   React.useEffect(() => {
     if (runtime && threadListAdapter) {
-      console.log('🚀 Manually connecting adapter to runtime')
-      console.log('🚀 Runtime threads object:', runtime.threads)
-      console.log('🚀 ThreadListAdapter object:', threadListAdapter)
+      // Manually connect adapter to runtime
       
       // Try to manually trigger the adapter
       setTimeout(async () => {
-        console.log('🚀 Manually calling adapter.list()')
+        // Try to trigger the adapter
         try {
-          const result = await threadListAdapter.list()
-          console.log('🚀 Manual adapter.list() result:', result)
+          await threadListAdapter.list()
         } catch (error) {
-          console.error('🚀 Manual adapter.list() error:', error)
+          console.error('Manual adapter.list() error:', error)
         }
       }, 2000)
     }
   }, [runtime, threadListAdapter])
 
-  console.log('🚀 Runtime with thread list created:', { 
-    hasRuntime: !!runtime,
-    hasThreadListAdapter: !!threadListAdapter,
-    agentId: agent?.id 
-  })
+  // Runtime created with thread list support
 
   return {
     runtime,
@@ -121,17 +112,13 @@ export function useAgentChatRuntimeWithThreadList(agent: ApiAgent | null) {
 }
 
 export function useAgentChatRuntimeBase(agent: ApiAgent | null) {
-  console.log('🚀 useAgentChatRuntime called with agent:', agent?.name)
   const [messages, setMessages] = useState<ThreadMessage[]>([])
   const [isRunning, setIsRunning] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
-  console.log('🚀 Runtime state:', { messagesCount: messages.length, isRunning, sessionId })
 
   // Initialize with welcome message when agent loads
   const initializeChat = useCallback(() => {
-    console.log('🚀 initializeChat called:', { agent: agent?.name, messagesLength: messages.length })
     if (agent && messages.length === 0) {
-      console.log('🚀 Creating welcome message...')
       const welcomeMessage: ThreadMessage = {
         id: 'welcome',
         role: 'assistant',
@@ -151,20 +138,14 @@ How can I help you today?`,
         },
         status: { type: 'complete', reason: 'stop' },
       } as unknown as ThreadMessage
-      console.log('🚀 Setting welcome message:', welcomeMessage)
       setMessages([welcomeMessage])
-      console.log('🚀 Welcome message set')
-    } else {
-      console.log('🚀 Skipping welcome message:', { hasAgent: !!agent, messagesLength: messages.length })
     }
   }, [agent, messages.length])
 
   // Handle new messages from user
   const onNew = useCallback(
     async (message: AppendMessage) => {
-      console.log('🚀 onNew called with message:', message)
       if (!agent) {
-        console.log('🚀 No agent, returning early')
         return
       }
 
@@ -173,7 +154,6 @@ How can I help you today?`,
       const userUIMessage = convertToAssistantUI(userMessage)
       setMessages((prev) => [...prev, userUIMessage])
 
-      console.log('🚀 Setting isRunning to true')
       setIsRunning(true)
 
       try {
@@ -193,7 +173,7 @@ How can I help you today?`,
           conversationHistory: conversationHistory,
         };
         
-        console.log('🚀 Sending API request:', requestBody)
+        // Send API request to agent
 
         // Call your existing API
         const response = await fetch('/api/v2/agents/chat', {
@@ -204,34 +184,17 @@ How can I help you today?`,
           body: JSON.stringify(requestBody),
         })
 
-        console.log('🚀 Response status:', response.status, response.statusText)
-        console.log('🚀 Response headers:', Object.fromEntries(response.headers.entries()))
+        // Check response status
 
         if (!response.ok) {
-          console.log('🚀 Response not OK, response:', response)
           throw new Error(`API request failed: ${response.status} ${response.statusText}`)
         }
 
         const data = await response.json()
-        console.log('🚀 Raw API response received:', data)
-        console.log('🚀 Response structure:', {
-          success: data.success,
-          dataKeys: data.data ? Object.keys(data.data) : 'no data',
-          message: data.data?.message,
-          sessionId: data.data?.sessionId,
-          messageLength: data.data?.message?.length
-        })
 
         // Store sessionId from the response for future requests
         if (data.success && data.data.sessionId) {
           setSessionId(data.data.sessionId)
-          console.log('🚀 Session ID stored:', data.data.sessionId)
-          
-          // Notify thread list to refresh if we got a new session
-          if (!sessionId && data.data.sessionId) {
-            console.log('🚀 New session created, should refresh thread list')
-            // The thread list will refresh automatically when it's next accessed
-          }
         }
 
         // Create assistant response message
@@ -244,18 +207,13 @@ How can I help you today?`,
           timestamp: new Date(),
         }
         
-        console.log('🚀 Assistant message created:', assistantMessage)
+        // Create assistant response message
 
         // Convert to assistant-ui format and add to messages
         const assistantUIMessage = convertToAssistantUI(assistantMessage)
         setMessages((prev) => [...prev, assistantUIMessage])
       } catch (error) {
-        console.error('🚀 Chat error occurred:', error)
-        console.error('🚀 Error details:', {
-          name: (error as Error)?.name,
-          message: (error as Error)?.message,
-          stack: (error as Error)?.stack
-        })
+        console.error('Chat error occurred:', error)
         
         // Add error message
         const errorMessage: ChatMessage = {
@@ -268,7 +226,6 @@ How can I help you today?`,
         const errorUIMessage = convertToAssistantUI(errorMessage)
         setMessages((prev) => [...prev, errorUIMessage])
       } finally {
-        console.log('🚀 Setting isRunning to false')
         setIsRunning(false)
       }
     },
@@ -278,26 +235,19 @@ How can I help you today?`,
   // Handle reload of the last assistant message
   const onReload = useCallback(
     async (parentId: string | null) => {
-      console.log('🚀 onReload called for parentId:', parentId)
-      console.log('🚀 Current messages:', messages.map(m => ({ id: m.id, role: m.role, content: m.content })))
-      
       if (!agent || !parentId) {
-        console.log('🚀 No agent or parentId, returning early')
         return
       }
 
       // Find the message being reloaded and get conversation history up to that point
       const messageIndex = messages.findIndex(msg => msg.id === parentId)
-      console.log('🚀 Message index found:', messageIndex)
       
       if (messageIndex === -1) {
-        console.log('🚀 Message not found for reload')
         return
       }
 
       const messageToReload = messages[messageIndex]
       const messageRole = messageToReload.role
-      console.log('🚀 Reloading message with role:', messageRole)
 
       let userMessage = null
       let conversationHistory: Array<{role: string, content: string}> = []
@@ -337,11 +287,7 @@ How can I help you today?`,
         })
       }
 
-      console.log('🚀 Conversation history:', conversationHistory)
-      console.log('🚀 Found user message:', userMessage)
-      
       if (!userMessage) {
-        console.log('🚀 No user message found for reload')
         return
       }
 
@@ -357,11 +303,7 @@ How can I help you today?`,
           apiConversationHistory = conversationHistory.filter(msg => msg !== userMessage)
         }
         
-        console.log('🚀 Sending API request with:', {
-          agentId: agent.id,
-          message: userMessage.content,
-          conversationHistory: apiConversationHistory
-        })
+        // Send API request to reload message
 
         // Call API with the same user message
         const response = await fetch('/api/v2/agents/chat', {
@@ -449,14 +391,12 @@ export function useAgentChatRuntime(agent: ApiAgent | null) {
   const { messages, isRunning, onNew, onReload, initializeChat, setMessages } = useAgentChatRuntimeBase(agent)
   
   // Create the external store runtime without thread list support
-  console.log('🚀 Creating external store runtime with:', { messagesCount: messages.length, isRunning })
   const runtime = useExternalStoreRuntime({
     messages,
     isRunning,
     onNew,
     onReload,
   })
-  console.log('🚀 External store runtime created:', runtime)
 
   return {
     runtime,
