@@ -2,7 +2,14 @@
 
 > **⚠️ ACTIVE DEVELOPMENT** - This project is under active development. Features may change, and breaking changes may occur. DO NOT use in production yet. Contributions and feedback welcome!
 
-A powerful open-source platform for creating intelligent AI customer service agents with advanced safety features, MCP integration, and embeddable widgets. Built with Next.js, OpenAI Agents SDK, and comprehensive guardrails.[A bit more about its feature overall but clean]
+A powerful open-source platform for creating intelligent AI customer service agents with advanced safety features, MCP integration, and embeddable widgets. Built with Next.js, OpenAI's latest models, and comprehensive guardrails.
+
+**Key Features:**
+- 🧙‍♂️ **5-Step Agent Wizard** - No coding required to create production-ready AI agents
+- 🛡️ **Multi-Layer Guardrails** - Advanced safety protection with content filtering and privacy controls  
+- 🔧 **MCP Integration** - Connect to business systems via Model Context Protocol servers
+- 💬 **Embeddable Widget** - Deploy anywhere with secure JWT authentication
+- 📊 **Real-time Analytics** - Cost tracking, performance monitoring, and usage insights
 
 ## 🌟 What This Platform Does
 
@@ -15,65 +22,25 @@ Create production-ready AI customer service agents through our **Easy wizard**:
 5. **Review & Deploy** - Launch your agent with embeddable widget support
 
 
-[For Develoeprs, after this the diagram md, inserted here, are place below ]
+### For Developers
+After understanding the business value, explore the technical architecture and implementation details:
 
-## 🏗️ Architecture
+📋 **[View Architecture Overview →](docs/ARCHITECTURE.md)**
 
-The platform uses a modern, modular architecture with safety-first design:
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Business Owner                           │
-│               (5-Step Agent Wizard)                         │
-│  • Model Selection (GPT-4.1, o3, etc.)                   │
-│  • MCP Integration Setup                                   │  
-│  • Tool & Capability Selection                             │
-│  • Multi-Layer Guardrails Configuration                    │
-│  • Widget Deployment & Testing                             │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────────┐
-│                 AI Agent Engine                             │
-│           (OpenAI Agents SDK + Guardrails)                 │
-│  • Input Guardrails (Content Safety, Privacy)             │
-│  • Model Context Protocol (MCP) Integration               │
-│  • Output Guardrails (Professional Tone, Accuracy)        │
-│  • Cost Tracking & Performance Monitoring                 │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────────┐
-│               MCP Integration Layer                         │
-│  • Shopify MCP Server (12 tools available)               │
-│  • Stripe MCP Server (payment processing)                 │
-│  • Custom Tools MCP Server (calculations, etc.)          │
-│  • OpenAI Hosted Tools (web search, file search)         │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────────┐
-│                Safety & Security Layer                      │
-│  • Content Moderation (toxicity, harassment detection)    │
-│  • Privacy Protection (PII detection & blocking)          │
-│  • Professional Tone Validation                           │
-│  • Factual Accuracy Checking                              │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────────┐
-│                Customer Interface                           │
-│             (Secure Chat Experience)                       │
-│  • Embeddable Widget (JWT-secured)                        │
-│  • Real-time Guardrail Feedback                           │
-│  • Cross-domain Security                                   │
-│  • Professional, Accurate Responses                       │
-└─────────────────────────────────────────────────────────────┘
-```
+Our technical documentation covers:
+- **System Architecture** - Component interaction and data flow
+- **Technology Stack** - Frontend, backend, and AI integration
+- **Security Design** - Multi-layer protection and authentication  
+- **Deployment Architecture** - Production setup and scaling
+- **API Documentation** - RESTful endpoints and integration patterns
 
 ## 🚀 Current Features
 
 ### ✅ Production Ready
 - **🧙‍♂️ Agent Creation Wizard** - Complete 5-step guided setup process
 - **🛡️ Multi-Layer Guardrails System** - Input/output safety and quality protection
--[native and custom tools support such as ...]
-- **🔧 MCP Integration Architecture** - Model Context Protocol server support
+- **🔧 MCP Integration Architecture** - Model Context Protocol server support with native and custom tools
+- **🛒 Native Tool Support** - OpenAI hosted tools (web search, file search) and custom functions (calculations, data processing)
 - **🛒 Shopify Integration** - Complete MCP server with 12 tools (products, inventory, policies, shipping, store management)
 - **💬 Secure Chat Interface** - Real-time guardrail monitoring with user-friendly feedback
 - **🔐 JWT Widget Security** - Cross-domain authentication with domain validation
@@ -121,35 +88,28 @@ The platform uses a modern, modular architecture with safety-first design:
 
 ## 🛠️ Quick Start
 
+**📋 [Complete Installation Guide →](docs/INSTALLATION.md)**
+
+For a detailed setup walkthrough, environment configuration, and troubleshooting, see our comprehensive installation documentation.
+
 ### Prerequisites
 - **Node.js 18+** 
-- **PostgreSQL** database
-- **OpenAI API key**
-- Business platform credentials (Shopify, Stripe, etc.)
+- **Supabase Account** - PostgreSQL database with authentication
+- **OpenAI API key** - For AI model access
+- **Business platform credentials** (Optional: Shopify, Stripe, etc.)
 
-### Installation
-
+### Quick Setup
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/ai-customer-service-platform.git
-cd ai-customer-service-platform
-
-# Install dependencies
+# Clone and install
+git clone https://github.com/Parham-dev/ai-agent-cs.git
+cd ai-agent-cs
 npm install
 
-# Configure environment variables
+# Configure environment (see installation guide for details)
 cp .env.example .env.local
-# Edit .env.local with your configuration:
-# - DATABASE_URL="postgresql://..."
-# - OPENAI_API_KEY="sk-..."
-# - JWT_SECRET="your-secure-jwt-secret"
-# - SUPABASE_URL="your-supabase-url"
-# - SUPABASE_ANON_KEY="your-supabase-anon-key"
 
-# Set up database
+# Set up database and start
 npx prisma migrate dev
-
-# Start development server
 npm run dev
 ```
 
@@ -189,13 +149,6 @@ Complete e-commerce toolkit via dedicated MCP server:
 - `getPaymentTerms` - Payment terms and configurations
 - `getMarketingEvents` - Marketing campaigns and events
 - `getLocales` - Available languages and store localization
-
-#### **Stripe Payments** 🔄 (Coming Soon)
-Payment processing via dedicated MCP server:
-- Payment lookup and transaction details
-- Refund processing and dispute management  
-- Subscription and billing management
-- Invoice generation and payment tracking
 
 #### **OpenAI Hosted Tools** ✅
 Direct integration with OpenAI's hosted capabilities:
@@ -257,11 +210,6 @@ const mcpIntegrations = [
       "getPages"             // Store content pages
       // ... 4 additional tools available
     ]
-  },
-  {
-    type: "stripe", 
-    name: "Payment Processing MCP",
-    status: "coming_soon"
   }
 ];
 ```
@@ -402,21 +350,6 @@ if (result.blocked) {
 - Source attribution when possible
 ```
 
-## 📊 Analytics & Monitoring
-
-### Real-time Metrics ✅
-- **🛡️ Guardrail Triggers** - Track safety violations and content filtering with detailed breakdown
-- **⚡ Performance Tracking** - Response times, token usage, and execution speed monitoring
-- **🔧 Tool Usage Analytics** - Which integrations and capabilities are most utilized
-- **📈 Conversation Volume** - Chat frequency, peak usage patterns, and user engagement
-- **💰 Cost Monitoring** - Real-time cost tracking across 40+ AI models with detailed breakdowns
-
-### Advanced Analytics (Coming Soon) 🔄
-- **📊 Resolution Rates** - Customer satisfaction and issue resolution tracking
-- **🎯 Popular Topics** - Most common customer inquiries and pain points analysis
-- **🚀 Agent Performance** - Detailed performance analysis and optimization recommendations  
-- **💡 Business Intelligence** - Actionable insights dashboard with trend analysis
-
 ## 🗺️ Development Roadmap
 
 ### Phase 1: Multi-Integration Platform (Current)
@@ -440,31 +373,6 @@ if (result.blocked) {
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
-```bash
-# Fork and clone the repository
-git clone https://github.com/yourusername/ai-customer-service-platform.git
-cd ai-customer-service-platform
-
-# Install dependencies  
-npm install
-
-# Set up environment variables
-cp .env.example .env.local
-# Configure your DATABASE_URL, OPENAI_API_KEY, etc.
-
-# Set up database
-npx prisma migrate dev
-
-# Start development server
-npm run dev
-
-# Create feature branch for contributions
-git checkout -b feature/your-amazing-feature
-
-# Make changes, test, and submit pull request
-```
 
 ### Code Quality Standards
 - **TypeScript** - Strict type checking enabled
@@ -496,11 +404,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support & Community
 
-- 📧 **Email**: support@ai-customer-platform.com
-- 💬 **Discord**: [Join our community](https://discord.gg/ai-customer-platform)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/ai-customer-service-platform/issues)
-- 📚 **Documentation**: [docs.ai-customer-platform.com](https://docs.ai-customer-platform.com)
-- 🚀 **Live Demo**: [demo.ai-customer-platform.com](https://demo.ai-customer-platform.com)
+- 📧 **Email**: info@appwebdev.co.ukissues)
 
 ---
 
@@ -509,7 +413,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 </p>
 
 <p align="center">
-  <a href="https://github.com/yourusername/ai-customer-service-platform/stargazers">⭐ Star us on GitHub</a> •
-  <a href="https://twitter.com/aicustomerplatform">🐦 Follow on Twitter</a> •
-  <a href="https://demo.ai-customer-platform.com">🚀 Try the Demo</a>
+  <a href="https://github.com/Parham-dev/ai-agent-cs/stargazers">⭐ Star us on GitHub</a> •
 </p> 
