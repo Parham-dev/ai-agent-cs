@@ -2,24 +2,20 @@
 
 > **⚠️ ACTIVE DEVELOPMENT** - This project is under active development. Features may change, and breaking changes may occur. DO NOT use in production yet. Contributions and feedback welcome!
 
-A powerful open-source platform for creating intelligent AI customer service agents with advanced safety features, MCP integration, and embeddable widgets. Built with Next.js, OpenAI Agents SDK, and comprehensive guardrails.
+A powerful open-source platform for creating intelligent AI customer service agents with advanced safety features, MCP integration, and embeddable widgets. Built with Next.js, OpenAI Agents SDK, and comprehensive guardrails.[A bit more about its feature overall but clean]
 
 ## 🌟 What This Platform Does
 
 ### For Business Owners
-Create production-ready AI customer service agents through our **5-step wizard**:
+Create production-ready AI customer service agents through our **Easy wizard**:
 1. **Basic Information** - Configure agent name, model selection (GPT-4.1, o3, etc.), instructions, and behavior
 2. **Integrations** - Connect business systems via Model Context Protocol (MCP) servers  
 3. **Tools** - Select from OpenAI hosted tools, custom functions, and MCP capabilities
 4. **Guardrails** - Enable multi-layer safety and quality protection
 5. **Review & Deploy** - Launch your agent with embeddable widget support
 
-### For Customers  
-Get instant, intelligent, and **safe** support:
-- Real-time business data lookups with privacy protection
-- Professional communication with tone validation
-- Accurate answers with factual verification
-- Content safety filtering for respectful interactions
+
+[For Develoeprs, after this the diagram md, inserted here, are place below ]
 
 ## 🏗️ Architecture
 
@@ -75,16 +71,16 @@ The platform uses a modern, modular architecture with safety-first design:
 
 ### ✅ Production Ready
 - **🧙‍♂️ Agent Creation Wizard** - Complete 5-step guided setup process
-- **🛡️ Multi-Layer Guardrails System** - Input/output safety and quality protection  
+- **🛡️ Multi-Layer Guardrails System** - Input/output safety and quality protection
+-[native and custom tools support such as ...]
 - **🔧 MCP Integration Architecture** - Model Context Protocol server support
 - **🛒 Shopify Integration** - Complete MCP server with 12 tools (products, inventory, policies, shipping, store management)
 - **💬 Secure Chat Interface** - Real-time guardrail monitoring with user-friendly feedback
 - **🔐 JWT Widget Security** - Cross-domain authentication with domain validation
-- **📊 Cost Tracking** - Comprehensive token usage and cost monitoring for 40+ models
 - **🎨 Modern UI/UX** - Mantine + Tailwind CSS with dark/light theme support
 
 ### 🔄 In Development  
-- **💳 Stripe Integration** - Payment processing MCP server
+- **📊 Cost Tracking** - Comprehensive token usage and cost monitoring
 - **📈 Analytics Dashboard** - Conversation metrics and performance insights
 - **⚡ Rate Limiting** - API protection and abuse prevention
 - **🌐 CDN Distribution** - Global widget delivery infrastructure
