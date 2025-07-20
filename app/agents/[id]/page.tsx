@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/dashboard/layout'
@@ -39,31 +39,16 @@ import {
 import { api } from '@/lib/api'
 import { AgentIntegrationsManager } from '@/components/agent-integrations'
 import { toast } from 'sonner'
-import type { ApiAgent } from '@/lib/types'
+import { useAgent } from '@/components/shared/hooks'
 
 export default function AgentDetailPage() {
   const router = useRouter()
   const params = useParams()
   const agentId = params?.id as string
 
-  const [agent, setAgent] = useState<ApiAgent | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // Use SWR for agent data with automatic retries and caching
+  const { agent, isLoading, error, refreshAgent } = useAgent(agentId)
   const [isTogglingStatus, setIsTogglingStatus] = useState(false)
-
-  const fetchAgent = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const agentData = await api.agents.getAgent(agentId)
-      setAgent(agentData)
-    } catch (err) {
-      console.error('Failed to fetch agent:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch agent')
-    } finally {
-      setLoading(false)
-    }
-  }, [agentId])
 
   const handleToggleStatus = async () => {
     if (!agent) return
@@ -73,7 +58,8 @@ export default function AgentDetailPage() {
       const updatedAgent = await api.agents.updateAgent(agent.id, { 
         isActive: !agent.isActive 
       })
-      setAgent(updatedAgent)
+      // Refresh SWR cache with updated data
+      await refreshAgent()
       toast.success(`Agent ${updatedAgent.isActive ? 'activated' : 'deactivated'} successfully`)
     } catch (err) {
       console.error('Failed to toggle agent status:', err)
@@ -105,13 +91,7 @@ export default function AgentDetailPage() {
     toast.success('Agent ID copied to clipboard')
   }
 
-  useEffect(() => {
-    if (agentId) {
-      fetchAgent()
-    }
-  }, [agentId, fetchAgent])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout title="Loading..." subtitle="Fetching agent details">
         <Center h={400}>
@@ -121,7 +101,7 @@ export default function AgentDetailPage() {
     )
   }
 
-  if (error || !agent) {
+  if (error || (!isLoading && !agent)) {
     return (
       <DashboardLayout title="Error" subtitle="Failed to load agent">
         <Center h={400}>
@@ -131,7 +111,9 @@ export default function AgentDetailPage() {
             </ThemeIcon>
             <Stack align="center" gap="xs">
               <Title order={3}>Agent not found</Title>
-              <Text c="dimmed" ta="center">{error || 'The requested agent could not be found.'}</Text>
+              <Text c="dimmed" ta="center">
+                {error instanceof Error ? error.message : error || 'The requested agent could not be found.'}
+              </Text>
             </Stack>
             <Button 
               component={Link} 
@@ -146,9 +128,20 @@ export default function AgentDetailPage() {
     )
   }
 
+  // Show loading while agent is being fetched
+  if (!agent) {
+    return (
+      <DashboardLayout title="Loading..." subtitle="Fetching agent details">
+        <Center h={400}>
+          <Loader size="lg" />
+        </Center>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout 
-      title={agent?.name || 'Loading...'} 
+      title={agent.name} 
       subtitle="Agent details and configuration"
     >
       <Container size="xl" px={0}>

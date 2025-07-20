@@ -1,7 +1,6 @@
 export { IntegrationGrid } from './IntegrationGrid'
 export { IntegrationCard } from './IntegrationCard'
 export { AddIntegrationModal } from './AddIntegrationModal'
-export { useIntegrationManagement } from './useIntegrationManagement'
 export { useIntegrations } from './useIntegrations'
 export { usePreloadIntegrations, preloadIntegrations } from './usePreloadIntegrations'
 export { CredentialsFormSection } from './CredentialsFormSection'

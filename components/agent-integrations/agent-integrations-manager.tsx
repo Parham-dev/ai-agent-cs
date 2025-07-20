@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React from 'react'
 import { 
   Paper, 
   Title, 
@@ -20,59 +20,23 @@ import {
 } from '@mantine/core'
 import { Plus } from 'lucide-react'
 import { AgentIntegrationCard } from './agent-integration-card'
-import { api } from '@/lib/api'
-import { toast } from 'sonner'
-import type { ApiIntegration, ApiAgentIntegration } from '@/lib/types'
+import { useIntegrations } from '@/components/shared/integrations'
+import { useAgentIntegrations } from '@/components/shared/hooks'
 
 interface AgentIntegrationsManagerProps {
   agentId: string
 }
 
 export function AgentIntegrationsManager({ agentId }: AgentIntegrationsManagerProps) {
-  const [integrations, setIntegrations] = useState<ApiIntegration[]>([])
-  const [agentIntegrations, setAgentIntegrations] = useState<ApiAgentIntegration[]>([])
-  const [loading, setLoading] = useState(true)
+  // Use SWR hooks for data fetching and caching
+  const { allIntegrations: integrations, isLoading: integrationsLoading } = useIntegrations()
+  const { 
+    isLoading: agentIntegrationsLoading, 
+    isIntegrationConnected, 
+    getAgentIntegration 
+  } = useAgentIntegrations(agentId)
 
-
-  const fetchData = useCallback(async () => {
-    if (!agentId) {
-      console.warn('AgentIntegrationsManager: agentId is required')
-      setLoading(false)
-      return
-    }
-
-    try {
-      setLoading(true)
-      const [integrationsData, agentIntegrationsData] = await Promise.all([
-        api.integrations.getIntegrations({ isActive: true }),
-        api.agentIntegrations.getAgentIntegrations(agentId)
-      ])
-      
-      setIntegrations(integrationsData)
-      setAgentIntegrations(agentIntegrationsData)
-    } catch (error) {
-      console.error('Failed to fetch integrations:', error)
-      toast.error('Failed to load integrations')
-    } finally {
-      setLoading(false)
-    }
-  }, [agentId])
-
-
-
-
-
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
-
-  const isIntegrationConnected = (integrationId: string) => {
-    return agentIntegrations.some(ai => ai.integrationId === integrationId)
-  }
-
-  const getAgentIntegration = (integrationId: string) => {
-    return agentIntegrations.find(ai => ai.integrationId === integrationId)
-  }
+  const loading = integrationsLoading || agentIntegrationsLoading
 
   if (loading) {
     return (

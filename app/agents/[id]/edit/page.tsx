@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { DashboardLayout } from '@/components/dashboard/layout'
@@ -9,30 +8,15 @@ import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Bot } from 'lucide-react'
-import type { ApiAgent } from '@/lib/types'
+import { useAgent } from '@/components/shared/hooks'
 
 export default function EditAgentPage() {
   const router = useRouter()
   const params = useParams()
   const agentId = params?.id as string
 
-  const [agent, setAgent] = useState<ApiAgent | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchAgent = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const agentData = await api.agents.getAgent(agentId)
-      setAgent(agentData)
-    } catch (err) {
-      console.error('Failed to fetch agent:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch agent')
-    } finally {
-      setLoading(false)
-    }
-  }, [agentId])
+  // Use SWR for agent data with automatic caching and error handling
+  const { agent, isLoading: loading, error, refreshAgent } = useAgent(agentId)
 
   const handleSave = async (data: AgentFormData) => {
     try {
@@ -48,6 +32,8 @@ export default function EditAgentPage() {
         tools: data.selectedTools,
       })
 
+      // Refresh SWR cache with updated data
+      await refreshAgent()
       toast.success('Agent updated successfully!')
       router.push(`/agents/${updatedAgent.id}`)
     } catch (error) {
@@ -60,11 +46,6 @@ export default function EditAgentPage() {
     router.push(`/agents/${agentId}`)
   }
 
-  useEffect(() => {
-    if (agentId) {
-      fetchAgent()
-    }
-  }, [agentId, fetchAgent])
 
   if (loading) {
     return (
@@ -83,7 +64,7 @@ export default function EditAgentPage() {
           <Bot className="h-16 w-16 text-muted-foreground" />
           <div className="text-center">
             <h3 className="text-lg font-semibold">Agent not found</h3>
-            <p className="text-muted-foreground">{error || 'The requested agent could not be found.'}</p>
+            <p className="text-muted-foreground">{error instanceof Error ? error.message : error || 'The requested agent could not be found.'}</p>
           </div>
           <Button asChild>
             <Link href="/agents">

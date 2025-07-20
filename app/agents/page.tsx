@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { DashboardLayout } from '@/components/dashboard/layout'
@@ -31,29 +31,18 @@ import {
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
+import { useAgents } from '@/components/shared/hooks'
 import type { ApiAgent } from '@/lib/types'
 
 export default function AgentsPage() {
   const router = useRouter()
-  const [agents, setAgents] = useState<ApiAgent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  const fetchAgents = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const agentsData = await api.agents.getAgents()
-      setAgents(agentsData)
-    } catch (err) {
-      console.error('Failed to fetch agents:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch agents')
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Use SWR for agents data with automatic caching and updates
+  const { agents, isLoading, error, refreshAgents } = useAgents({ 
+    search: searchTerm || undefined 
+  })
 
   const handleToggleStatus = async (agent: ApiAgent) => {
     try {
@@ -62,10 +51,8 @@ export default function AgentsPage() {
         isActive: !agent.isActive 
       })
       
-      // Update local state
-      setAgents(prev => prev.map(a => 
-        a.id === agent.id ? updatedAgent : a
-      ))
+      // Refresh SWR cache with updated data
+      await refreshAgents()
       
       toast.success(`Agent ${updatedAgent.isActive ? 'activated' : 'deactivated'} successfully`)
     } catch (err) {
@@ -85,8 +72,8 @@ export default function AgentsPage() {
       setActionLoading(agent.id)
       await api.agents.deleteAgent(agent.id)
       
-      // Remove from local state
-      setAgents(prev => prev.filter(a => a.id !== agent.id))
+      // Refresh SWR cache after deletion
+      await refreshAgents()
       
       toast.success('Agent deleted successfully')
     } catch (err) {
@@ -97,17 +84,10 @@ export default function AgentsPage() {
     }
   }
 
-  useEffect(() => {
-    fetchAgents()
-  }, [])
+  // Filter is now handled by SWR hook with search parameter
+  // No need for local filtering since SWR will handle server-side search
 
-  const filteredAgents = agents.filter(agent =>
-    agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (agent.systemPrompt && agent.systemPrompt.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (agent.description && agent.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  )
-
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout title="Agents" subtitle="Manage your AI customer service agents">
         <Center h={300}>
@@ -132,7 +112,7 @@ export default function AgentsPage() {
               <Text size="lg" fw={600}>Error Loading Agents</Text>
               <Text size="sm" c="dimmed" ta="center">{error}</Text>
             </Stack>
-            <Button onClick={fetchAgents} leftSection={<Bot size={16} />}>
+            <Button onClick={() => refreshAgents()} leftSection={<Bot size={16} />}>
               Try Again
             </Button>
           </Stack>
@@ -211,7 +191,7 @@ export default function AgentsPage() {
         </Grid>
 
         {/* Agents List */}
-        {filteredAgents.length === 0 ? (
+        {agents.length === 0 ? (
           <Card withBorder padding="xl" radius="md">
             <Stack align="center" gap="md">
               <ThemeIcon size="xl" variant="light" color="gray">
@@ -242,7 +222,7 @@ export default function AgentsPage() {
           </Card>
         ) : (
           <Grid>
-            {filteredAgents.map((agent) => (
+            {agents.map((agent) => (
               <Grid.Col key={agent.id} span={{ base: 12, lg: 6 }}>
                 <Card withBorder padding="lg" radius="md" style={{ height: '100%' }}>
                   <Stack gap="md" h="100%">

@@ -10,16 +10,8 @@ export function useIntegrationFormState(form: UseFormReturnType<AgentFormData>) 
   const isIntegrationSelected = (integrationId: string, integrationType?: string) => {
     const selections = form.getValues().selectedIntegrations || []
     
-    console.log('🔍 isIntegrationSelected called:', {
-      integrationId,
-      integrationType,
-      selections: selections.map(s => s.integrationId)
-    })
-    
     // Direct ID match (most common case)
     const directMatch = selections.some(selected => selected.integrationId === integrationId)
-    console.log('🔍 Direct match result:', directMatch)
-    
     if (directMatch) return true
     
     // If no direct match and we have the integration type, check by type
@@ -37,7 +29,6 @@ export function useIntegrationFormState(form: UseFormReturnType<AgentFormData>) 
           return false // Let direct match handle real IDs
         }
       })
-      console.log('🔍 Type match result:', typeMatch)
       return typeMatch
     }
     
@@ -85,16 +76,12 @@ export function useIntegrationFormState(form: UseFormReturnType<AgentFormData>) 
   // Updates the integration ID (when temp becomes real)
   const updateIntegrationId = (oldId: string, newId: string) => {
     const current = form.getValues().selectedIntegrations || []
-    console.log('🔄 updateIntegrationId called:', { oldId, newId })
-    console.log('🔄 Current selections before update:', current.map(s => s.integrationId))
-    
     const updated = current.map(selected =>
       selected.integrationId === oldId
         ? { ...selected, integrationId: newId }
         : selected
     )
     
-    console.log('🔄 Updated selections after update:', updated.map(s => s.integrationId))
     form.setFieldValue('selectedIntegrations', updated)
   }
 

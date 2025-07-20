@@ -1,73 +1,32 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Bot, Activity, ShieldCheck } from 'lucide-react'
 import { AssistantRuntimeProvider } from '@assistant-ui/react'
 import { Thread } from '@/components/assistant-ui/thread'
-import { api } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAgentChatRuntime } from '@/lib/assistant-ui/runtime'
 import { DashboardLayout } from '@/components/dashboard/layout'
-import type { ApiAgent } from '@/lib/types'
+import { useAgent } from '@/components/shared/hooks'
 
 
 export default function AgentChatPage() {
   const params = useParams()
   const agentId = params?.id as string
 
-  console.log('🔥 AgentChatPage render - agentId:', agentId)
-
-  // State
-  const [agent, setAgent] = useState<ApiAgent | null>(null)
-  const [agentLoading, setAgentLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  console.log('🔥 Current state:', { agent: agent?.name, agentLoading, error })
+  // Use SWR for agent data with automatic caching and error handling
+  const { agent, isLoading: agentLoading, error } = useAgent(agentId)
 
   // Initialize assistant-ui runtime
-  console.log('🔥 Creating runtime with agent:', agent?.name)
-  const { runtime, initializeChat } = useAgentChatRuntime(agent)
-  console.log('🔥 Runtime created:', { runtime, initializeChat })
-
-  // Load agent data
-  const fetchAgent = useCallback(async () => {
-    try {
-      console.log('🔥 fetchAgent called for agentId:', agentId)
-      setAgentLoading(true)
-      setError(null)
-      console.log('🔥 Calling api.agents.getAgent...')
-      const agentData = await api.agents.getAgent(agentId)
-      console.log('🔥 Agent data received:', agentData)
-      setAgent(agentData)
-      console.log('🔥 Agent state updated')
-    } catch (err) {
-      console.error('🔥 Failed to fetch agent:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load agent')
-    } finally {
-      console.log('🔥 fetchAgent finally block')
-      setAgentLoading(false)
-    }
-  }, [agentId])
-
-  // Effects
-  useEffect(() => {
-    console.log('🔥 useEffect[agentId] triggered with:', agentId)
-    if (agentId) {
-      console.log('🔥 Calling fetchAgent...')
-      fetchAgent()
-    }
-  }, [agentId, fetchAgent])
+  const { runtime, initializeChat } = useAgentChatRuntime(agent || null)
 
   // Initialize chat when agent loads
   useEffect(() => {
-    console.log('🔥 useEffect[agent] triggered with:', agent?.name)
     if (agent) {
-      console.log('🔥 Calling initializeChat...')
       initializeChat()
-      console.log('🔥 initializeChat called')
     }
   }, [agent, initializeChat])
 

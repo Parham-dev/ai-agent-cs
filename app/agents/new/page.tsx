@@ -6,6 +6,7 @@ import { AgentCreationWizard, type AgentFormData } from '@/components/agents/cre
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import { createClientLogger } from '@/lib/utils/client-logger'
+import { mutate } from 'swr'
 
 export default function NewAgentPage() {
   const router = useRouter()
@@ -20,6 +21,14 @@ export default function NewAgentPage() {
       });
 
       // Create the agent using v2 API - organization scoping handled by server
+      console.log('🔨 Creating agent with data:', {
+        name: data.name,
+        model: data.model,
+        hasSystemPrompt: !!data.systemPrompt,
+        temperature: data.temperature,
+        maxTokens: data.maxTokens
+      })
+      
       const agent = await api.agents.createAgent({
         name: data.name,
         description: data.description,
@@ -29,6 +38,13 @@ export default function NewAgentPage() {
         maxTokens: data.maxTokens,
         rules: data.rules,
         tools: data.selectedTools || []
+      })
+      
+      console.log('✅ Agent created successfully:', {
+        id: agent.id,
+        name: agent.name,
+        model: agent.model,
+        isActive: agent.isActive
       })
 
       // Create agent-integration relationships if there are any configured integrations
@@ -66,6 +82,14 @@ export default function NewAgentPage() {
       });
 
       toast.success('Agent created successfully!')
+      
+      // Invalidate agents list cache to show new agent immediately
+      await mutate(key => typeof key === 'string' && key.startsWith('agents'))
+      
+      // Small delay to ensure SWR cache updates before redirect
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      console.log('🔄 Redirecting to agent page:', `/agents/${agent.id}`)
       router.push(`/agents/${agent.id}`)
     } catch (error) {
       logger.error('Failed to create agent', {}, error as Error)

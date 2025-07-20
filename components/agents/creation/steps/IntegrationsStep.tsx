@@ -18,9 +18,6 @@ export function IntegrationsStep({ form }: StepProps) {
   const [selectedIntegrationForTools, setSelectedIntegrationForTools] = useState<ApiIntegration | null>(null)
   const [selectedIntegrationForCredentials, setSelectedIntegrationForCredentials] = useState<ApiIntegration | null>(null)
   
-  // Loading state for integration operations (for future use)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [integrationSaving, setIntegrationSaving] = useState(false)
 
   // Custom hooks
   const {
@@ -87,7 +84,6 @@ export function IntegrationsStep({ form }: StepProps) {
 
   // Handle credentials saved - simplified without state synchronization complexity
   const handleCredentialsSaved = async (savedIntegration: ApiIntegration) => {
-    setIntegrationSaving(true)
     try {
       const tempId = selectedIntegrationForCredentials?.id
       
@@ -108,8 +104,6 @@ export function IntegrationsStep({ form }: StepProps) {
     } catch (error) {
       console.error('Failed to save integration:', error)
       toast.error('Failed to configure integration')
-    } finally {
-      setIntegrationSaving(false)
     }
   }
 
