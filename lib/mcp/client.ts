@@ -205,6 +205,26 @@ export class MCPClient {
   }
 
   /**
+   * Gracefully close all server connections with a delay to allow pending operations
+   */
+  async gracefulCloseAll(delayMs: number = 5000): Promise<void> {
+    logger.debug(`Scheduling graceful MCP client shutdown in ${delayMs}ms`);
+    
+    return new Promise((resolve) => {
+      setTimeout(async () => {
+        try {
+          await this.closeAll();
+          logger.debug('Graceful MCP client shutdown completed');
+          resolve();
+        } catch (error) {
+          logger.error('Error during graceful MCP client shutdown', {}, error as Error);
+          resolve(); // Still resolve to prevent hanging
+        }
+      }, delayMs);
+    });
+  }
+
+  /**
    * Get server status
    */
   getServerStatus(): Array<{ name: string; connected: boolean; error?: string }> {

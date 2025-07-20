@@ -24,8 +24,8 @@ export class AgentApiClient extends BaseApiClient {
    * Get a single agent by ID
    */
   async getAgent(id: string): Promise<ApiAgent> {
-    const response = this.request<{ agent: ApiAgent }>(`/agents/${id}`);
-    return response.then(data => data.agent);
+    const response = await this.request<{ agent: ApiAgent }>(`/agents/${id}`);
+    return response.agent;
   }
 
   /**

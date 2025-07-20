@@ -110,7 +110,7 @@ export default function AgentsPage() {
             </ThemeIcon>
             <Stack align="center" gap="xs">
               <Text size="lg" fw={600}>Error Loading Agents</Text>
-              <Text size="sm" c="dimmed" ta="center">{error}</Text>
+              <Text size="sm" c="dimmed" ta="center">{error instanceof Error ? error.message : error}</Text>
             </Stack>
             <Button onClick={() => refreshAgents()} leftSection={<Bot size={16} />}>
               Try Again

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useExternalStoreRuntime } from '@assistant-ui/react'
 import type { ThreadMessage, AppendMessage } from '@assistant-ui/react'
 import type { ApiAgent } from '@/lib/types'
+import { SessionThreadListAdapter } from './thread-list-adapter'
 
 // Message interface matching your current system
 interface ChatMessage {
@@ -54,11 +55,36 @@ function convertFromAssistantUI(message: AppendMessage | ThreadMessage): ChatMes
   }
 }
 
+export function useAgentChatRuntimeWithThreadList(agent: ApiAgent | null) {
+  console.log('🚀 useAgentChatRuntimeWithThreadList called with agent:', agent?.name)
+  
+  // For now, let's just use the regular runtime and add thread list support later
+  // The ThreadList components can work with a basic runtime
+  const baseRuntime = useAgentChatRuntime(agent)
+  
+  // Create thread list adapter for this agent
+  const threadListAdapter = useMemo(() => {
+    if (!agent) return null
+    try {
+      return new SessionThreadListAdapter(agent.id)
+    } catch (error) {
+      console.error('Failed to create SessionThreadListAdapter:', error)
+      return null
+    }
+  }, [agent])
+
+  return {
+    runtime: baseRuntime.runtime,
+    threadListAdapter
+  }
+}
+
 export function useAgentChatRuntime(agent: ApiAgent | null) {
   console.log('🚀 useAgentChatRuntime called with agent:', agent?.name)
   const [messages, setMessages] = useState<ThreadMessage[]>([])
   const [isRunning, setIsRunning] = useState(false)
-  console.log('🚀 Runtime state:', { messagesCount: messages.length, isRunning })
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  console.log('🚀 Runtime state:', { messagesCount: messages.length, isRunning, sessionId })
 
   // Initialize with welcome message when agent loads
   const initializeChat = useCallback(() => {
@@ -128,6 +154,7 @@ How can I help you today?`,
           body: JSON.stringify({
             agentId: agent.id,
             message: userMessage.content,
+            sessionId: sessionId, // Include sessionId to continue conversation
             conversationHistory: conversationHistory,
           }),
         })
@@ -137,6 +164,11 @@ How can I help you today?`,
         }
 
         const data = await response.json()
+
+        // Store sessionId from the response for future requests
+        if (data.success && data.data.sessionId) {
+          setSessionId(data.data.sessionId)
+        }
 
         // Create assistant response message
         const assistantMessage: ChatMessage = {
@@ -168,7 +200,7 @@ How can I help you today?`,
         setIsRunning(false)
       }
     },
-    [agent, messages]
+    [agent, messages, sessionId]
   )
 
   // Handle reload of the last assistant message
@@ -268,6 +300,7 @@ How can I help you today?`,
           body: JSON.stringify({
             agentId: agent.id,
             message: userMessage.content,
+            sessionId: sessionId, // Include sessionId to continue conversation
             conversationHistory: apiConversationHistory,
           }),
         })
@@ -277,6 +310,11 @@ How can I help you today?`,
         }
 
         const data = await response.json()
+
+        // Store sessionId from the response for future requests
+        if (data.success && data.data.sessionId) {
+          setSessionId(data.data.sessionId)
+        }
 
         // Create new assistant response message
         const assistantMessage: ChatMessage = {
@@ -321,7 +359,7 @@ How can I help you today?`,
         setIsRunning(false)
       }
     },
-    [agent, messages]
+    [agent, messages, sessionId]
   )
 
   // Create the external store runtime
