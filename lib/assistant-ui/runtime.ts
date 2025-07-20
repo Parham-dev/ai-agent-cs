@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { useExternalStoreRuntime } from '@assistant-ui/react'
 import type { ThreadMessage, AppendMessage } from '@assistant-ui/react'
 import type { ApiAgent } from '@/lib/types'
@@ -23,13 +23,14 @@ interface ChatMessage {
 
 // Convert your message format to assistant-ui format
 function convertToAssistantUI(message: ChatMessage): ThreadMessage {
+  const content = message.content || ''
   return {
     id: message.id,
     role: message.role as 'user' | 'assistant',
     content: [
       {
         type: 'text',
-        text: message.content,
+        text: content,
       },
     ],
     createdAt: message.timestamp,
@@ -42,7 +43,7 @@ function convertToAssistantUI(message: ChatMessage): ThreadMessage {
 
 // Convert assistant-ui format to your message format
 function convertFromAssistantUI(message: AppendMessage | ThreadMessage): ChatMessage {
-  const textContent = message.content
+  const textContent = (message.content || [])
     .filter((c) => c.type === 'text')
     .map((c) => (c as { text: string }).text)
     .join('')
@@ -50,7 +51,7 @@ function convertFromAssistantUI(message: AppendMessage | ThreadMessage): ChatMes
   return {
     id: ('id' in message ? message.id : `msg-${Date.now()}`) || `msg-${Date.now()}`,
     role: message.role as 'user' | 'assistant',
-    content: textContent,
+    content: textContent || '',
     timestamp: ('createdAt' in message ? message.createdAt : new Date()) || new Date(),
   }
 }
@@ -58,14 +59,11 @@ function convertFromAssistantUI(message: AppendMessage | ThreadMessage): ChatMes
 export function useAgentChatRuntimeWithThreadList(agent: ApiAgent | null) {
   console.log('🚀 useAgentChatRuntimeWithThreadList called with agent:', agent?.name)
   
-  // For now, let's just use the regular runtime and add thread list support later
-  // The ThreadList components can work with a basic runtime
-  const baseRuntime = useAgentChatRuntime(agent)
-  
   // Create thread list adapter for this agent
   const threadListAdapter = useMemo(() => {
     if (!agent) return null
     try {
+      console.log('🚀 Creating SessionThreadListAdapter for agent:', agent.id)
       return new SessionThreadListAdapter(agent.id)
     } catch (error) {
       console.error('Failed to create SessionThreadListAdapter:', error)
@@ -73,13 +71,56 @@ export function useAgentChatRuntimeWithThreadList(agent: ApiAgent | null) {
     }
   }, [agent])
 
+  // Get base chat functionality
+  const { messages, setMessages, isRunning, onNew, onReload, initializeChat } = useAgentChatRuntimeBase(agent)
+  
+  // Create runtime with thread list adapter using the correct pattern
+  console.log('🚀 Creating useExternalStoreRuntime with thread list adapter')
+  
+  // Try a simpler approach - create the runtime without adapters first
+  const runtime = useExternalStoreRuntime({
+    messages,
+    isRunning,
+    onNew,
+    onReload,
+  })
+  
+  // Then try to manually connect the adapter to the runtime
+  React.useEffect(() => {
+    if (runtime && threadListAdapter) {
+      console.log('🚀 Manually connecting adapter to runtime')
+      console.log('🚀 Runtime threads object:', runtime.threads)
+      console.log('🚀 ThreadListAdapter object:', threadListAdapter)
+      
+      // Try to manually trigger the adapter
+      setTimeout(async () => {
+        console.log('🚀 Manually calling adapter.list()')
+        try {
+          const result = await threadListAdapter.list()
+          console.log('🚀 Manual adapter.list() result:', result)
+        } catch (error) {
+          console.error('🚀 Manual adapter.list() error:', error)
+        }
+      }, 2000)
+    }
+  }, [runtime, threadListAdapter])
+
+  console.log('🚀 Runtime with thread list created:', { 
+    hasRuntime: !!runtime,
+    hasThreadListAdapter: !!threadListAdapter,
+    agentId: agent?.id 
+  })
+
   return {
-    runtime: baseRuntime.runtime,
-    threadListAdapter
+    runtime,
+    threadListAdapter,
+    initializeChat,
+    messages,
+    setMessages,
   }
 }
 
-export function useAgentChatRuntime(agent: ApiAgent | null) {
+export function useAgentChatRuntimeBase(agent: ApiAgent | null) {
   console.log('🚀 useAgentChatRuntime called with agent:', agent?.name)
   const [messages, setMessages] = useState<ThreadMessage[]>([])
   const [isRunning, setIsRunning] = useState(false)
@@ -141,9 +182,18 @@ How can I help you today?`,
           const chatMsg = convertFromAssistantUI(msg)
           return {
             role: chatMsg.role,
-            content: chatMsg.content,
+            content: chatMsg.content || '',
           }
         })
+
+        const requestBody = {
+          agentId: agent.id,
+          message: userMessage.content || '',
+          sessionId: sessionId, // Include sessionId to continue conversation
+          conversationHistory: conversationHistory,
+        };
+        
+        console.log('🚀 Sending API request:', requestBody)
 
         // Call your existing API
         const response = await fetch('/api/v2/agents/chat', {
@@ -151,23 +201,37 @@ How can I help you today?`,
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            agentId: agent.id,
-            message: userMessage.content,
-            sessionId: sessionId, // Include sessionId to continue conversation
-            conversationHistory: conversationHistory,
-          }),
+          body: JSON.stringify(requestBody),
         })
 
+        console.log('🚀 Response status:', response.status, response.statusText)
+        console.log('🚀 Response headers:', Object.fromEntries(response.headers.entries()))
+
         if (!response.ok) {
-          throw new Error('Failed to send message')
+          console.log('🚀 Response not OK, response:', response)
+          throw new Error(`API request failed: ${response.status} ${response.statusText}`)
         }
 
         const data = await response.json()
+        console.log('🚀 Raw API response received:', data)
+        console.log('🚀 Response structure:', {
+          success: data.success,
+          dataKeys: data.data ? Object.keys(data.data) : 'no data',
+          message: data.data?.message,
+          sessionId: data.data?.sessionId,
+          messageLength: data.data?.message?.length
+        })
 
         // Store sessionId from the response for future requests
         if (data.success && data.data.sessionId) {
           setSessionId(data.data.sessionId)
+          console.log('🚀 Session ID stored:', data.data.sessionId)
+          
+          // Notify thread list to refresh if we got a new session
+          if (!sessionId && data.data.sessionId) {
+            console.log('🚀 New session created, should refresh thread list')
+            // The thread list will refresh automatically when it's next accessed
+          }
         }
 
         // Create assistant response message
@@ -179,24 +243,32 @@ How can I help you today?`,
             : 'Sorry, there was an error processing your message.',
           timestamp: new Date(),
         }
+        
+        console.log('🚀 Assistant message created:', assistantMessage)
 
         // Convert to assistant-ui format and add to messages
         const assistantUIMessage = convertToAssistantUI(assistantMessage)
         setMessages((prev) => [...prev, assistantUIMessage])
       } catch (error) {
-        console.error('Chat error:', error)
+        console.error('🚀 Chat error occurred:', error)
+        console.error('🚀 Error details:', {
+          name: (error as Error)?.name,
+          message: (error as Error)?.message,
+          stack: (error as Error)?.stack
+        })
         
         // Add error message
         const errorMessage: ChatMessage = {
           id: `msg-error-${Date.now()}`,
           role: 'assistant',
-          content: '❌ Sorry, there was an error processing your message. Please try again.',
+          content: `❌ Sorry, there was an error processing your message: ${(error as Error)?.message || 'Unknown error'}. Please try again.`,
           timestamp: new Date(),
         }
 
         const errorUIMessage = convertToAssistantUI(errorMessage)
         setMessages((prev) => [...prev, errorUIMessage])
       } finally {
+        console.log('🚀 Setting isRunning to false')
         setIsRunning(false)
       }
     },
@@ -236,7 +308,7 @@ How can I help you today?`,
           const chatMsg = convertFromAssistantUI(msg)
           return {
             role: chatMsg.role,
-            content: chatMsg.content,
+            content: chatMsg.content || '',
           }
         })
         
@@ -252,7 +324,7 @@ How can I help you today?`,
         const chatMsg = convertFromAssistantUI(messageToReload)
         userMessage = {
           role: chatMsg.role,
-          content: chatMsg.content,
+          content: chatMsg.content || '',
         }
         
         // Get conversation history before this user message
@@ -260,7 +332,7 @@ How can I help you today?`,
           const chatMsg = convertFromAssistantUI(msg)
           return {
             role: chatMsg.role,
-            content: chatMsg.content,
+            content: chatMsg.content || '',
           }
         })
       }
@@ -299,7 +371,7 @@ How can I help you today?`,
           },
           body: JSON.stringify({
             agentId: agent.id,
-            message: userMessage.content,
+            message: userMessage.content || '',
             sessionId: sessionId, // Include sessionId to continue conversation
             conversationHistory: apiConversationHistory,
           }),
@@ -335,7 +407,7 @@ How can I help you today?`,
           const userUIMessage = convertToAssistantUI({
             id: `msg-${Date.now()}-user`,
             role: 'user',
-            content: userMessage.content,
+            content: userMessage.content || '',
             timestamp: new Date(),
           })
           setMessages((prev) => [...prev, userUIMessage, assistantUIMessage])
@@ -362,7 +434,21 @@ How can I help you today?`,
     [agent, messages, sessionId]
   )
 
-  // Create the external store runtime
+  return {
+    messages,
+    setMessages,
+    isRunning,
+    onNew,
+    onReload,
+    initializeChat,
+  }
+}
+
+// Backward compatibility function for components that expect the old interface
+export function useAgentChatRuntime(agent: ApiAgent | null) {
+  const { messages, isRunning, onNew, onReload, initializeChat, setMessages } = useAgentChatRuntimeBase(agent)
+  
+  // Create the external store runtime without thread list support
   console.log('🚀 Creating external store runtime with:', { messagesCount: messages.length, isRunning })
   const runtime = useExternalStoreRuntime({
     messages,

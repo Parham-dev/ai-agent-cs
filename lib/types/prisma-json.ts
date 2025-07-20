@@ -122,6 +122,67 @@ declare global {
       }
       [key: string]: unknown
     }
+
+    // New conversation and message types for session-based architecture
+    interface ConversationContext {
+      // Customer context
+      customerPreferences?: Record<string, unknown>
+      customerHistory?: string[]
+      
+      // Session state
+      sessionData?: Record<string, unknown>
+      variables?: Record<string, unknown>
+      
+      // Agent behavior for this conversation
+      agentOverrides?: {
+        temperature?: number
+        model?: string
+        systemPromptAddition?: string
+      }
+      
+      // Integration context
+      integrationState?: Record<string, Record<string, unknown>>
+      
+      [key: string]: unknown
+    }
+
+    // Tool calls made in a message
+    type MessageToolCalls = MessageToolCall[]
+    
+    interface MessageToolCall {
+      id: string
+      name: string
+      arguments: Record<string, unknown>
+      timestamp: string
+    }
+
+    // Tool execution results for a message
+    type MessageToolResults = MessageToolResult[]
+    
+    interface MessageToolResult {
+      toolCallId: string
+      result: unknown
+      success: boolean
+      error?: string
+      timestamp: string
+      executionTime?: number
+    }
+
+    // Usage metadata for cost tracking
+    interface UsageMetadata {
+      requestId?: string
+      modelUsed?: string
+      toolsUsed?: string[]
+      customerContext?: {
+        customerId?: string
+        sessionId?: string
+      }
+      performance?: {
+        responseTime?: number
+        tokenProcessingTime?: number
+      }
+      [key: string]: unknown
+    }
   }
 }
 

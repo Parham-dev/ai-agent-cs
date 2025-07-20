@@ -104,23 +104,83 @@ model AgentIntegration {
 }
 
 model Conversation {
-  id             String       @id @default(cuid())
-  organizationId String
-  agentId        String?
-  customerId     String?
-  customerEmail  String?
-  customerName   String?
-  /// [ConversationMessages]
-  messages       Json         @default("[]")
-  status         String       @default("open")
-  channel        String       @default("web")
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  agent          Agent?       @relation(fields: [agentId], references: [id])
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId, status])
+  id               String            @id @default(cuid())
+  organizationId   String
+  agentId          String
+  sessionId        String            // Link multiple conversations to same session
+  customerId       String?
+  customerName     String?
+  customerEmail    String?
+  
+  // Conversation metadata
+  title            String?           // Auto-generated or user-editable
+  status           ConversationStatus @default(ACTIVE)
+  channel          String            @default("web")
+  isArchived       Boolean           @default(false)
+  
+  // Session context
+  /// [ConversationContext]
+  context          Json?             @default("{}")
+  
+  // Timestamps for sorting/cleanup
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  lastMessageAt    DateTime?         // For recency sorting
+  
+  // Relations
+  messages         Message[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agent            Agent             @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  usageRecords     UsageRecord[]
+  
+  @@index([organizationId, sessionId])
+  @@index([organizationId, agentId, lastMessageAt])
+  @@index([organizationId, customerId])
+  @@index([sessionId, createdAt])
   @@map("conversations")
+}
+
+model Message {
+  id               String            @id @default(cuid())
+  conversationId   String
+  role             MessageRole       // USER, ASSISTANT, SYSTEM
+  content          String
+  
+  // Message metadata
+  tokenCount       Int?              // For analytics
+  finishReason     String?           // stop, length, tool_calls, etc.
+  
+  // Tool usage tracking
+  /// [MessageToolCalls]
+  toolCalls        Json?             @default("[]")
+  /// [MessageToolResults]
+  toolResults      Json?             @default("[]")
+  
+  // Cost tracking
+  usageRecordId    String?           // Link to usage record
+  
+  // Timestamps
+  createdAt        DateTime          @default(now())
+  
+  // Relations
+  conversation     Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  usageRecord      UsageRecord?      @relation(fields: [usageRecordId], references: [id])
+  
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+enum ConversationStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+  ARCHIVED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
 }
 
 model CustomerMemory {
@@ -200,11 +260,14 @@ model UsageRecord {
   // Relations
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   agent          Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  messages       Message[]    // Messages linked to this usage record
   
   @@index([organizationId, createdAt])
   @@index([organizationId, model])
   @@index([organizationId, source])
   @@index([agentId, createdAt])
+  @@index([conversationId])
   @@map("usage_records")
 }
 

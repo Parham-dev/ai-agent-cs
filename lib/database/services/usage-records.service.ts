@@ -134,7 +134,7 @@ class UsageRecordsService {
           source: data.source.trim(),
           requestId: data.requestId?.trim() || null,
           conversationId: data.conversationId?.trim() || null,
-          metadata: data.metadata || null
+          metadata: data.metadata
         }
       })
 

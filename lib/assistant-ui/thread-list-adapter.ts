@@ -1,8 +1,6 @@
 'use client'
 
-import type { 
-  unstable_RemoteThreadListAdapter as RemoteThreadListAdapter 
-} from '@assistant-ui/react'
+// Removed RemoteThreadListAdapter import as we implement the interface directly
 import type { ThreadMessage } from '@assistant-ui/react'
 import type { AssistantStream } from 'assistant-stream'
 
@@ -26,8 +24,11 @@ type RemoteThreadInitializeResponse = {
 /**
  * Thread List Adapter for session-based chat
  * Integrates with our session-based API to provide multi-session support
+ * 
+ * This adapter implements the assistant-ui thread list interface to enable
+ * multi-thread support with useExternalStoreRuntime
  */
-export class SessionThreadListAdapter implements RemoteThreadListAdapter {
+export class SessionThreadListAdapter {
   private agentId: string
   private sessions = new Map<string, RemoteThreadMetadata>()
 
@@ -40,16 +41,41 @@ export class SessionThreadListAdapter implements RemoteThreadListAdapter {
    */
   async list(): Promise<RemoteThreadListResponse> {
     try {
-      // For now, return the sessions we have in memory
-      // TODO: In the future, this could fetch from a database
-      const threads = Array.from(this.sessions.values())
+      console.log('🚀 Fetching threads from database for agent:', this.agentId)
+      
+      // Fetch conversations from database
+      const response = await fetch(`/api/v2/agents/${this.agentId}/conversations`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        console.error('Failed to fetch conversations:', response.status, response.statusText)
+        return { threads: [] }
+      }
+
+      const data = await response.json()
+      console.log('🚀 Fetched conversations from API:', data)
+      
+      if (!data.success || !data.data?.threads) {
+        console.error('Invalid response format:', data)
+        return { threads: [] }
+      }
+
+      const dbThreads = data.data.threads as RemoteThreadMetadata[]
+      
+      // Update local cache with database data
+      this.sessions.clear()
+      dbThreads.forEach(thread => {
+        this.sessions.set(thread.remoteId, thread)
+      })
+      
+      console.log('🚀 Loaded threads from database:', dbThreads.length)
       
       return {
-        threads: threads.sort((a, b) => {
-          // Sort by creation time (most recent first)
-          // For now, we'll use the remoteId as a proxy for creation time
-          return b.remoteId.localeCompare(a.remoteId)
-        })
+        threads: dbThreads
       }
     } catch (error) {
       console.error('Failed to list threads:', error)
@@ -152,7 +178,7 @@ export class SessionThreadListAdapter implements RemoteThreadListAdapter {
   async initialize(threadId: string): Promise<RemoteThreadInitializeResponse> {
     try {
       // Generate a unique session ID
-      const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
       
       // Create session metadata
       const sessionMetadata: RemoteThreadMetadata = {
@@ -249,5 +275,65 @@ export class SessionThreadListAdapter implements RemoteThreadListAdapter {
    */
   getAllSessions(): RemoteThreadMetadata[] {
     return Array.from(this.sessions.values())
+  }
+
+
+  /**
+   * Get the current thread list for the UI
+   */
+  getThreads(): RemoteThreadMetadata[] {
+    return this.getAllSessions()
+  }
+
+  /**
+   * Switch to a specific thread (required by assistant-ui)
+   */
+  async switchToThread(remoteId: string): Promise<void> {
+    try {
+      console.log('🚀 Switching to thread:', remoteId)
+      
+      // Update the current session metadata if needed
+      const session = this.sessions.get(remoteId)
+      if (session) {
+        console.log('🚀 Found session for thread:', session.title)
+      } else {
+        console.log('🚀 Session not found for thread:', remoteId)
+      }
+      
+      // The actual thread switching is handled by the assistant-ui runtime
+      // This method is called to notify the adapter about the switch
+    } catch (error) {
+      console.error('Failed to switch to thread:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Create a new thread (required by assistant-ui)
+   */
+  async createThread(): Promise<{ remoteId: string }> {
+    try {
+      console.log('🚀 Creating new thread')
+      
+      // Generate a unique session ID for the new thread
+      const remoteId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+      
+      // Create session metadata
+      const sessionMetadata: RemoteThreadMetadata = {
+        status: 'regular',
+        remoteId,
+        title: 'New Chat'
+      }
+      
+      // Store in local cache
+      this.sessions.set(remoteId, sessionMetadata)
+      
+      console.log('🚀 Created new thread:', remoteId)
+      
+      return { remoteId }
+    } catch (error) {
+      console.error('Failed to create thread:', error)
+      throw error
+    }
   }
 }

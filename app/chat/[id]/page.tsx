@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Bot, Activity } from 'lucide-react'
@@ -12,17 +13,154 @@ import { useAgentChatRuntimeWithThreadList } from '@/lib/assistant-ui/runtime'
 import { DashboardLayout } from '@/components/dashboard/layout'
 import { useAgent } from '@/components/shared/hooks'
 import { renderError } from '@/lib/utils/error'
+import { useAuthContext } from '@/components/providers/auth-provider'
 
 
 export default function AgentChatPage() {
   const params = useParams()
   const agentId = params?.id as string
+  
+  console.log('🚀 AgentChatPage params:', params)
+  console.log('🚀 AgentChatPage agentId:', agentId)
+
+  // Check authentication
+  const { isAuthenticated, loading: authLoading } = useAuthContext()
+  
+  console.log('🚀 Auth state:', { isAuthenticated, authLoading })
 
   // Use SWR for agent data with automatic caching and error handling
   const { agent, isLoading: agentLoading, error } = useAgent(agentId)
+  
+  console.log('🚀 Agent state:', { agent: agent?.name, isLoading: agentLoading, error })
 
   // Initialize assistant-ui runtime with thread list support (always call hooks)
-  const { runtime } = useAgentChatRuntimeWithThreadList(agent || null)
+  // Pass agent even if null - the runtime will handle the null case
+  const { runtime, setMessages, initializeChat } = useAgentChatRuntimeWithThreadList(agent || null)
+  
+  // Initialize chat when agent becomes available
+  React.useEffect(() => {
+    if (agent && runtime) {
+      console.log('🚀 Agent loaded, initializing chat:', agent.name)
+      initializeChat()
+    }
+  }, [agent, runtime, initializeChat])
+
+  // Handle authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Checking authentication...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Bot className="h-16 w-16 text-muted-foreground mx-auto" />
+          <div>
+            <h3 className="text-lg font-semibold">Authentication Required</h3>
+            <p className="text-muted-foreground">Please log in to access the chat interface.</p>
+          </div>
+          <Button asChild>
+            <Link href="/auth/login">
+              Log In
+            </Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+  
+  // Handle thread selection from sidebar
+  const handleThreadSelect = React.useCallback(async (sessionId: string, conversationId: string) => {
+    console.log('🚀 Thread selected:', { sessionId, conversationId })
+    
+    if (!agent) return
+    
+    try {
+      console.log('🚀 Loading conversation messages:', conversationId)
+      
+      // Fetch conversation messages from the database
+      const response = await fetch(`/api/v2/conversations/${conversationId}/messages`)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load conversation: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      console.log('🚀 Loaded conversation data:', data)
+      
+      if (data.success && data.data?.messages) {
+        // Convert database messages to assistant-ui format using the same converter from runtime
+        const threadMessages = data.data.messages.map((msg: { id: string; role: string; content: string; createdAt: string }) => ({
+          id: msg.id,
+          role: msg.role.toLowerCase() as 'user' | 'assistant',
+          content: [
+            {
+              type: 'text' as const,
+              text: msg.content,
+            },
+          ],
+          createdAt: new Date(msg.createdAt),
+          metadata: { 
+            custom: {}
+          },
+          status: { type: 'complete' as const, reason: 'stop' as const },
+        } as any)) // eslint-disable-line @typescript-eslint/no-explicit-any
+        
+        console.log('🚀 Setting messages for thread:', threadMessages.length)
+        setMessages(threadMessages)
+      } else {
+        // If no messages, start with welcome message
+        console.log('🚀 No messages found, showing welcome message')
+        const welcomeMessage = {
+          id: 'welcome',
+          role: 'assistant' as const,
+          content: [
+            {
+              type: 'text' as const,
+              text: `👋 Hello! I'm **${agent.name}**.
+
+${agent.systemPrompt || "I'm here to help you!"}
+
+How can I help you today?`,
+            },
+          ],
+          createdAt: new Date(),
+          metadata: { 
+            custom: {}
+          },
+          status: { type: 'complete' as const, reason: 'stop' as const },
+        } as any // eslint-disable-line @typescript-eslint/no-explicit-any
+        setMessages([welcomeMessage])
+      }
+      
+    } catch (error) {
+      console.error('🚀 Failed to load conversation:', error)
+      // Show error message to user
+      const errorMessage = {
+        id: 'error',
+        role: 'assistant' as const,
+        content: [
+          {
+            type: 'text' as const,
+            text: '❌ Sorry, there was an error loading this conversation. Please try again.'
+          }
+        ],
+        createdAt: new Date(),
+        metadata: { 
+          custom: {}
+        },
+        status: { type: 'complete' as const, reason: 'stop' as const },
+      } as any // eslint-disable-line @typescript-eslint/no-explicit-any
+      setMessages([errorMessage])
+    }
+  }, [agent, setMessages])
 
   if (agentLoading) {
     return (
@@ -65,7 +203,7 @@ export default function AgentChatPage() {
         {/* Thread List Sidebar (left column within content area) */}
         {runtime ? (
           <AssistantRuntimeProvider runtime={runtime}>
-            <ThreadListSidebar />
+            <ThreadListSidebar onThreadSelect={handleThreadSelect} />
           </AssistantRuntimeProvider>
         ) : (
           <div className="w-80 h-full bg-background border-r border-gray-200 dark:border-gray-700 flex items-center justify-center">

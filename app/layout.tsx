@@ -24,14 +24,14 @@ export default function RootLayout({
         <ColorSchemeScript />
       </head>
       <body className="antialiased">
-        <TooltipProvider>
-          <MantineThemeProvider>
-            <AuthProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <MantineThemeProvider>
               {children}
               <Toaster richColors />
-            </AuthProvider>
-          </MantineThemeProvider>
-        </TooltipProvider>
+            </MantineThemeProvider>
+          </TooltipProvider>
+        </AuthProvider>
       </body>
     </html>
   );

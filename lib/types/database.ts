@@ -289,5 +289,163 @@ export interface BillingConfigWithRelations extends BillingConfig {
   organization: Pick<Organization, 'name' | 'slug'>
 }
 
+// Conversation and Message Types (Session-based Architecture)
+export type ConversationStatus = 'ACTIVE' | 'PAUSED' | 'CLOSED' | 'ARCHIVED'
+export type MessageRole = 'USER' | 'ASSISTANT' | 'SYSTEM'
+
+export interface Conversation {
+  id: string
+  organizationId: string
+  agentId: string
+  sessionId: string
+  customerId?: string | null
+  customerName?: string | null
+  customerEmail?: string | null
+  title?: string | null
+  status: ConversationStatus
+  channel: string
+  isArchived: boolean
+  context?: PrismaJson.ConversationContext | null
+  createdAt: Date
+  updatedAt: Date
+  lastMessageAt?: Date | null
+}
+
+export interface Message {
+  id: string
+  conversationId: string
+  role: MessageRole
+  content: string
+  tokenCount?: number | null
+  finishReason?: string | null
+  toolCalls?: PrismaJson.MessageToolCalls | null
+  toolResults?: PrismaJson.MessageToolResults | null
+  usageRecordId?: string | null
+  createdAt: Date
+}
+
+export interface ConversationWithRelations extends Conversation {
+  organization?: Pick<Organization, 'name' | 'slug'>
+  agent?: Pick<Agent, 'id' | 'name' | 'model'>
+  messages?: Message[]
+  usageRecords?: Pick<UsageRecord, 'id' | 'totalCost' | 'totalTokens'>[]
+  _count?: {
+    messages: number
+    usageRecords: number
+  }
+}
+
+export interface MessageWithRelations extends Message {
+  conversation?: Pick<Conversation, 'id' | 'sessionId' | 'title' | 'agentId'>
+  usageRecord?: Pick<UsageRecord, 'id' | 'totalCost' | 'totalTokens' | 'model'> | null
+}
+
+// Create data types
+export interface CreateConversationData {
+  agentId: string
+  sessionId: string
+  customerId?: string
+  customerName?: string
+  customerEmail?: string
+  title?: string
+  channel?: string
+  context?: PrismaJson.ConversationContext
+}
+
+export interface UpdateConversationData {
+  title?: string
+  status?: ConversationStatus
+  isArchived?: boolean
+  context?: PrismaJson.ConversationContext
+  customerId?: string
+  customerName?: string
+  customerEmail?: string
+  lastMessageAt?: Date
+}
+
+export interface CreateMessageData {
+  conversationId: string
+  role: MessageRole
+  content: string
+  tokenCount?: number
+  finishReason?: string
+  toolCalls?: PrismaJson.MessageToolCalls
+  toolResults?: PrismaJson.MessageToolResults
+  usageRecordId?: string
+}
+
+export interface UpdateMessageData {
+  content?: string
+  tokenCount?: number
+  finishReason?: string
+  toolCalls?: PrismaJson.MessageToolCalls
+  toolResults?: PrismaJson.MessageToolResults
+  usageRecordId?: string
+}
+
+// Filter types
+export interface ConversationFilters {
+  agentId?: string
+  sessionId?: string
+  customerId?: string
+  status?: ConversationStatus
+  isArchived?: boolean
+  search?: string
+  dateFrom?: Date
+  dateTo?: Date
+  limit?: number
+  offset?: number
+}
+
+export interface MessageFilters {
+  conversationId?: string
+  role?: MessageRole
+  search?: string
+  dateFrom?: Date
+  dateTo?: Date
+  limit?: number
+  offset?: number
+}
+
+export interface SessionFilters {
+  agentId?: string
+  customerId?: string
+  activeOnly?: boolean
+  limit?: number
+  offset?: number
+}
+
+// Session aggregation types
+export interface SessionSummary {
+  sessionId: string
+  agentId: string
+  conversationCount: number
+  messageCount: number
+  totalCost: number
+  totalTokens: number
+  lastActivity: Date
+  firstConversation: Date
+  customerId?: string | null
+  customerName?: string | null
+  latestTitle?: string | null
+}
+
+export interface ConversationStats {
+  totalConversations: number
+  activeConversations: number
+  totalMessages: number
+  totalCost: number
+  totalTokens: number
+  averageConversationLength: number
+  averageCost: number
+  topAgents: Array<{
+    agentId: string
+    agentName: string
+    conversationCount: number
+    messageCount: number
+    totalCost: number
+  }>
+}
+
 // This file must be a module
 export {}
