@@ -154,7 +154,7 @@ export class ListProductsService extends BaseShopifyClient {
         handle: node.handle as string,
         vendor: node.vendor as string,
         product_type: node.productType as string,
-        body_html: node.description as string,
+        body_html: this.truncateDescription(node.description as string),
         tags: (node.tags as string[]).join(','),
         variants,
         images,
@@ -173,5 +173,16 @@ export class ListProductsService extends BaseShopifyClient {
         options: [] // Not fetching options for list view for performance
       };
     });
+  }
+
+  /**
+   * Truncate product description for customer service efficiency
+   */
+  private truncateDescription(description: string): string {
+    if (!description) return '';
+    
+    // Remove HTML tags and truncate to 150 characters for AI context efficiency
+    const plainText = description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return plainText.length > 150 ? plainText.substring(0, 147) + '...' : plainText;
   }
 }

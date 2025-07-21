@@ -151,7 +151,7 @@ export class GetProductDetailsService extends BaseShopifyClient {
       handle: productData.handle as string,
       vendor: productData.vendor as string,
       product_type: productData.productType as string,
-      body_html: productData.description as string,
+      body_html: this.truncateDescription(productData.description as string),
       tags: (productData.tags as string[]).join(','),
       variants,
       images,
@@ -169,5 +169,16 @@ export class GetProductDetailsService extends BaseShopifyClient {
       status: (productData.status as string).toLowerCase(),
       options
     };
+  }
+
+  /**
+   * Truncate product description for customer service efficiency
+   */
+  private truncateDescription(description: string): string {
+    if (!description) return '';
+    
+    // Remove HTML tags and truncate to 150 characters for AI context efficiency
+    const plainText = description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return plainText.length > 150 ? plainText.substring(0, 147) + '...' : plainText;
   }
 }

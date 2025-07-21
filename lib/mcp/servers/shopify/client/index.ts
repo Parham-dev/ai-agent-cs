@@ -1,8 +1,8 @@
 import { MCPServerCredentials, SearchProductsParams, ListProductsParams } from '../types';
 import { ProductsService } from './products/index';
-import { InventoryService } from './inventory';
-import { StoreService } from './store';
-import { MarketingService } from './marketing';
+import { InventoryService } from './inventory/index';
+import { StoreService } from './store/index';
+import { MarketingService } from './marketing/index';
 import { CommerceService } from './commerce/index';
 
 /**
