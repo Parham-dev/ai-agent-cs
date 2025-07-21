@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from 'react'
 import { Bell, Search, User, ChevronDown, Zap, LogOut, Settings, UserIcon } from 'lucide-react'
 import { Group, TextInput, ActionIcon, Badge, Avatar, Menu, Title, Text } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
@@ -14,16 +15,35 @@ interface HeaderProps {
 
 export function Header({ title = "Dashboard", subtitle }: HeaderProps) {
   const [menuOpened, { toggle: toggleMenu }] = useDisclosure(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { user, logout } = useAuthContext()
 
   const handleLogout = async () => {
-    const result = await logout()
-    if (result.success) {
+    if (isLoggingOut) return
+    
+    setIsLoggingOut(true)
+    
+    try {
+      await logout()
+      
+      // Show success notification
       notifications.show({
         title: 'Logged out',
         message: 'You have been successfully logged out.',
-        color: 'blue',
+        color: 'green',
       })
+
+      // Note: redirect is handled in the logout function
+    } catch {
+      // Show error notification
+      notifications.show({
+        title: 'Logout Error',
+        message: 'There was an issue logging out, but you will be redirected.',
+        color: 'orange',
+      })
+    } finally {
+      // Keep loading state until redirect happens
+      // Don't set to false as component will unmount
     }
   }
 
@@ -157,10 +177,15 @@ export function Header({ title = "Dashboard", subtitle }: HeaderProps) {
               <Menu.Divider />
               <Menu.Item 
                 color="red" 
-                leftSection={<LogOut size={16} />}
+                leftSection={isLoggingOut ? undefined : <LogOut size={16} />}
                 onClick={handleLogout}
+                disabled={isLoggingOut}
+                style={{ 
+                  opacity: isLoggingOut ? 0.6 : 1,
+                  cursor: isLoggingOut ? 'wait' : 'pointer'
+                }}
               >
-                Logout
+                {isLoggingOut ? 'Logging out...' : 'Logout'}
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>

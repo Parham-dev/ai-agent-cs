@@ -7,13 +7,12 @@ import type { User, LoginRequest, SignupRequest, AuthSession } from '@/lib/types
 interface AuthContextType {
   user: User | null;
   session: AuthSession | null;
-  loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<{ success: boolean; error?: string }>;
   signup: (credentials: SignupRequest) => Promise<{ success: boolean; error?: string; message?: string }>;
-  logout: () => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<{ success: boolean; error?: string; message?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

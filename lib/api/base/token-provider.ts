@@ -93,8 +93,9 @@ class TokenProvider {
 
   /**
    * Set token manually (for testing - not recommended)
+   * @deprecated Use Supabase auth methods instead
    */
-  setToken(token: string): void {
+  setToken(): void {
     console.warn('TokenProvider.setToken() is deprecated. Use Supabase auth methods instead.');
   }
 }

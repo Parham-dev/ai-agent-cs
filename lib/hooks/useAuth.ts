@@ -98,22 +98,40 @@ export function useAuth() {
     };
   }, [isSigningUp]);
 
-  // Login function
+  // Login function with proper state coordination
   const login = useCallback(async (credentials: LoginRequest) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
-    const result = await authService.login(credentials);
+    try {
+      const result = await authService.login(credentials);
 
-    setState(prev => ({ 
-      ...prev, 
-      loading: false, 
-      error: result.error || null 
-    }));
-
-    return result;
+      if (result.success) {
+        // Let the auth state change listener handle user data update
+        // Keep loading until auth context updates with user data
+        return result;
+      } else {
+        setState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: result.error || null 
+        }));
+        return result;
+      }
+    } catch (error) {
+      setState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: error instanceof Error ? error.message : 'Login failed' 
+      }));
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Login failed'
+      };
+    }
   }, []);
 
-  // Signup function
+  // Signup function with proper state coordination
   const signup = useCallback(async (credentials: SignupRequest) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     setIsSigningUp(true);
@@ -121,14 +139,23 @@ export function useAuth() {
     try {
       const result = await authService.signup(credentials);
 
-      if (result.success && result.user && result.session) {
-        // Set auth state directly for successful signup
-        setState({
-          user: result.user,
-          session: result.session,
-          loading: false,
-          error: null
-        });
+      if (result.success) {
+        if (result.user && result.session) {
+          // Auto-login successful - set auth state directly
+          setState({
+            user: result.user,
+            session: result.session,
+            loading: false,
+            error: null
+          });
+        } else {
+          // Email confirmation required - clear loading but don't set user
+          setState(prev => ({ 
+            ...prev, 
+            loading: false,
+            error: null
+          }));
+        }
       } else {
         setState(prev => ({ 
           ...prev, 
@@ -151,32 +178,60 @@ export function useAuth() {
     }
   }, []);
 
-  // Logout function
+  // Logout function with complete cleanup and redirect
   const logout = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
-    const result = await authService.logout();
-
-    if (result.success) {
+    try {
+      const result = await authService.logout();
+      
+      // Always clear state regardless of result (logout should always succeed locally)
       setState({
         user: null,
         session: null,
         loading: false,
         error: null
       });
-    } else {
-      setState(prev => ({ 
-        ...prev, 
-        loading: false, 
-        error: result.error || null 
-      }));
-    }
 
-    return result;
+      // Force redirect to login page after state cleanup
+      if (typeof window !== 'undefined') {
+        // Use timeout to ensure state is cleared before redirect
+        setTimeout(() => {
+          window.location.href = '/auth/login';
+        }, 100);
+      }
+
+      return {
+        success: true,
+        message: result.message || 'Successfully logged out'
+      };
+    } catch (error) {
+      // Even if logout fails, clear local state and redirect
+      setState({
+        user: null,
+        session: null,
+        loading: false,
+        error: null
+      });
+
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          window.location.href = '/auth/login';
+        }, 100);
+      }
+
+      return {
+        success: true,
+        error: error instanceof Error ? error.message : 'Logout completed with warnings',
+        message: 'Logged out successfully'
+      };
+    }
   }, []);
 
   return {
-    ...state,
+    user: state.user,
+    session: state.session,
+    error: state.error,
     login,
     signup,
     logout,

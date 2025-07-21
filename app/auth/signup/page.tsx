@@ -24,16 +24,16 @@ import { useAuthContext } from '@/components/providers';
 import type { SignupRequest } from '@/lib/types/auth';
 
 export default function SignupPage() {
-  const { signup, isAuthenticated, loading } = useAuthContext();
+  const { signup, isAuthenticated, isLoading } = useAuthContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - let auth context handle timing
   useEffect(() => {
-    if (isAuthenticated && !loading) {
-      router.replace('/'); // Use replace to avoid back button issues
+    if (isAuthenticated && !isLoading) {
+      router.replace('/');
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   const form = useForm<SignupRequest>({
     initialValues: {
@@ -68,16 +68,15 @@ export default function SignupPage() {
           icon: <Check size={16} />,
         });
         
-        // If email confirmation is required, show info and redirect to login
-        if (result.message?.includes('email')) {
-          setTimeout(() => {
-            router.replace('/auth/login');
-          }, 2000);
+        // If email confirmation is required, redirect to login
+        if (result.message?.includes('email') || result.message?.includes('confirm')) {
+          // Email confirmation required, redirect to login
+          router.replace('/auth/login');
+          setIsSubmitting(false);
         } else {
-          // Auto-login successful, redirect to dashboard after a short delay
-          setTimeout(() => {
-            router.replace('/');
-          }, 1500);
+          // Auto-login successful, let auth context handle redirect
+          // Keep loading state until auth context updates and redirects
+          // Note: Redirect is handled by auth context useEffect above
         }
       } else {
         notifications.show({
@@ -95,11 +94,10 @@ export default function SignupPage() {
       });
       setIsSubmitting(false);
     }
-    // Note: Don't set isSubmitting to false if success, keep loading until redirect
   };
 
   // Show loading while checking authentication
-  if (loading) {
+  if (isLoading) {
     return (
       <Container size={420} my={40}>
         <Paper withBorder shadow="md" p={30} mt={30} radius="md">

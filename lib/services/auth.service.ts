@@ -155,23 +155,45 @@ export class AuthService {
   }
 
   /**
-   * Sign out user
+   * Sign out user with complete session cleanup
    */
-  async logout(): Promise<{ success: boolean; error?: string }> {
+  async logout(): Promise<{ success: boolean; error?: string; message?: string }> {
     try {
-      const { error } = await this.supabase.auth.signOut();
-      if (error) {
-        return { success: false, error: error.message };
-      }
-      
-      // Clear the cached token
+      // Clear TokenProvider cache first
       tokenProvider.clearToken();
       
-      return { success: true };
+      // Sign out from Supabase (this clears localStorage session)
+      const { error } = await this.supabase.auth.signOut();
+      if (error) {
+        console.error('Supabase logout error:', error);
+        // Don't fail logout if Supabase signOut fails - session might already be expired
+      }
+
+      // Call server-side logout confirmation (optional)
+      try {
+        const token = await tokenProvider.getToken();
+        if (token) {
+          await fetch('/api/v2/auth/logout', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        }
+      } catch {
+        // Ignore server-side logout errors
+      }
+      
+      return { 
+        success: true,
+        message: 'Successfully logged out'
+      };
     } catch (error) {
+      // Even if logout partially fails, clear local state
+      tokenProvider.clearToken();
+      
       return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Logout failed'
+        success: true, // Always return success to clear UI state
+        error: error instanceof Error ? error.message : 'Logout completed with warnings',
+        message: 'Logged out successfully'
       };
     }
   }

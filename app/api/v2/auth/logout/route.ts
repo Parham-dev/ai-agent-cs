@@ -1,35 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/database/clients';
-import { Api, validateMethod } from '@/lib/api';
+import { NextResponse } from 'next/server';
+import { withAuth } from '@/lib/auth/middleware';
+import { Api } from '@/lib/api';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  // Validate HTTP method
-  const methodError = validateMethod(request, ['POST']);
-  if (methodError) return methodError;
-
+export const POST = withAuth(async function(): Promise<NextResponse> {
   try {
-    // Create Supabase client for server-side auth operations
-    const supabase = createServerSupabaseClient();
-
-    // Sign out from Supabase
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      console.error('Logout error:', error);
-      return Api.error(
-        'AUTHENTICATION_ERROR',
-        'Failed to logout',
-        error.message
-      );
-    }
-
+    // At this point, the user is authenticated (verified by withAuth middleware)
+    // The client-side will handle the actual sign-out process
+    // This endpoint just confirms the logout action server-side
+    
     return Api.success(
-      { message: 'Logout successful' },
-      { message: 'Successfully logged out' }
+      { 
+        success: true,
+        message: 'Logout successful' 
+      },
+      { 
+        message: 'Successfully logged out',
+        timestamp: new Date().toISOString()
+      }
     );
 
   } catch (error) {
     console.error('Logout error:', error);
     return Api.internalError('Logout failed');
   }
-}
+});

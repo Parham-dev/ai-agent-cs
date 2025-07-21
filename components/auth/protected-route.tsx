@@ -17,17 +17,17 @@ export function ProtectedRoute({
   allowedRoles,
   fallback 
 }: ProtectedRouteProps) {
-  const { isAuthenticated, loading, user } = useAuthContext();
+  const { isAuthenticated, isLoading, user } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.replace('/auth/login');
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   // Show loading while checking authentication
-  if (loading) {
+  if (isLoading) {
     return (
       <Container size="xs" my={40}>
         <Paper withBorder shadow="md" p={30} radius="md">

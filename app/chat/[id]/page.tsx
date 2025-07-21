@@ -21,7 +21,7 @@ export default function AgentChatPage() {
   const agentId = params?.id as string
 
   // Check authentication
-  const { isAuthenticated, loading: authLoading } = useAuthContext()
+  const { isAuthenticated, isLoading: authLoading } = useAuthContext()
 
   // Use SWR for agent data with automatic caching and error handling
   const { agent, isLoading: agentLoading, error } = useAgent(agentId)

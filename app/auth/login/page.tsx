@@ -24,16 +24,16 @@ import { useAuthContext } from '@/components/providers';
 import type { LoginRequest } from '@/lib/types/auth';
 
 export default function LoginPage() {
-  const { login, isAuthenticated, loading, error } = useAuthContext();
+  const { login, isAuthenticated, isLoading, error } = useAuthContext();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - let auth context handle timing
   useEffect(() => {
-    if (isAuthenticated && !loading) {
-      router.replace('/'); // Use replace to avoid back button issues
+    if (isAuthenticated && !isLoading) {
+      router.replace('/');
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   const form = useForm<LoginRequest>({
     initialValues: {
@@ -58,13 +58,15 @@ export default function LoginPage() {
           message: 'You have been successfully logged in.',
           color: 'green',
         });
-        router.replace('/');
+        // Note: Redirect is handled by auth context useEffect above
+        // Keep loading state until redirect happens
       } else {
         notifications.show({
           title: 'Login failed',
           message: result.error || 'Please check your credentials and try again.',
           color: 'red',
         });
+        setIsSubmitting(false);
       }
     } catch {
       notifications.show({
@@ -72,13 +74,13 @@ export default function LoginPage() {
         message: 'An unexpected error occurred. Please try again.',
         color: 'red',
       });
-    } finally {
       setIsSubmitting(false);
     }
+    // Note: Don't set isSubmitting to false on success - keep loading until redirect
   };
 
   // Show loading while checking authentication
-  if (loading) {
+  if (isLoading) {
     return (
       <Container size={420} my={40}>
         <Paper withBorder shadow="md" p={30} mt={30} radius="md">
