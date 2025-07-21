@@ -63,7 +63,7 @@
       
       return `
         <div class="chat-header" style="
-          background: linear-gradient(135deg, ${this.config.primaryColor}, ${this.config.primaryColor}dd);
+          background: linear-gradient(135deg, ${this.config.primaryColor || '#007bff'}, ${(this.config.primaryColor || '#007bff')}dd);
           color: white;
           padding: 16px;
           display: flex;
@@ -127,14 +127,14 @@
             <div style="
               width: 32px;
               height: 32px;
-              background: ${this.config.primaryColor}20;
+              background: ${(this.config.primaryColor || '#007bff')}20;
               border-radius: 50%;
               display: flex;
               align-items: center;
               justify-content: center;
               flex-shrink: 0;
             ">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="${this.config.primaryColor}">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="${this.config.primaryColor || '#007bff'}">
                 <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/>
               </svg>
             </div>
@@ -160,7 +160,7 @@
         ">
           <div style="display: flex; gap: 8px; align-items: flex-end;">
             <div style="flex: 1;">
-              <textarea class="chat-input" placeholder="${this.config.placeholder}" style="
+              <textarea class="chat-input" placeholder="${this.config.placeholder || 'Type your message...'}" style="
                 width: 100%;
                 border: 1px solid #dee2e6;
                 border-radius: 20px;
@@ -176,7 +176,7 @@
               " rows="1"></textarea>
             </div>
             <button class="chat-send" style="
-              background: ${this.config.primaryColor};
+              background: ${this.config.primaryColor || '#007bff'};
               border: none;
               border-radius: 50%;
               width: 44px;
@@ -200,7 +200,7 @@
               font-size: 11px;
               color: #6c757d;
             ">
-              Powered by <a href="#" style="color: ${this.config.primaryColor}; text-decoration: none;">CustomerAgent</a>
+              Powered by <a href="#" style="color: ${this.config.primaryColor || '#007bff'}; text-decoration: none;">CustomerAgent</a>
             </div>
           ` : ''}
         </div>
@@ -233,21 +233,21 @@
           <div style="
             width: 32px;
             height: 32px;
-            background: ${this.config.primaryColor}20;
+            background: ${(this.config.primaryColor || '#007bff')}20;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
           ">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="${this.config.primaryColor}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="${this.config.primaryColor || '#007bff'}">
               <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/>
             </svg>
           </div>
         ` : ''}
         
         <div style="
-          background: ${isUser ? this.config.primaryColor : 'white'};
+          background: ${isUser ? (this.config.primaryColor || '#007bff') : 'white'};
           color: ${isUser ? 'white' : '#333333'};
           padding: 12px 16px;
           border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
@@ -291,14 +291,14 @@
         <div style="
           width: 32px;
           height: 32px;
-          background: ${this.config.primaryColor}20;
+          background: ${(this.config.primaryColor || '#007bff')}20;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
         ">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="${this.config.primaryColor}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="${this.config.primaryColor || '#007bff'}">
             <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/>
           </svg>
         </div>
@@ -429,7 +429,7 @@
       const sendBtn = this.getSendButton();
       if (sendBtn) {
         sendBtn.disabled = !enabled;
-        sendBtn.style.background = enabled ? this.config.primaryColor : '#dee2e6';
+        sendBtn.style.background = enabled ? (this.config.primaryColor || '#007bff') : '#dee2e6';
       }
     }
   }

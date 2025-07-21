@@ -2,7 +2,7 @@
  * AI Customer Service Widget Core
  * Version: 2.0.0
  * 
- * Orchestrates the modular widget components
+ * Lightweight orchestrator for modular widget components
  */
 
 (function() {
@@ -14,88 +14,109 @@
   }
 
   /**
-   * Core widget controller
+   * Core widget orchestrator - keeps only essential coordination logic
    */
   class WidgetCore {
     constructor() {
-      this.config = {};
-      this.sessionToken = null;
-      this.utils = {};
       this.isOpen = false;
+      this.initialized = false;
       
       // Module instances
+      this.config = null;
       this.api = null;
       this.messageManager = null;
       this.ui = null;
+      this.uiFactory = null;
       this.events = null;
       this.styles = null;
       
-      this.initialized = false;
+      // Utils reference
+      this.utils = {};
     }
 
     /**
      * Initialize core with configuration
      * @param {Object} initData - Initialization data
      */
-    init(initData) {
+    async init(initData) {
       if (this.initialized) {
         this.utils.log('Core already initialized');
         return;
       }
 
-      this.config = initData.config || {};
-      this.sessionToken = initData.sessionToken;
       this.utils = initData.utils || {};
+      this.utils.log('Core initializing...');
       
-      this.utils.log('Core initializing with config:', this.config);
-      this.utils.log('Session token present:', !!this.sessionToken);
-      
-      // Initialize modules
-      this.initializeModules();
-      
-      // Set up UI
-      this.setupUI();
-      
-      // Set up event handlers
-      this.setupEventHandlers();
-      
-      this.initialized = true;
-      this.utils.log('Core initialization complete');
+      try {
+        // Initialize configuration manager
+        this.config = new window.CustomerAgentConfig(this.utils);
+        const processedConfig = await this.config.initialize(initData.config || {});
+        
+        // Initialize API and authenticate
+        this.api = new window.CustomerAgentAPI(processedConfig, null, this.utils);
+        const authData = await this.api.authenticate();
+        
+        // Update config with server data
+        if (authData.agent?.greeting) {
+          this.config.update({ greeting: authData.agent.greeting });
+        }
+        
+        // Initialize other modules
+        this.initializeModules(processedConfig);
+        
+        // Set up UI
+        this.setupUI();
+        
+        // Set up event handlers
+        this.setupEventHandlers();
+        
+        this.initialized = true;
+        this.utils.log('Core initialization complete');
+        
+      } catch (error) {
+        console.error('[CustomerAgent] Core initialization failed:', error);
+        throw error;
+      }
     }
 
     /**
      * Initialize all modules
+     * @param {Object} config - Processed configuration
      */
-    initializeModules() {
-      // Initialize API module
-      this.api = new window.CustomerAgentAPI(this.config, this.sessionToken, this.utils);
-      
+    initializeModules(config) {
       // Initialize message manager
       this.messageManager = new window.CustomerAgentMessageManager(this.utils);
       
-      // Initialize UI module
-      this.ui = new window.CustomerAgentUI(this.config, this.utils);
+      // Initialize UI modules
+      this.ui = new window.CustomerAgentUI(config, this.utils);
+      this.uiFactory = new window.CustomerAgentUIFactory(config, this.utils);
       
-      // Initialize events module
-      this.events = new window.CustomerAgentEvents(this.config, this.utils);
+      // Initialize event handling
+      this.events = new window.CustomerAgentEvents(config, this.utils);
       
-      // Initialize styles module
-      this.styles = new window.CustomerAgentStyles(this.config);
+      // Initialize styles
+      this.styles = new window.CustomerAgentStyles(config);
     }
 
     /**
      * Set up UI components
      */
     setupUI() {
+      const config = this.config.get();
+      
       // Add styles
       this.styles.addCoreStyles();
-      this.styles.addThemeStyles(this.config.theme || 'auto');
+      this.styles.addThemeStyles(config.theme);
+      
+      // Create chat bubble
+      const bubble = this.uiFactory.createChatBubble();
+      document.body.appendChild(bubble);
       
       // Create chat container
       const chatContainer = this.ui.createChatContainer();
       document.body.appendChild(chatContainer);
       
-      // Initialize event listeners
+      // Initialize events
       this.events.init(this.ui);
     }
 
@@ -113,10 +134,11 @@
         this.close();
       });
       
-      // Watch theme changes
-      this.styles.watchThemeChanges((theme) => {
-        this.styles.addThemeStyles(theme);
-      });
+      // Handle bubble click
+      const bubble = document.getElementById('customer-agent-bubble');
+      if (bubble) {
+        bubble.addEventListener('click', () => this.open());
+      }
     }
 
     /**
@@ -133,7 +155,7 @@
       this.ui.showTyping();
 
       try {
-        // Get conversation history (excluding the message we just added)
+        // Get conversation history
         const history = this.messageManager.getHistory().slice(0, -1);
         
         // Send to API
@@ -145,9 +167,6 @@
         this.ui.renderMessage(assistantMessage);
         this.ui.scrollToBottom();
         
-        // Emit message received event
-        this.events.emit('messageReceived', { message: assistantMessage });
-        
       } catch (error) {
         this.ui.hideTyping();
         const errorMessage = this.messageManager.addMessage(
@@ -158,7 +177,6 @@
         this.ui.scrollToBottom();
         
         this.utils.log('Send message error:', error);
-        this.events.emit('error', { error });
       }
     }
 
@@ -167,30 +185,20 @@
      */
     open() {
       const chatContainer = this.ui.getChatContainer();
-      if (!chatContainer) {
-        this.utils.log('Error: chatContainer not found when trying to open');
-        return;
-      }
+      if (!chatContainer) return;
       
-      // Hide bubble when chat opens
-      const bubble = document.getElementById('customer-agent-bubble');
-      if (bubble) {
-        bubble.style.display = 'none';
-      }
-      
+      // Hide bubble, show chat
+      this.uiFactory.setBubbleVisible(false);
       chatContainer.style.display = 'flex';
       this.isOpen = true;
       
       // Focus input
       setTimeout(() => {
         const input = this.ui.getInputElement();
-        if (input) {
-          input.focus();
-        }
+        if (input) input.focus();
       }, 300);
       
-      this.utils.log('Chat opened successfully');
-      this.events.emit('opened');
+      this.utils.log('Chat opened');
     }
 
     /**
@@ -200,67 +208,54 @@
       const chatContainer = this.ui.getChatContainer();
       if (!chatContainer) return;
       
+      // Hide chat, show bubble
       chatContainer.style.display = 'none';
+      this.uiFactory.setBubbleVisible(true);
       this.isOpen = false;
       
-      // Show bubble again
-      const bubble = document.getElementById('customer-agent-bubble');
-      if (bubble) {
-        bubble.style.display = 'flex';
-      }
-      
       this.utils.log('Chat closed');
-      this.events.emit('closed');
-    }
-
-    /**
-     * Check if chat is open
-     * @returns {boolean} - Open state
-     */
-    getIsOpen() {
-      return this.isOpen;
-    }
-
-    /**
-     * Clear chat messages
-     */
-    clearChat() {
-      this.messageManager.clear();
-      this.ui.clearMessages();
-      
-      // Re-add welcome message
-      const greeting = this.config.greeting || 'Hello! How can I help you today?';
-      const welcomeMessage = this.messageManager.addMessage(greeting, 'assistant');
-      this.ui.renderMessage(welcomeMessage);
     }
 
     /**
      * Update configuration
      * @param {Object} newConfig - New configuration values
      */
-    updateConfig(newConfig) {
-      this.config = { ...this.config, ...newConfig };
-      
-      // Update modules with new config
-      if (newConfig.primaryColor) {
-        this.styles.updatePrimaryColor(newConfig.primaryColor);
+    configure(newConfig) {
+      if (this.config) {
+        this.config.update(newConfig);
+        
+        // Update UI if color changed
+        if (newConfig.primaryColor) {
+          this.uiFactory.updateBubbleColor(newConfig.primaryColor);
+        }
+        
+        // Update theme if changed
+        if (newConfig.theme) {
+          this.styles.addThemeStyles(newConfig.theme);
+        }
       }
-      
-      if (newConfig.theme) {
-        this.styles.addThemeStyles(newConfig.theme);
-      }
-      
-      this.utils.log('Configuration updated:', this.config);
     }
 
     /**
-     * Update session token
-     * @param {string} token - New session token
+     * Get current configuration
+     * @returns {Object} - Current configuration
      */
-    updateSessionToken(token) {
-      this.sessionToken = token;
-      if (this.api) {
-        this.api.updateSessionToken(token);
+    getConfig() {
+      return this.config ? this.config.get() : {};
+    }
+
+    /**
+     * Clear chat messages
+     */
+    clearChat() {
+      if (this.messageManager && this.ui) {
+        this.messageManager.clear();
+        this.ui.clearMessages();
+        
+        // Re-add welcome message
+        const greeting = this.config.getValue('greeting') || 'Hello! How can I help you today?';
+        const welcomeMessage = this.messageManager.addMessage(greeting, 'assistant');
+        this.ui.renderMessage(welcomeMessage);
       }
     }
 
@@ -268,43 +263,38 @@
      * Destroy the widget
      */
     destroy() {
-      // Clean up events
-      if (this.events) {
-        this.events.cleanup();
-      }
+      // Clean up modules
+      if (this.events) this.events.cleanup();
+      if (this.styles) this.styles.cleanup();
       
-      // Clean up styles
-      if (this.styles) {
-        this.styles.cleanup();
-      }
-      
-      // Remove chat container
+      // Remove UI elements
       const chatContainer = this.ui?.getChatContainer();
-      if (chatContainer) {
-        chatContainer.remove();
-      }
+      const bubble = document.getElementById('customer-agent-bubble');
+      
+      if (chatContainer) chatContainer.remove();
+      if (bubble) bubble.remove();
       
       this.initialized = false;
       this.utils.log('Widget destroyed');
     }
 
     /**
-     * Get message history
-     * @returns {Array} - Message history
+     * Get debug information
      */
-    getMessageHistory() {
-      return this.messageManager ? this.messageManager.getMessages() : [];
-    }
-
-    /**
-     * Add custom event listener
-     * @param {string} eventName - Event name
-     * @param {Function} handler - Event handler
-     */
-    on(eventName, handler) {
-      if (this.events) {
-        this.events.on(eventName, handler);
-      }
+    debug() {
+      console.log('[CustomerAgent] Debug Info:', {
+        initialized: this.initialized,
+        isOpen: this.isOpen,
+        hasSessionToken: !!(this.api && this.api.sessionToken),
+        config: this.getConfig(),
+        moduleStatus: {
+          config: !!this.config,
+          api: !!this.api,
+          ui: !!this.ui,
+          events: !!this.events,
+          messageManager: !!this.messageManager
+        }
+      });
     }
   }
 
@@ -312,20 +302,21 @@
   const coreInstance = new WidgetCore();
 
   /**
-   * Public API
+   * Public API - slim interface
    */
   window.CustomerAgentCore = {
     initialized: true,
     init: (initData) => coreInstance.init(initData),
     open: () => coreInstance.open(),
     close: () => coreInstance.close(),
-    isOpen: () => coreInstance.getIsOpen(),
+    show: () => coreInstance.open(), // Alias
+    hide: () => coreInstance.close(), // Alias
+    isOpen: () => coreInstance.isOpen,
+    configure: (config) => coreInstance.configure(config),
+    getConfig: () => coreInstance.getConfig(),
     clearChat: () => coreInstance.clearChat(),
-    updateConfig: (config) => coreInstance.updateConfig(config),
-    updateSessionToken: (token) => coreInstance.updateSessionToken(token),
     destroy: () => coreInstance.destroy(),
-    getMessageHistory: () => coreInstance.getMessageHistory(),
-    on: (eventName, handler) => coreInstance.on(eventName, handler)
+    debug: () => coreInstance.debug()
   };
 
 })();

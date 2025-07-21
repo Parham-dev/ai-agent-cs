@@ -1,9 +1,9 @@
 /**
  * AI Customer Service Widget Loader
- * Version: 1.0.0
+ * Version: 2.0.0
  * 
  * Lightweight widget loader that initializes the chat interface on demand.
- * This file should be < 2KB to ensure fast loading.
+ * This file should be < 2KB for fast loading.
  */
 
 (function() {
@@ -14,66 +14,14 @@
     return;
   }
 
-  // Default configuration
-  const DEFAULT_CONFIG = {
-    // Basic settings
-    agentId: null,
-    position: 'bottom-right',
-    theme: 'auto',
-    primaryColor: '#007bff',
-    
-    // Widget appearance
-    width: 360,
-    height: 500,
-    zIndex: 9999,
-    borderRadius: '12px',
-    
-    // Behavior
-    greeting: null,
-    placeholder: 'Type your message...',
-    showPoweredBy: true,
-    
-    // Triggers
-    triggers: {
-      showAfter: null,
-      showOnScroll: null,
-      showOnExit: false,
-      hideOnMobile: false
-    },
-    
-    // Advanced
-    debug: false,
-    apiUrl: null, // Will default to current domain
-    version: '1.0.0'
-  };
-
-  // Widget state
-  let widgetConfig = { ...DEFAULT_CONFIG };
-  let widgetLoaded = false;
-  let widgetVisible = false;
-  let sessionToken = null;
-  let triggersFired = { showAfter: false, showOnScroll: false };
-
   /**
-   * Utility functions
+   * Utility functions for the loader
    */
   const utils = {
-    // Merge configurations
-    merge: (target, source) => {
-      const result = { ...target };
-      for (const key in source) {
-        if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-          result[key] = utils.merge(result[key] || {}, source[key]);
-        } else if (source[key] !== undefined) {
-          result[key] = source[key];
-        }
-      }
-      return result;
-    },
-
     // Log debug messages
     log: (...args) => {
-      if (widgetConfig.debug) {
+      const globalConfig = window.CustomerAgent || {};
+      if (globalConfig.debug) {
         console.log('[CustomerAgent]', ...args);
       }
     },
@@ -105,11 +53,17 @@
       return config;
     },
 
-    // Get base URL for widget assets
-    getBaseUrl: () => {
-      const script = utils.getCurrentScript();
-      const src = script.src;
-      return src.substring(0, src.lastIndexOf('/') + 1);
+    // Merge configurations
+    merge: (target, source) => {
+      const result = { ...target };
+      for (const key in source) {
+        if (source[key] !== null && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+          result[key] = utils.merge(result[key] || {}, source[key]);
+        } else if (source[key] !== undefined) {
+          result[key] = source[key];
+        }
+      }
+      return result;
     },
 
     // Check if mobile device
@@ -128,327 +82,85 @@
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
       };
-    }
-  };
+    },
 
-  /**
-   * Configuration management
-   */
-  const config = {
-    // Initialize configuration from multiple sources
-    init: () => {
+    // Get base URL for widget assets
+    getBaseUrl: () => {
       const script = utils.getCurrentScript();
-      const dataConfig = utils.parseDataAttributes(script);
-      const globalConfig = window.CustomerAgent || {};
-      
-      // Merge configurations: defaults < global < data attributes
-      widgetConfig = utils.merge(widgetConfig, globalConfig);
-      widgetConfig = utils.merge(widgetConfig, dataConfig);
-      
-      // Set API URL if not provided - derive from script source, not page location
-      if (!widgetConfig.apiUrl) {
-        const script = utils.getCurrentScript();
-        const scriptUrl = new URL(script.src);
-        widgetConfig.apiUrl = scriptUrl.origin;
-      }
-      
-      utils.log('Configuration initialized:', widgetConfig);
-      
-      // Validate required config
-      if (!widgetConfig.agentId) {
-        console.error('[CustomerAgent] Error: agentId is required');
-        return false;
-      }
-      
-      return true;
-    },
-
-    // Get configuration value
-    get: (key) => {
-      return widgetConfig[key];
-    },
-
-    // Set configuration value
-    set: (key, value) => {
-      widgetConfig[key] = value;
+      const src = script.src;
+      return src.substring(0, src.lastIndexOf('/') + 1);
     }
   };
 
   /**
-   * Authentication management
-   */
-  const auth = {
-    // Authenticate with the API
-    authenticate: async () => {
-      try {
-        utils.log('Authenticating widget...');
-        
-        const response = await fetch(`${widgetConfig.apiUrl}/api/v2/widget/auth`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            agentId: widgetConfig.agentId,
-            domain: window.location.hostname,
-            referrer: document.referrer,
-            userAgent: navigator.userAgent,
-            url: window.location.href
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Authentication failed: ${response.status}`);
-        }
-
-        const data = await response.json();
-        sessionToken = data.data?.sessionToken || data.sessionToken;
-        
-        utils.log('Authentication response:', { 
-          success: data.success,
-          hasSessionToken: !!sessionToken,
-          sessionTokenLength: sessionToken ? sessionToken.length : 0
-        });
-        
-        // Update config with server settings
-        if (data.data?.agent) {
-          const agent = data.data.agent;
-          if (agent.greeting && !widgetConfig.greeting) {
-            widgetConfig.greeting = agent.greeting;
-          }
-        }
-
-        utils.log('Authentication successful');
-        return true;
-      } catch (error) {
-        console.error('[CustomerAgent] Authentication failed:', error);
-        return false;
-      }
-    },
-
-    // Get session token
-    getToken: () => sessionToken
-  };
-
-  /**
-   * Widget UI management
-   */
-  const ui = {
-    // Create chat bubble
-    createBubble: () => {
-      const bubble = document.createElement('div');
-      bubble.id = 'customer-agent-bubble';
-      bubble.style.cssText = `
-        position: fixed;
-        ${widgetConfig.position.includes('right') ? 'right: 20px;' : 'left: 20px;'}
-        bottom: 20px;
-        width: 56px;
-        height: 56px;
-        background: ${widgetConfig.primaryColor};
-        border-radius: 50%;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        cursor: pointer;
-        z-index: ${widgetConfig.zIndex};
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-        animation: customerAgentPulse 2s infinite;
-      `;
-
-      // Add chat icon (simple SVG)
-      bubble.innerHTML = `
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z" fill="white"/>
-          <circle cx="8" cy="12" r="1" fill="${widgetConfig.primaryColor}"/>
-          <circle cx="12" cy="12" r="1" fill="${widgetConfig.primaryColor}"/>
-          <circle cx="16" cy="12" r="1" fill="${widgetConfig.primaryColor}"/>
-        </svg>
-      `;
-
-      bubble.addEventListener('click', widget.open);
-      bubble.addEventListener('mouseenter', () => {
-        bubble.style.transform = 'scale(1.1)';
-      });
-      bubble.addEventListener('mouseleave', () => {
-        bubble.style.transform = 'scale(1)';
-      });
-
-      return bubble;
-    },
-
-    // Add required CSS animations
-    addStyles: () => {
-      if (document.getElementById('customer-agent-styles')) return;
-      
-      const style = document.createElement('style');
-      style.id = 'customer-agent-styles';
-      style.textContent = `
-        @keyframes customerAgentPulse {
-          0% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 0 ${widgetConfig.primaryColor}40; }
-          70% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 10px transparent; }
-          100% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 0 transparent; }
-        }
-        
-        @media (max-width: 768px) {
-          #customer-agent-bubble {
-            ${widgetConfig.triggers.hideOnMobile ? 'display: none !important;' : ''}
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-  };
-
-  /**
-   * Trigger system
-   */
-  const triggers = {
-    // Initialize all triggers
-    init: () => {
-      // Show after time delay
-      if (widgetConfig.triggers.showAfter && !triggersFired.showAfter) {
-        setTimeout(() => {
-          triggersFired.showAfter = true;
-          triggers.maybeShow('showAfter');
-        }, widgetConfig.triggers.showAfter);
-      }
-
-      // Show on scroll percentage
-      if (widgetConfig.triggers.showOnScroll && !triggersFired.showOnScroll) {
-        const onScroll = utils.throttle(() => {
-          const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
-          if (scrollPercent >= widgetConfig.triggers.showOnScroll) {
-            triggersFired.showOnScroll = true;
-            triggers.maybeShow('showOnScroll');
-            window.removeEventListener('scroll', onScroll);
-          }
-        }, 100);
-        
-        window.addEventListener('scroll', onScroll);
-      }
-
-      // Show on exit intent
-      if (widgetConfig.triggers.showOnExit) {
-        document.addEventListener('mouseleave', (e) => {
-          if (e.clientY <= 0) {
-            triggers.maybeShow('showOnExit');
-          }
-        });
-      }
-    },
-
-    // Maybe show widget based on trigger
-    maybeShow: (trigger) => {
-      utils.log(`Trigger fired: ${trigger}`);
-      if (!widgetVisible) {
-        widget.show();
-      }
-    }
-  };
-
-  /**
-   * Main widget controller
+   * Lightweight widget controller
    */
   const widget = {
     // Initialize the widget
-    init: async () => {
-      utils.log('Initializing widget...');
-      
-      // Initialize configuration
-      if (!config.init()) {
-        return false;
-      }
-
-      // Check if mobile and should hide
-      if (utils.isMobile() && widgetConfig.triggers.hideOnMobile) {
-        utils.log('Widget hidden on mobile');
-        return false;
-      }
-
-      // Authenticate
-      const authenticated = await auth.authenticate();
-      if (!authenticated) {
-        console.error('[CustomerAgent] Failed to authenticate widget');
-        return false;
-      }
-
-      // Add styles and create bubble
-      ui.addStyles();
-      const bubble = ui.createBubble();
-      document.body.appendChild(bubble);
-
-      // Initialize triggers
-      triggers.init();
-
-      utils.log('Widget initialized successfully');
-      return true;
-    },
-
-    // Show the widget bubble
-    show: () => {
-      const bubble = document.getElementById('customer-agent-bubble');
-      if (bubble) {
-        bubble.style.display = 'flex';
-        widgetVisible = true;
-        utils.log('Widget shown');
-      }
-    },
-
-    // Hide the widget bubble
-    hide: () => {
-      const bubble = document.getElementById('customer-agent-bubble');
-      if (bubble) {
-        bubble.style.display = 'none';
-        widgetVisible = false;
-        utils.log('Widget hidden');
-      }
-    },
-
-    // Open the chat interface
-    open: async () => {
-      utils.log('Opening chat interface...');
+    init: async (customConfig = {}) => {
+      utils.log('Widget loader initializing...');
       
       try {
-        if (!widgetLoaded) {
-          await widget.loadCore();
+        // Parse configuration
+        const script = utils.getCurrentScript();
+        const dataConfig = utils.parseDataAttributes(script);
+        const globalConfig = window.CustomerAgent || {};
+        
+        // Merge configurations
+        let config = utils.merge(globalConfig, dataConfig);
+        config = utils.merge(config, customConfig);
+        
+        // Set API URL from script source if not provided
+        if (!config.apiUrl) {
+          const scriptUrl = new URL(script.src);
+          config.apiUrl = scriptUrl.origin;
         }
         
-        // Core should be ready now, try to open
-        if (window.CustomerAgentCore) {
-          window.CustomerAgentCore.open();
-        } else {
-          throw new Error('CustomerAgentCore not available after loading');
+        // Validate required config
+        if (!config.agentId) {
+          console.error('[CustomerAgent] Error: agentId is required');
+          return false;
         }
+
+        utils.log('Configuration parsed:', {
+          agentId: config.agentId,
+          apiUrl: config.apiUrl,
+          hasCustomConfig: Object.keys(customConfig).length > 0
+        });
+
+        // Load and initialize core
+        await widget.loadCore(config);
+        return true;
+        
       } catch (error) {
-        console.error('[CustomerAgent] Failed to open chat:', error);
-        // Show bubble again if opening failed
-        widget.show();
+        console.error('[CustomerAgent] Widget initialization failed:', error);
+        return false;
       }
     },
 
-    // Load the core chat interface
-    loadCore: async () => {
-      if (widgetLoaded) return Promise.resolve();
-      
-      utils.log('Loading core chat interface...');
+    // Load the core modules
+    loadCore: async (config) => {
+      utils.log('Loading widget core modules...');
       
       return new Promise((resolve, reject) => {
         try {
-          // Load CSS first using absolute URL
+          // Load CSS first
           const cssLink = document.createElement('link');
           cssLink.rel = 'stylesheet';
-          cssLink.href = `${widgetConfig.apiUrl}/widget/widget.css`;
+          cssLink.href = `${config.apiUrl}/widget/widget.css`;
           document.head.appendChild(cssLink);
 
-          // Load modules in order using absolute URLs
+          // Load modules in dependency order (defaults first!)
           const modulesToLoad = [
-            `${widgetConfig.apiUrl}/widget/widget-api.js`,
-            `${widgetConfig.apiUrl}/widget/widget-messages.js`,
-            `${widgetConfig.apiUrl}/widget/widget-ui.js`,
-            `${widgetConfig.apiUrl}/widget/widget-events.js`,
-            `${widgetConfig.apiUrl}/widget/widget-styles.js`,
-            `${widgetConfig.apiUrl}/widget/widget-core.js`
+            `${config.apiUrl}/widget/config/defaults.js`,
+            `${config.apiUrl}/widget/widget-config.js`,
+            `${config.apiUrl}/widget/widget-api.js`,
+            `${config.apiUrl}/widget/widget-messages.js`,
+            `${config.apiUrl}/widget/widget-ui.js`,
+            `${config.apiUrl}/widget/widget-ui-factory.js`,
+            `${config.apiUrl}/widget/widget-events.js`,
+            `${config.apiUrl}/widget/widget-styles.js`,
+            `${config.apiUrl}/widget/widget-core.js`
           ];
 
           let loadedCount = 0;
@@ -476,14 +188,12 @@
           // Load all modules sequentially
           Promise.all(modulesToLoad.map(src => loadScript(src)))
             .then(() => {
-              widgetLoaded = true;
               utils.log('All modules loaded successfully');
               
               // Initialize core with configuration
               if (window.CustomerAgentCore) {
                 window.CustomerAgentCore.init({
-                  config: widgetConfig,
-                  sessionToken: auth.getToken(),
+                  config: config,
                   utils: utils
                 });
                 resolve();
@@ -492,7 +202,7 @@
               }
             })
             .catch((error) => {
-              console.error('[CustomerAgent] Failed to load modules');
+              console.error('[CustomerAgent] Failed to load modules:', error);
               reject(error);
             });
             
@@ -517,39 +227,32 @@
     initialized: true,
     
     // Version
-    version: DEFAULT_CONFIG.version,
+    version: '2.0.0',
     
     // Initialize widget (can be called manually)
-    init: (customConfig = {}) => {
-      if (customConfig) {
-        widgetConfig = utils.merge(widgetConfig, customConfig);
-      }
-      return widget.init();
-    },
+    init: widget.init,
     
-    // Public methods
-    show: widget.show,
-    hide: widget.hide,
-    open: widget.open,
+    // Proxy methods - will be available after core loads
+    show: () => window.CustomerAgentCore && window.CustomerAgentCore.show(),
+    hide: () => window.CustomerAgentCore && window.CustomerAgentCore.hide(),
+    open: () => window.CustomerAgentCore && window.CustomerAgentCore.open(),
+    close: () => window.CustomerAgentCore && window.CustomerAgentCore.close(),
     
     // Configuration methods
     configure: (newConfig) => {
-      widgetConfig = utils.merge(widgetConfig, newConfig);
-      utils.log('Configuration updated:', widgetConfig);
+      if (window.CustomerAgentCore) {
+        window.CustomerAgentCore.configure(newConfig);
+      } else {
+        // Store for later if core not loaded yet
+        window.CustomerAgent = utils.merge(window.CustomerAgent, newConfig);
+      }
     },
     
     // Get current configuration
-    getConfig: () => ({ ...widgetConfig }),
+    getConfig: () => window.CustomerAgentCore ? window.CustomerAgentCore.getConfig() : {},
     
     // Debug method
-    debug: () => {
-      console.log('[CustomerAgent] Debug Info:', {
-        config: widgetConfig,
-        loaded: widgetLoaded,
-        visible: widgetVisible,
-        token: !!sessionToken
-      });
-    }
+    debug: () => window.CustomerAgentCore && window.CustomerAgentCore.debug()
   };
 
   // Auto-initialize when DOM is ready
@@ -562,15 +265,14 @@
     // Merge configurations to get agentId
     const mergedConfig = utils.merge(globalConfig, dataConfig);
     
-    console.log('[CustomerAgent] Auto-initialization:', {
+    utils.log('Auto-initialization:', {
       hasDataConfig: Object.keys(dataConfig).length > 0,
       hasGlobalConfig: Object.keys(globalConfig).length > 0,
-      agentId: mergedConfig.agentId,
-      allConfigKeys: Object.keys(mergedConfig)
+      agentId: mergedConfig.agentId
     });
     
     if (mergedConfig.agentId) {
-      console.log('[CustomerAgent] agentId found, initializing widget...');
+      utils.log('agentId found, initializing widget...');
       widget.init();
     } else {
       console.error('[CustomerAgent] Error: agentId is required');

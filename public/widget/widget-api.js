@@ -7,13 +7,51 @@
   'use strict';
 
   /**
-   * API client for chat communication
+   * API client for chat communication and authentication
    */
   class WidgetAPI {
     constructor(config, sessionToken, utils) {
       this.config = config;
       this.sessionToken = sessionToken;
       this.utils = utils;
+    }
+
+    /**
+     * Authenticate with the widget API
+     * @returns {Promise<Object>} - Authentication response data
+     */
+    async authenticate() {
+      try {
+        this.utils.log('Authenticating widget...');
+        
+        const response = await fetch(`${this.config.apiUrl}/api/v2/widget/auth`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            agentId: this.config.agentId,
+            domain: window.location.hostname,
+            referrer: document.referrer,
+            userAgent: navigator.userAgent,
+            url: window.location.href
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Authentication failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        this.sessionToken = data.data?.sessionToken || data.sessionToken;
+        
+        this.utils.log('Authentication successful');
+        
+        return data.data || data;
+      } catch (error) {
+        this.utils.log('Authentication failed:', error);
+        throw error;
+      }
     }
 
     /**
