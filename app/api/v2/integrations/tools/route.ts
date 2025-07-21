@@ -24,12 +24,13 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   logger.debug('Fetching tools for integration type', { integrationType });
 
-  let tools: Array<{ name: string; description: string }> = [];
+  let tools: Array<{ name: string; displayName?: string; description: string }> = [];
 
   switch (integrationType) {
     case 'shopify':
       tools = SHOPIFY_TOOLS.map(tool => ({
-        name: tool.name.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()), // Convert camelCase to Title Case
+        name: tool.name, // Store actual function name, not display name
+        displayName: tool.name.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase()), // Convert camelCase to Title Case for UI
         description: tool.description || 'No description available'
       }));
       break;

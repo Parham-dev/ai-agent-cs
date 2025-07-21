@@ -305,6 +305,131 @@ export interface ShopifyLocale {
   published: boolean;
 }
 
+export interface ShopifyFulfillment {
+  id: number;
+  order_id: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  tracking_company: string | null;
+  tracking_number: string | null;
+  tracking_numbers: string[];
+  tracking_url: string | null;
+  tracking_urls: string[];
+  receipt: {
+    testcase: boolean;
+    authorization: string;
+  } | null;
+  name: string;
+  service: string;
+  shipment_status: string | null;
+  location_id: number;
+  origin_address: {
+    address1: string;
+    address2: string | null;
+    city: string;
+    country_code: string;
+    province_code: string;
+    zip: string;
+  } | null;
+  line_items: Array<{
+    id: number;
+    variant_id: number;
+    title: string;
+    quantity: number;
+    sku: string;
+    price: string;
+    vendor: string;
+    fulfillment_service: string;
+    product_id: number;
+    requires_shipping: boolean;
+    taxable: boolean;
+    gift_card: boolean;
+    name: string;
+    variant_title: string;
+    properties: Array<{
+      name: string;
+      value: string;
+    }>;
+    product_exists: boolean;
+    fulfillable_quantity: number;
+    grams: number;
+    total_discount: string;
+    fulfillment_status: string;
+    admin_graphql_api_id: string;
+  }>;
+  notify_customer: boolean;
+  admin_graphql_api_id: string;
+}
+
+export interface OrderTrackingParams {
+  orderNumber: string;
+}
+
+export interface OrderTrackingResponse {
+  order: {
+    id: string;
+    name: string;
+    order_number: number;
+    created_at: string;
+    updated_at: string;
+    financial_status: string;
+    fulfillment_status: string | null;
+    total_price: string;
+    currency: string;
+    customer: {
+      email: string;
+      first_name: string;
+      last_name: string;
+    } | null;
+    shipping_address: {
+      first_name: string;
+      last_name: string;
+      company: string | null;
+      address1: string;
+      address2: string | null;
+      city: string;
+      province: string;
+      country: string;
+      zip: string;
+      phone: string | null;
+    } | null;
+    line_items: Array<{
+      id: string;
+      title: string;
+      quantity: number;
+      price: string;
+      sku: string;
+      variant_title: string;
+      fulfillment_status: string | null;
+    }>;
+    fulfillments: Array<{
+      id: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+      tracking_company: string | null;
+      tracking_number: string | null;
+      tracking_url: string | null;
+      shipment_status: string | null;
+      estimated_delivery: string | null;
+      line_items: Array<{
+        id: string;
+        title: string;
+        quantity: number;
+        sku: string;
+      }>;
+    }>;
+  } | null;
+  tracking_info: {
+    has_tracking: boolean;
+    tracking_numbers: string[];
+    tracking_urls: string[];
+    shipment_status: string | null;
+    estimated_delivery: string | null;
+  };
+}
+
 // Additional MCP-specific types
 export interface MCPServerCredentials {
   type: 'shopify';

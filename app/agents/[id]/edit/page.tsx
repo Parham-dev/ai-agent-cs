@@ -18,6 +18,72 @@ export default function EditAgentPage() {
   // Use SWR for agent data with automatic caching and error handling
   const { agent, isLoading: loading, error, refreshAgent } = useAgent(agentId)
 
+  /**
+   * Handle integration relationship updates
+   * Compares current selections with existing relationships and creates/updates/deletes as needed
+   */
+  const handleIntegrationUpdates = async (
+    agentId: string, 
+    selectedIntegrations: Array<{integrationId: string; selectedTools: string[]; config?: Record<string, unknown>}>,
+    existingIntegrations: Array<{integrationId: string; selectedTools?: string[]; config?: unknown}>
+  ) => {
+    // Create maps for efficient comparison
+    const selectedMap = new Map(selectedIntegrations.map(s => [s.integrationId, s]))
+    const existingMap = new Map(existingIntegrations.map(e => [e.integrationId, e]))
+
+    // Handle deletions - integrations that exist but are no longer selected
+    for (const [integrationId] of existingMap) {
+      if (!selectedMap.has(integrationId)) {
+        try {
+          await fetch(`/api/v2/agent-integrations?agentId=${agentId}&integrationId=${integrationId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+        } catch (error) {
+          console.error(`Failed to delete integration ${integrationId}:`, error)
+          // Continue with other operations even if one fails
+        }
+      }
+    }
+
+    // Handle creations and updates
+    for (const [integrationId, selection] of selectedMap) {
+      const existing = existingMap.get(integrationId)
+      
+      if (!existing) {
+        // Create new relationship
+        try {
+          await api.agentIntegrations.createAgentIntegration({
+            agentId,
+            integrationId,
+            selectedTools: selection.selectedTools || [],
+            config: selection.config || {},
+          })
+        } catch (error) {
+          console.error(`Failed to create integration ${integrationId}:`, error)
+        }
+      } else {
+        // Update existing relationship if tools or config changed
+        const toolsChanged = JSON.stringify(existing.selectedTools || []) !== JSON.stringify(selection.selectedTools || [])
+        const configChanged = JSON.stringify(existing.config || {}) !== JSON.stringify(selection.config || {})
+        
+        if (toolsChanged || configChanged) {
+          try {
+            // Update existing relationship
+            await api.agentIntegrations.updateAgentIntegration(agentId, integrationId, {
+              selectedTools: selection.selectedTools || [],
+              config: selection.config || {},
+            })
+          } catch (error) {
+            console.error(`Failed to update integration ${integrationId}:`, error)
+          }
+        }
+      }
+    }
+  }
+
   const handleSave = async (data: AgentFormData) => {
     try {
       const updatedAgent = await api.agents.updateAgent(agentId, {
@@ -31,6 +97,11 @@ export default function EditAgentPage() {
         rules: data.rules,
         tools: data.selectedTools,
       })
+
+      // Handle integration relationships
+      if (data.selectedIntegrations && agent) {
+        await handleIntegrationUpdates(agentId, data.selectedIntegrations, agent.agentIntegrations || [])
+      }
 
       // Refresh SWR cache with updated data
       await refreshAgent()
@@ -93,7 +164,11 @@ export default function EditAgentPage() {
       guardrails: (agent.rules as Record<string, unknown>)?.guardrails as { input: string[], output: string[] } || { input: [], output: [] },
       customInstructions: (agent.rules as Record<string, unknown>)?.customInstructions as string[] || []
     },
-    selectedIntegrations: [],
+    selectedIntegrations: agent.agentIntegrations?.map(ai => ({
+      integrationId: ai.integrationId,
+      selectedTools: ai.selectedTools || [],
+      config: ai.config || {}
+    })) || [],
     availableTools: agent.tools || [],
     selectedTools: agent.tools || [],
   }

@@ -26,7 +26,7 @@ export class MCPClient {
   /**
    * Initialize MCP servers based on agent integrations
    */
-  async initializeServers(integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown> }>): Promise<MCPServerStdio[]> {
+  async initializeServers(integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown>; selectedTools?: string[] }>): Promise<MCPServerStdio[]> {
     const mcpServers: MCPServerStdio[] = [];
     
     try {
@@ -62,7 +62,7 @@ export class MCPClient {
    */
   private async initializeServer(
     config: MCPServerConfig, 
-    integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown> }>
+    integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown>; selectedTools?: string[] }>
   ): Promise<MCPServerStdio | null> {
     try {
       // Find integrations that use this server
@@ -78,8 +78,26 @@ export class MCPClient {
       // Prepare server credentials
       const serverCredentials = this.prepareServerCredentials(config, relevantIntegrations);
       
-      // Create server command with credentials
-      const fullCommand = this.buildServerCommand(config, serverCredentials);
+      // Collect selected tools from relevant integrations
+      const allSelectedTools = relevantIntegrations.flatMap(integration => integration.selectedTools || []);
+      const uniqueSelectedTools = [...new Set(allSelectedTools)];
+      
+      logger.info('MCP Client selectedTools debug', {
+        serverName: config.name,
+        relevantIntegrationsCount: relevantIntegrations.length,
+        relevantIntegrations: relevantIntegrations.map(i => ({
+          type: i.type,
+          selectedToolsCount: i.selectedTools?.length || 0,
+          selectedTools: i.selectedTools || []
+        })),
+        allSelectedToolsCount: allSelectedTools.length,
+        allSelectedTools,
+        uniqueSelectedToolsCount: uniqueSelectedTools.length,
+        uniqueSelectedTools
+      });
+      
+      // Create server command with credentials and selected tools
+      const fullCommand = this.buildServerCommand(config, serverCredentials, uniqueSelectedTools);
       
       // Create MCP server instance
       const mcpServer = new MCPServerStdio({
@@ -162,7 +180,7 @@ export class MCPClient {
   /**
    * Build server command with credentials
    */
-  private buildServerCommand(config: MCPServerConfig, credentials: ServerCredentials[]): string {
+  private buildServerCommand(config: MCPServerConfig, credentials: ServerCredentials[], selectedTools?: string[]): string {
     const args = [...(config.args || [])];
     
     // Add credentials as base64 encoded argument
@@ -177,6 +195,13 @@ export class MCPClient {
     // Add retries
     const retries = config.retries || this.defaults.retries;
     args.push('--retries', retries.toString());
+    
+    // Add selected tools if provided
+    if (selectedTools && selectedTools.length > 0) {
+      const selectedToolsJson = JSON.stringify(selectedTools);
+      const selectedToolsBase64 = Buffer.from(selectedToolsJson).toString('base64');
+      args.push('--selected-tools', selectedToolsBase64);
+    }
     
     // Build full command
     return `${config.command} ${args.join(' ')}`;
@@ -277,7 +302,7 @@ export class MCPClient {
  * Create MCP client with agent integrations
  */
 export async function createMCPClient(
-  integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown> }>
+  integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown>; selectedTools?: string[] }>
 ): Promise<{ client: MCPClient; servers: MCPServerStdio[] }> {
   const client = new MCPClient();
   const servers = await client.initializeServers(integrations);

@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { agentIntegrationsService } from '@/lib/database/services'
 import { ApiResponseHelper as Api, validateMethod, withErrorHandling } from '@/lib/api/helpers'
-import type { CreateAgentIntegrationData } from '@/lib/types'
+import type { CreateAgentIntegrationData, UpdateAgentIntegrationData } from '@/lib/types'
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   const methodError = validateMethod(request, ['GET']);
@@ -46,6 +46,30 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   })
   
   return Api.success({ relationship }, undefined, 201)
+})
+
+export const PUT = withErrorHandling(async (request: NextRequest) => {
+  const methodError = validateMethod(request, ['PUT'])
+  if (methodError) return methodError
+
+  const data = await request.json() as UpdateAgentIntegrationData & { agentId: string; integrationId: string }
+  
+  // Validation for required fields
+  if (!data.agentId || !data.integrationId) {
+    return Api.error('VALIDATION_ERROR', 'Both agentId and integrationId are required')
+  }
+
+  const relationship = await agentIntegrationsService.updateAgentIntegration(
+    data.agentId, 
+    data.integrationId, 
+    {
+      selectedTools: data.selectedTools,
+      config: data.config,
+      isEnabled: data.isEnabled
+    }
+  )
+  
+  return Api.success({ relationship })
 })
 
 export const DELETE = withErrorHandling(async (request: NextRequest) => {

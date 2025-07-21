@@ -145,13 +145,35 @@ class ShopifyMCPServer {
       throw new Error(`Tool configuration errors: ${toolErrors.join(', ')}`);
     }
 
-    // Load tools
-    this.tools = ALL_TOOLS.map(tool => ({
+    // Load tools (filter by selectedTools if provided)
+    const selectedTools = options.selectedTools as string[] | undefined;
+    
+    // Debug logging
+    logger.info('MCP Server tool loading debug', {
+      hasSelectedTools: !!selectedTools,
+      selectedToolsCount: selectedTools?.length || 0,
+      selectedTools: selectedTools || [],
+      allAvailableToolsCount: ALL_TOOLS.length,
+      allAvailableTools: ALL_TOOLS.map(tool => tool.name)
+    });
+    
+    const availableTools = selectedTools ? 
+      ALL_TOOLS.filter(tool => selectedTools.includes(tool.name)) : 
+      ALL_TOOLS;
+    
+    this.tools = availableTools.map(tool => ({
       name: tool.name,
       description: tool.description,
       inputSchema: tool.inputSchema,
       handler: tool.handler as (params: unknown, context: MCPToolContext) => Promise<unknown>
     }));
+    
+    logger.info('Final tools registered', {
+      registeredToolsCount: this.tools.length,
+      registeredTools: this.tools.map(t => t.name),
+      wasFiltered: !!selectedTools,
+      originalSelectedTools: selectedTools || []
+    });
 
     // Validate credentials
     await this.validateCredentials();
@@ -250,6 +272,7 @@ async function main() {
     const credentialsIndex = args.indexOf('--credentials');
     const timeoutIndex = args.indexOf('--timeout');
     const retriesIndex = args.indexOf('--retries');
+    const selectedToolsIndex = args.indexOf('--selected-tools');
 
     if (credentialsIndex === -1 || credentialsIndex + 1 >= args.length) {
       throw new Error('Missing --credentials argument');
@@ -260,10 +283,19 @@ async function main() {
     const credentialsJson = Buffer.from(credentialsBase64, 'base64').toString();
     const credentials: MCPServerCredentials[] = JSON.parse(credentialsJson);
 
+    // Decode selected tools if provided
+    let selectedTools: string[] | undefined;
+    if (selectedToolsIndex !== -1 && selectedToolsIndex + 1 < args.length) {
+      const selectedToolsBase64 = args[selectedToolsIndex + 1];
+      const selectedToolsJson = Buffer.from(selectedToolsBase64, 'base64').toString();
+      selectedTools = JSON.parse(selectedToolsJson);
+    }
+
     // Parse options
     const options = {
       timeout: timeoutIndex !== -1 ? parseInt(args[timeoutIndex + 1]) : 30000,
-      retries: retriesIndex !== -1 ? parseInt(args[retriesIndex + 1]) : 3
+      retries: retriesIndex !== -1 ? parseInt(args[retriesIndex + 1]) : 3,
+      selectedTools
     };
 
     // Create and start server

@@ -1,9 +1,10 @@
-import { MCPServerCredentials, SearchProductsParams, ListProductsParams } from '../types';
+import { MCPServerCredentials, SearchProductsParams, ListProductsParams, OrderTrackingParams } from '../types';
 import { ProductsService } from './products/index';
 import { InventoryService } from './inventory/index';
 import { StoreService } from './store/index';
 import { MarketingService } from './marketing/index';
 import { CommerceService } from './commerce/index';
+import { FulfillmentService } from './fulfillment/index';
 
 /**
  * Main Shopify MCP client that composes all service domains
@@ -14,6 +15,7 @@ export class ShopifyMCPClient {
   private store: StoreService;
   private marketing: MarketingService;
   private commerce: CommerceService;
+  private fulfillment: FulfillmentService;
 
   constructor(credentials: MCPServerCredentials['credentials'], settings?: MCPServerCredentials['settings']) {
     // Initialize all service domains with the same credentials
@@ -22,6 +24,7 @@ export class ShopifyMCPClient {
     this.store = new StoreService(credentials, settings);
     this.marketing = new MarketingService(credentials, settings);
     this.commerce = new CommerceService(credentials, settings);
+    this.fulfillment = new FulfillmentService(credentials, settings);
   }
 
   // Product methods
@@ -81,6 +84,11 @@ export class ShopifyMCPClient {
     return this.commerce.getShippingZones();
   }
 
+  // Fulfillment methods
+  async getOrderTracking(params: OrderTrackingParams) {
+    return this.fulfillment.getOrderTracking(params);
+  }
+
   // Common methods (delegate to products service for now)
   async validateCredentials() {
     return this.products.validateCredentials();
@@ -96,4 +104,4 @@ export class ShopifyMCPClient {
 }
 
 // Re-export for backward compatibility
-export { ProductsService, InventoryService, StoreService, MarketingService, CommerceService };
+export { ProductsService, InventoryService, StoreService, MarketingService, CommerceService, FulfillmentService };

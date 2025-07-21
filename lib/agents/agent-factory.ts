@@ -57,7 +57,8 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
           type: integration.type,
           name: integration.name,
           credentials: integration.credentials,
-          config: agentIntegration.config || {}
+          config: agentIntegration.config || {},
+          selectedTools: agentIntegration.selectedTools || []
         })
       }
       

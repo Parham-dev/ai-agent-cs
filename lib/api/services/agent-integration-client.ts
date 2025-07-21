@@ -5,7 +5,8 @@
 import { BaseApiClient } from '../base/client';
 import type { 
   ApiAgentIntegration, 
-  CreateAgentIntegrationRequest 
+  CreateAgentIntegrationRequest,
+  UpdateAgentIntegrationData
 } from '@/lib/types';
 
 export class AgentIntegrationApiClient extends BaseApiClient {
@@ -29,6 +30,24 @@ export class AgentIntegrationApiClient extends BaseApiClient {
     return this.request<ApiAgentIntegration>('/agent-integrations', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update an existing agent-integration relationship
+   */
+  async updateAgentIntegration(
+    agentId: string, 
+    integrationId: string, 
+    data: UpdateAgentIntegrationData
+  ): Promise<ApiAgentIntegration> {
+    return this.request<ApiAgentIntegration>('/agent-integrations', {
+      method: 'PUT',
+      body: JSON.stringify({
+        agentId,
+        integrationId,
+        ...data,
+      }),
     });
   }
 

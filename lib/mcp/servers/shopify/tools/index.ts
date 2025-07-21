@@ -16,6 +16,7 @@ import { getPaymentTermsTool } from './get-payment-terms';
 import { getProductListingsTool } from './get-product-listings';
 import { getShippingZonesTool } from './get-shipping-zones';
 import { getLocalesTool } from './get-locales';
+import { getOrderTrackingTool } from './get-order-tracking';
 
 export { 
   searchProductsTool, 
@@ -29,7 +30,8 @@ export {
   getPaymentTermsTool,
   getProductListingsTool,
   getShippingZonesTool,
-  getLocalesTool
+  getLocalesTool,
+  getOrderTrackingTool
 };
 
 // Tool registry for easier management
@@ -45,7 +47,8 @@ export const SHOPIFY_TOOLS = {
   getPaymentTerms: getPaymentTermsTool,
   getProductListings: getProductListingsTool,
   getShippingZones: getShippingZonesTool,
-  getLocales: getLocalesTool
+  getLocales: getLocalesTool,
+  getOrderTracking: getOrderTrackingTool
 };
 
 // Get all tool names
@@ -54,7 +57,6 @@ export const TOOL_NAMES = Object.keys(SHOPIFY_TOOLS);
 // Get all tools as array
 export const ALL_TOOLS = Object.values(SHOPIFY_TOOLS);
 
-// Tool metadata
 export const TOOL_METADATA = {
   searchProducts: {
     category: 'search',
@@ -127,6 +129,12 @@ export const TOOL_METADATA = {
     description: 'Get available languages and locales for the store',
     complexity: 'simple',
     requiresAuth: true
+  },
+  getOrderTracking: {
+    category: 'read',
+    description: 'Track order status by order number - perfect for customer service',
+    complexity: 'simple',
+    requiresAuth: false
   }
 };
 
