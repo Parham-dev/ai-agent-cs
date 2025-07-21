@@ -134,8 +134,16 @@
               justify-content: center;
               flex-shrink: 0;
             ">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="${this.config.primaryColor || '#007bff'}">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="${this.config.primaryColor || '#007bff'}">
+                <rect x="6" y="6" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <rect x="8" y="8" width="2" height="2" rx="0.5" fill="currentColor"/>
+                <rect x="14" y="8" width="2" height="2" rx="0.5" fill="currentColor"/>
+                <path d="M10 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <rect x="10" y="2" width="4" height="4" rx="1" fill="currentColor"/>
+                <circle cx="7" cy="4" r="1" fill="currentColor"/>
+                <circle cx="17" cy="4" r="1" fill="currentColor"/>
+                <path d="M12 16v2" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M6 20h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
             </div>
             <div style="
@@ -240,8 +248,16 @@
             justify-content: center;
             flex-shrink: 0;
           ">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="${this.config.primaryColor || '#007bff'}">
-              <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="${this.config.primaryColor || '#007bff'}">
+              <rect x="6" y="6" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+              <rect x="8" y="8" width="2" height="2" rx="0.5" fill="currentColor"/>
+              <rect x="14" y="8" width="2" height="2" rx="0.5" fill="currentColor"/>
+              <path d="M10 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <rect x="10" y="2" width="4" height="4" rx="1" fill="currentColor"/>
+              <circle cx="7" cy="4" r="1" fill="currentColor"/>
+              <circle cx="17" cy="4" r="1" fill="currentColor"/>
+              <path d="M12 16v2" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M6 20h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
           </div>
         ` : ''}
@@ -298,8 +314,16 @@
           justify-content: center;
           flex-shrink: 0;
         ">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="${this.config.primaryColor || '#007bff'}">
-            <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="${this.config.primaryColor || '#007bff'}">
+            <rect x="6" y="6" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <rect x="8" y="8" width="2" height="2" rx="0.5" fill="currentColor"/>
+            <rect x="14" y="8" width="2" height="2" rx="0.5" fill="currentColor"/>
+            <path d="M10 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <rect x="10" y="2" width="4" height="4" rx="1" fill="currentColor"/>
+            <circle cx="7" cy="4" r="1" fill="currentColor"/>
+            <circle cx="17" cy="4" r="1" fill="currentColor"/>
+            <path d="M12 16v2" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M6 20h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </div>
         <div style="
