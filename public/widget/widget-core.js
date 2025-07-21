@@ -1,9 +1,8 @@
 /**
  * AI Customer Service Widget Core
- * Version: 1.0.0
+ * Version: 2.0.0
  * 
- * Core chat interface loaded on demand when user interacts with widget.
- * Handles chat UI, message management, and API communication.
+ * Orchestrates the modular widget components
  */
 
 (function() {
@@ -14,635 +13,195 @@
     return;
   }
 
-  // Core state
-  let config = {};
-  let sessionToken = null;
-  let utils = {};
-  let chatContainer = null;
-  let isOpen = false;
-  let messages = [];
-  let isTyping = false;
-
   /**
-   * Chat API client
+   * Core widget controller
    */
-  const api = {
-    // Send message to chat API
-    sendMessage: async (message, conversationHistory = []) => {
-      try {
-        utils.log('Sending message:', message);
-        
-        // Check if we have a valid session token
-        if (!sessionToken) {
-          throw new Error('No session token available');
-        }
-        
-        const response = await fetch(`${config.apiUrl}/api/v2/agents/chat`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionToken}`
-          },
-          body: JSON.stringify({
-            agentId: config.agentId,
-            message: message,
-            conversationHistory: conversationHistory,
-            context: {
-              url: window.location.href,
-              referrer: document.referrer,
-              userAgent: navigator.userAgent,
-              timestamp: new Date().toISOString()
-            }
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Chat API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        utils.log('Received response:', data);
-        
-        return data.success ? data.data.message : 'Sorry, there was an error processing your message.';
-      } catch (error) {
-        utils.log('API error:', error);
-        throw error;
-      }
+  class WidgetCore {
+    constructor() {
+      this.config = {};
+      this.sessionToken = null;
+      this.utils = {};
+      this.isOpen = false;
+      
+      // Module instances
+      this.api = null;
+      this.messageManager = null;
+      this.ui = null;
+      this.events = null;
+      this.styles = null;
+      
+      this.initialized = false;
     }
-  };
 
-  /**
-   * Message management
-   */
-  const messageManager = {
-    // Add message to chat
-    addMessage: (content, role = 'user') => {
-      const message = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        role: role,
-        content: content,
-        timestamp: new Date()
-      };
-      
-      messages.push(message);
-      ui.renderMessage(message);
-      ui.scrollToBottom();
-      
-      return message;
-    },
-
-    // Get conversation history for API
-    getHistory: () => {
-      return messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
-    },
-
-    // Clear all messages
-    clear: () => {
-      messages = [];
-      const messagesContainer = chatContainer.querySelector('.chat-messages');
-      if (messagesContainer) {
-        messagesContainer.innerHTML = '';
+    /**
+     * Initialize core with configuration
+     * @param {Object} initData - Initialization data
+     */
+    init(initData) {
+      if (this.initialized) {
+        this.utils.log('Core already initialized');
+        return;
       }
+
+      this.config = initData.config || {};
+      this.sessionToken = initData.sessionToken;
+      this.utils = initData.utils || {};
+      
+      this.utils.log('Core initializing with config:', this.config);
+      this.utils.log('Session token present:', !!this.sessionToken);
+      
+      // Initialize modules
+      this.initializeModules();
+      
+      // Set up UI
+      this.setupUI();
+      
+      // Set up event handlers
+      this.setupEventHandlers();
+      
+      this.initialized = true;
+      this.utils.log('Core initialization complete');
     }
-  };
 
-  /**
-   * UI management
-   */
-  const ui = {
-    // Create chat container
-    createChatContainer: () => {
-      const container = document.createElement('div');
-      container.id = 'customer-agent-chat';
+    /**
+     * Initialize all modules
+     */
+    initializeModules() {
+      // Initialize API module
+      this.api = new window.CustomerAgentAPI(this.config, this.sessionToken, this.utils);
       
-      // Position and size based on device
-      const isMobile = utils.isMobile();
-      const position = config.position || 'bottom-right';
+      // Initialize message manager
+      this.messageManager = new window.CustomerAgentMessageManager(this.utils);
       
-      container.style.cssText = `
-        position: fixed;
-        ${!isMobile && position.includes('right') ? 'right: 20px;' : ''}
-        ${!isMobile && position.includes('left') ? 'left: 20px;' : ''}
-        ${!isMobile ? 'bottom: 90px;' : 'top: 0; left: 0; right: 0; bottom: 0;'}
-        width: ${isMobile ? '100%' : config.width + 'px'};
-        height: ${isMobile ? '100%' : config.height + 'px'};
-        background: white;
-        border-radius: ${isMobile ? '0' : config.borderRadius};
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        z-index: ${config.zIndex + 1};
-        display: none;
-        flex-direction: column;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-size: 14px;
-        overflow: hidden;
-        animation: customerAgentSlideIn 0.3s ease-out;
-      `;
-
-      container.innerHTML = ui.getChatHTML();
-      return container;
-    },
-
-    // Get chat HTML structure
-    getChatHTML: () => {
-      const greeting = config.greeting || `Hello! How can I help you today?`;
-      const isMobile = utils.isMobile();
+      // Initialize UI module
+      this.ui = new window.CustomerAgentUI(this.config, this.utils);
       
-      return `
-        <div class="chat-header" style="
-          background: linear-gradient(135deg, ${config.primaryColor}, ${config.primaryColor}dd);
-          color: white;
-          padding: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          ${isMobile ? 'padding-top: max(16px, env(safe-area-inset-top, 16px));' : ''}
-        ">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="
-              width: 32px;
-              height: 32px;
-              background: rgba(255, 255, 255, 0.2);
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            ">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/>
-              </svg>
-            </div>
-            <div>
-              <div style="font-weight: 600; font-size: 16px;">Customer Support</div>
-              <div style="font-size: 12px; opacity: 0.9;">Online now</div>
-            </div>
-          </div>
-          <button class="chat-close" style="
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0.8;
-            transition: opacity 0.2s;
-          " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-            </svg>
-          </button>
-        </div>
-        
-        <div class="chat-messages" style="
-          flex: 1;
-          overflow-y: auto;
-          padding: 16px;
-          background: #f8f9fa;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        ">
-          <!-- Welcome message -->
-          <div class="message assistant" style="
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-          ">
-            <div style="
-              width: 32px;
-              height: 32px;
-              background: ${config.primaryColor}20;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              flex-shrink: 0;
-            ">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="${config.primaryColor}">
-                <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/>
-              </svg>
-            </div>
-            <div style="
-              background: white;
-              padding: 12px 16px;
-              border-radius: 18px 18px 18px 4px;
-              max-width: 80%;
-              box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-              line-height: 1.4;
-            ">
-              ${greeting}
-            </div>
-          </div>
-        </div>
-        
-        <div class="chat-input-container" style="
-          padding: 16px;
-          background: white;
-          border-top: 1px solid #e9ecef;
-          ${isMobile ? 'padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));' : ''}
-        ">
-          <div style="display: flex; gap: 8px; align-items: flex-end;">
-            <div style="flex: 1;">
-              <textarea class="chat-input" placeholder="${config.placeholder}" style="
-                width: 100%;
-                border: 1px solid #dee2e6;
-                border-radius: 20px;
-                padding: 12px 16px;
-                resize: none;
-                font-family: inherit;
-                font-size: 14px;
-                line-height: 1.4;
-                max-height: 100px;
-                min-height: 44px;
-                outline: none;
-                transition: border-color 0.2s;
-              " rows="1"></textarea>
-            </div>
-            <button class="chat-send" style="
-              background: ${config.primaryColor};
-              border: none;
-              border-radius: 50%;
-              width: 44px;
-              height: 44px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              cursor: pointer;
-              transition: all 0.2s;
-              flex-shrink: 0;
-            " disabled>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-              </svg>
-            </button>
-          </div>
-          ${config.showPoweredBy ? `
-            <div style="
-              text-align: center;
-              margin-top: 8px;
-              font-size: 11px;
-              color: #6c757d;
-            ">
-              Powered by <a href="#" style="color: ${config.primaryColor}; text-decoration: none;">CustomerAgent</a>
-            </div>
-          ` : ''}
-        </div>
-      `;
-    },
-
-    // Render a single message
-    renderMessage: (message) => {
-      const messagesContainer = chatContainer.querySelector('.chat-messages');
-      const messageEl = document.createElement('div');
-      messageEl.className = `message ${message.role}`;
+      // Initialize events module
+      this.events = new window.CustomerAgentEvents(this.config, this.utils);
       
-      const isUser = message.role === 'user';
-      const timestamp = message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
-      messageEl.style.cssText = `
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        ${isUser ? 'flex-direction: row-reverse;' : ''}
-      `;
-
-      messageEl.innerHTML = `
-        ${!isUser ? `
-          <div style="
-            width: 32px;
-            height: 32px;
-            background: ${config.primaryColor}20;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-          ">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="${config.primaryColor}">
-              <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/>
-            </svg>
-          </div>
-        ` : ''}
-        
-        <div style="
-          background: ${isUser ? config.primaryColor : 'white'};
-          color: ${isUser ? 'white' : 'inherit'};
-          padding: 12px 16px;
-          border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
-          max-width: 80%;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-          line-height: 1.4;
-          word-wrap: break-word;
-        ">
-          <div>${ui.escapeHtml(message.content)}</div>
-          <div style="
-            font-size: 11px;
-            opacity: 0.7;
-            margin-top: 4px;
-            text-align: ${isUser ? 'right' : 'left'};
-          ">
-            ${timestamp}
-          </div>
-        </div>
-      `;
-
-      messagesContainer.appendChild(messageEl);
-    },
-
-    // Show typing indicator
-    showTyping: () => {
-      if (isTyping) return;
-      
-      isTyping = true;
-      const messagesContainer = chatContainer.querySelector('.chat-messages');
-      const typingEl = document.createElement('div');
-      typingEl.className = 'typing-indicator';
-      typingEl.style.cssText = `
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-      `;
-
-      typingEl.innerHTML = `
-        <div style="
-          width: 32px;
-          height: 32px;
-          background: ${config.primaryColor}20;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        ">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="${config.primaryColor}">
-            <path d="M12 2C6.48 2 2 6.48 2 12C2 13.54 2.37 14.99 3.04 16.28L2 22L7.72 20.96C9.01 21.63 10.46 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"/>
-          </svg>
-        </div>
-        <div style="
-          background: white;
-          padding: 12px 16px;
-          border-radius: 18px 18px 18px 4px;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-          display: flex;
-          gap: 4px;
-          align-items: center;
-        ">
-          <div class="typing-dot" style="
-            width: 6px;
-            height: 6px;
-            background: #6c757d;
-            border-radius: 50%;
-            animation: customerAgentTyping 1.4s infinite;
-          "></div>
-          <div class="typing-dot" style="
-            width: 6px;
-            height: 6px;
-            background: #6c757d;
-            border-radius: 50%;
-            animation: customerAgentTyping 1.4s infinite 0.2s;
-          "></div>
-          <div class="typing-dot" style="
-            width: 6px;
-            height: 6px;
-            background: #6c757d;
-            border-radius: 50%;
-            animation: customerAgentTyping 1.4s infinite 0.4s;
-          "></div>
-        </div>
-      `;
-
-      messagesContainer.appendChild(typingEl);
-      ui.scrollToBottom();
-    },
-
-    // Hide typing indicator
-    hideTyping: () => {
-      if (!isTyping) return;
-      
-      isTyping = false;
-      const typingEl = chatContainer.querySelector('.typing-indicator');
-      if (typingEl) {
-        typingEl.remove();
-      }
-    },
-
-    // Scroll to bottom of messages
-    scrollToBottom: () => {
-      const messagesContainer = chatContainer.querySelector('.chat-messages');
-      if (messagesContainer) {
-        setTimeout(() => {
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }, 100);
-      }
-    },
-
-    // Escape HTML to prevent XSS
-    escapeHtml: (text) => {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    },
-
-    // Add required CSS animations
-    addCoreStyles: () => {
-      if (document.getElementById('customer-agent-core-styles')) return;
-      
-      const style = document.createElement('style');
-      style.id = 'customer-agent-core-styles';
-      style.textContent = `
-        @keyframes customerAgentSlideIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        
-        @keyframes customerAgentTyping {
-          0%, 60%, 100% {
-            transform: translateY(0);
-            opacity: 0.5;
-          }
-          30% {
-            transform: translateY(-10px);
-            opacity: 1;
-          }
-        }
-        
-        #customer-agent-chat .chat-input:focus {
-          border-color: ${config.primaryColor} !important;
-          box-shadow: 0 0 0 2px ${config.primaryColor}20 !important;
-        }
-        
-        #customer-agent-chat .chat-send:hover:not(:disabled) {
-          background: ${config.primaryColor}dd !important;
-          transform: scale(1.05);
-        }
-        
-        #customer-agent-chat .chat-send:disabled {
-          background: #dee2e6 !important;
-          cursor: not-allowed;
-        }
-        
-        @media (max-width: 768px) {
-          #customer-agent-chat {
-            border-radius: 0 !important;
-          }
-        }
-      `;
-      document.head.appendChild(style);
+      // Initialize styles module
+      this.styles = new window.CustomerAgentStyles(this.config);
     }
-  };
 
-  /**
-   * Event handlers
-   */
-  const events = {
-    // Initialize event listeners
-    init: () => {
-      const closeBtn = chatContainer.querySelector('.chat-close');
-      const sendBtn = chatContainer.querySelector('.chat-send');
-      const input = chatContainer.querySelector('.chat-input');
-
-      // Close button
-      closeBtn.addEventListener('click', core.close);
-
-      // Send button
-      sendBtn.addEventListener('click', events.sendMessage);
-
-      // Input events
-      input.addEventListener('input', events.onInput);
-      input.addEventListener('keydown', events.onKeyDown);
-
-      // Auto-resize textarea
-      input.addEventListener('input', () => {
-        input.style.height = 'auto';
-        input.style.height = Math.min(input.scrollHeight, 100) + 'px';
-      });
-    },
-
-    // Handle input changes
-    onInput: (e) => {
-      const input = e.target;
-      const sendBtn = chatContainer.querySelector('.chat-send');
-      const hasText = input.value.trim().length > 0;
-      
-      sendBtn.disabled = !hasText;
-      sendBtn.style.background = hasText ? config.primaryColor : '#dee2e6';
-    },
-
-    // Handle keyboard events
-    onKeyDown: (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        events.sendMessage();
-      }
-    },
-
-    // Send message
-    sendMessage: async () => {
-      const input = chatContainer.querySelector('.chat-input');
-      const message = input.value.trim();
-      
-      if (!message) return;
-
-      // Clear input
-      input.value = '';
-      input.style.height = 'auto';
-      events.onInput({ target: input });
-
-      // Add user message
-      messageManager.addMessage(message, 'user');
-
-      // Show typing indicator
-      ui.showTyping();
-
-      try {
-        // Send to API
-        const response = await api.sendMessage(message, messageManager.getHistory().slice(0, -1));
-        
-        // Hide typing and add response
-        ui.hideTyping();
-        messageManager.addMessage(response, 'assistant');
-        
-      } catch (error) {
-        ui.hideTyping();
-        messageManager.addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
-        utils.log('Send message error:', error);
-      }
-    }
-  };
-
-  /**
-   * Core controller
-   */
-  const core = {
-    // Initialize core
-    init: (initData) => {
-      config = initData.config || {};
-      sessionToken = initData.sessionToken;
-      utils = initData.utils || {};
-      
-      utils.log('Core initialized with config:', config);
-      utils.log('Core initialized with sessionToken:', sessionToken ? 'present' : 'missing');
-      
-      // Add core styles
-      ui.addCoreStyles();
+    /**
+     * Set up UI components
+     */
+    setupUI() {
+      // Add styles
+      this.styles.addCoreStyles();
+      this.styles.addThemeStyles(this.config.theme || 'auto');
       
       // Create chat container
-      chatContainer = ui.createChatContainer();
+      const chatContainer = this.ui.createChatContainer();
       document.body.appendChild(chatContainer);
       
-      // Initialize events
-      events.init();
-      
-      // Don't hide bubble yet - wait until chat actually opens
-      utils.log('Core initialization complete');
-    },
+      // Initialize event listeners
+      this.events.init(this.ui);
+    }
 
-    // Open chat
-    open: () => {
+    /**
+     * Set up event handlers
+     */
+    setupEventHandlers() {
+      // Handle send message
+      this.events.setSendMessageCallback(async (message) => {
+        await this.handleSendMessage(message);
+      });
+      
+      // Handle close
+      this.events.setCloseCallback(() => {
+        this.close();
+      });
+      
+      // Watch theme changes
+      this.styles.watchThemeChanges((theme) => {
+        this.styles.addThemeStyles(theme);
+      });
+    }
+
+    /**
+     * Handle sending a message
+     * @param {string} message - Message text
+     */
+    async handleSendMessage(message) {
+      // Add user message
+      const userMessage = this.messageManager.addMessage(message, 'user');
+      this.ui.renderMessage(userMessage);
+      this.ui.scrollToBottom();
+
+      // Show typing indicator
+      this.ui.showTyping();
+
+      try {
+        // Get conversation history (excluding the message we just added)
+        const history = this.messageManager.getHistory().slice(0, -1);
+        
+        // Send to API
+        const response = await this.api.sendMessage(message, history);
+        
+        // Hide typing and add response
+        this.ui.hideTyping();
+        const assistantMessage = this.messageManager.addMessage(response, 'assistant');
+        this.ui.renderMessage(assistantMessage);
+        this.ui.scrollToBottom();
+        
+        // Emit message received event
+        this.events.emit('messageReceived', { message: assistantMessage });
+        
+      } catch (error) {
+        this.ui.hideTyping();
+        const errorMessage = this.messageManager.addMessage(
+          'Sorry, I encountered an error. Please try again.', 
+          'assistant'
+        );
+        this.ui.renderMessage(errorMessage);
+        this.ui.scrollToBottom();
+        
+        this.utils.log('Send message error:', error);
+        this.events.emit('error', { error });
+      }
+    }
+
+    /**
+     * Open the chat widget
+     */
+    open() {
+      const chatContainer = this.ui.getChatContainer();
       if (!chatContainer) {
-        utils.log('Error: chatContainer not found when trying to open');
+        this.utils.log('Error: chatContainer not found when trying to open');
         return;
       }
       
-      // Hide bubble when chat opens successfully
+      // Hide bubble when chat opens
       const bubble = document.getElementById('customer-agent-bubble');
       if (bubble) {
         bubble.style.display = 'none';
       }
       
       chatContainer.style.display = 'flex';
-      isOpen = true;
+      this.isOpen = true;
       
       // Focus input
       setTimeout(() => {
-        const input = chatContainer.querySelector('.chat-input');
+        const input = this.ui.getInputElement();
         if (input) {
           input.focus();
-        } else {
-          utils.log('Warning: chat input not found');
         }
       }, 300);
       
-      utils.log('Chat opened successfully');
-    },
+      this.utils.log('Chat opened successfully');
+      this.events.emit('opened');
+    }
 
-    // Close chat
-    close: () => {
+    /**
+     * Close the chat widget
+     */
+    close() {
+      const chatContainer = this.ui.getChatContainer();
       if (!chatContainer) return;
       
       chatContainer.style.display = 'none';
-      isOpen = false;
+      this.isOpen = false;
       
       // Show bubble again
       const bubble = document.getElementById('customer-agent-bubble');
@@ -650,22 +209,123 @@
         bubble.style.display = 'flex';
       }
       
-      utils.log('Chat closed');
-    },
+      this.utils.log('Chat closed');
+      this.events.emit('closed');
+    }
 
-    // Check if chat is open
-    isOpen: () => isOpen
-  };
+    /**
+     * Check if chat is open
+     * @returns {boolean} - Open state
+     */
+    getIsOpen() {
+      return this.isOpen;
+    }
+
+    /**
+     * Clear chat messages
+     */
+    clearChat() {
+      this.messageManager.clear();
+      this.ui.clearMessages();
+      
+      // Re-add welcome message
+      const greeting = this.config.greeting || 'Hello! How can I help you today?';
+      const welcomeMessage = this.messageManager.addMessage(greeting, 'assistant');
+      this.ui.renderMessage(welcomeMessage);
+    }
+
+    /**
+     * Update configuration
+     * @param {Object} newConfig - New configuration values
+     */
+    updateConfig(newConfig) {
+      this.config = { ...this.config, ...newConfig };
+      
+      // Update modules with new config
+      if (newConfig.primaryColor) {
+        this.styles.updatePrimaryColor(newConfig.primaryColor);
+      }
+      
+      if (newConfig.theme) {
+        this.styles.addThemeStyles(newConfig.theme);
+      }
+      
+      this.utils.log('Configuration updated:', this.config);
+    }
+
+    /**
+     * Update session token
+     * @param {string} token - New session token
+     */
+    updateSessionToken(token) {
+      this.sessionToken = token;
+      if (this.api) {
+        this.api.updateSessionToken(token);
+      }
+    }
+
+    /**
+     * Destroy the widget
+     */
+    destroy() {
+      // Clean up events
+      if (this.events) {
+        this.events.cleanup();
+      }
+      
+      // Clean up styles
+      if (this.styles) {
+        this.styles.cleanup();
+      }
+      
+      // Remove chat container
+      const chatContainer = this.ui?.getChatContainer();
+      if (chatContainer) {
+        chatContainer.remove();
+      }
+      
+      this.initialized = false;
+      this.utils.log('Widget destroyed');
+    }
+
+    /**
+     * Get message history
+     * @returns {Array} - Message history
+     */
+    getMessageHistory() {
+      return this.messageManager ? this.messageManager.getMessages() : [];
+    }
+
+    /**
+     * Add custom event listener
+     * @param {string} eventName - Event name
+     * @param {Function} handler - Event handler
+     */
+    on(eventName, handler) {
+      if (this.events) {
+        this.events.on(eventName, handler);
+      }
+    }
+  }
+
+  // Create and export core instance
+  const coreInstance = new WidgetCore();
 
   /**
    * Public API
    */
   window.CustomerAgentCore = {
     initialized: true,
-    init: core.init,
-    open: core.open,
-    close: core.close,
-    isOpen: core.isOpen
+    init: (initData) => coreInstance.init(initData),
+    open: () => coreInstance.open(),
+    close: () => coreInstance.close(),
+    isOpen: () => coreInstance.getIsOpen(),
+    clearChat: () => coreInstance.clearChat(),
+    updateConfig: (config) => coreInstance.updateConfig(config),
+    updateSessionToken: (token) => coreInstance.updateSessionToken(token),
+    destroy: () => coreInstance.destroy(),
+    getMessageHistory: () => coreInstance.getMessageHistory(),
+    on: (eventName, handler) => coreInstance.on(eventName, handler)
   };
 
 })();

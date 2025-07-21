@@ -439,35 +439,61 @@
           cssLink.href = '/widget/widget.css';
           document.head.appendChild(cssLink);
 
-          // Load core JavaScript
-          const script = document.createElement('script');
-          script.src = '/widget/widget-core.js';
+          // Load modules in order
+          const modulesToLoad = [
+            '/widget/widget-api.js',
+            '/widget/widget-messages.js',
+            '/widget/widget-ui.js',
+            '/widget/widget-events.js',
+            '/widget/widget-styles.js',
+            '/widget/widget-core.js'
+          ];
+
+          let loadedCount = 0;
           
-          utils.log('Loading core script from:', script.src);
-          
-          script.onload = () => {
-            widgetLoaded = true;
-            utils.log('Core loaded successfully');
+          const loadScript = (src) => {
+            return new Promise((scriptResolve, scriptReject) => {
+              const script = document.createElement('script');
+              script.src = src;
+              
+              script.onload = () => {
+                loadedCount++;
+                utils.log(`Loaded module ${loadedCount}/${modulesToLoad.length}: ${src}`);
+                scriptResolve();
+              };
+              
+              script.onerror = (error) => {
+                console.error(`[CustomerAgent] Failed to load module: ${src}`);
+                scriptReject(error);
+              };
+              
+              document.head.appendChild(script);
+            });
+          };
+
+          // Load all modules sequentially
+          Promise.all(modulesToLoad.map(src => loadScript(src)))
+            .then(() => {
+              widgetLoaded = true;
+              utils.log('All modules loaded successfully');
+              
+              // Initialize core with configuration
+              if (window.CustomerAgentCore) {
+                window.CustomerAgentCore.init({
+                  config: widgetConfig,
+                  sessionToken: auth.getToken(),
+                  utils: utils
+                });
+                resolve();
+              } else {
+                reject(new Error('CustomerAgentCore not available after loading'));
+              }
+            })
+            .catch((error) => {
+              console.error('[CustomerAgent] Failed to load modules');
+              reject(error);
+            });
             
-            // Initialize core with configuration
-            if (window.CustomerAgentCore) {
-              window.CustomerAgentCore.init({
-                config: widgetConfig,
-                sessionToken: auth.getToken(),
-                utils: utils
-              });
-              resolve();
-            } else {
-              reject(new Error('CustomerAgentCore not available after loading'));
-            }
-          };
-          
-          script.onerror = (error) => {
-            console.error('[CustomerAgent] Failed to load core interface');
-            reject(error);
-          };
-          
-          document.head.appendChild(script);
         } catch (error) {
           console.error('[CustomerAgent] Error loading core:', error);
           reject(error);
