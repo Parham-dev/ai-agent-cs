@@ -1,5 +1,5 @@
-import { MCPServerCredentials } from '../types';
-import { ProductsService } from './products';
+import { MCPServerCredentials, SearchProductsParams, ListProductsParams } from '../types';
+import { ProductsService } from './products/index';
 import { InventoryService } from './inventory';
 import { StoreService } from './store';
 import { MarketingService } from './marketing';
@@ -25,16 +25,16 @@ export class ShopifyMCPClient {
   }
 
   // Product methods
-  async searchProducts(query: string, limit?: number) {
-    return this.products.searchProducts(query, limit);
+  async searchProducts(params: SearchProductsParams) {
+    return this.products.searchProducts(params);
   }
 
   async getProductDetails(productId: string) {
     return this.products.getProductDetails(productId);
   }
 
-  async listProducts(limit?: number, status?: string) {
-    return this.products.listProducts(limit, status);
+  async listProducts(params: ListProductsParams = {}) {
+    return this.products.listProducts(params);
   }
 
   // Inventory & Location methods

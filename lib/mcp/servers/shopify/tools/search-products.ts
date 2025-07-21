@@ -4,7 +4,8 @@ import {
   SearchProductsParams, 
   SearchProductsResponse, 
   MCPToolContext, 
-  MCPToolResponse 
+  MCPToolResponse,
+  ShopifyProduct
 } from '../types';
 
 /**
@@ -13,23 +14,65 @@ import {
  */
 export const searchProductsTool = {
   name: 'searchProducts',
-  description: 'Search for products by title, vendor, type, or tags',
+  description: 'Search for products with advanced filtering options for customer service',
   inputSchema: {
     type: 'object',
     properties: {
       query: {
         type: 'string',
-        description: 'Search query for product title, vendor, type, or tags'
+        description: 'Search query for product title'
+      },
+      vendor: {
+        type: 'string',
+        description: 'Filter by brand/vendor name'
+      },
+      productType: {
+        type: 'string',
+        description: 'Filter by product category/type'
+      },
+      tags: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Filter by product tags (e.g., waterproof, sale, new)'
+      },
+      priceMin: {
+        type: 'number',
+        description: 'Minimum price filter'
+      },
+      priceMax: {
+        type: 'number',
+        description: 'Maximum price filter'
+      },
+      inStockOnly: {
+        type: 'boolean',
+        description: 'Show only products that are in stock',
+        default: true
+      },
+      onSaleOnly: {
+        type: 'boolean',
+        description: 'Show only products that are on sale'
+      },
+      sku: {
+        type: 'string',
+        description: 'Search by specific SKU code'
+      },
+      barcode: {
+        type: 'string',
+        description: 'Search by barcode'
+      },
+      collectionId: {
+        type: 'string',
+        description: 'Filter by specific collection ID'
       },
       limit: {
         type: 'number',
         description: 'Maximum number of products to return (1-50)',
         minimum: 1,
         maximum: 50,
-        default: 10
+        default: 5
       }
     },
-    required: ['query']
+    required: []
   },
 
   async handler(
@@ -66,11 +109,11 @@ export const searchProductsTool = {
       const client = new ShopifyMCPClient(context.credentials, context.settings);
 
       // Search products
-      const response = await client.searchProducts(params.query, params.limit || 10);
+      const response = await client.searchProducts(params);
 
-      // Format response
+      // Format response - customer-focused data only
       const formattedResponse: SearchProductsResponse = {
-        products: response.map((product: unknown) => formatProductSummary(product as Record<string, unknown>)),
+        products: response.map((product) => formatCustomerProductSummary(product)),
         totalCount: response.length
       };
 
@@ -120,15 +163,14 @@ export const searchProductsTool = {
  * Validate search parameters
  */
 function validateSearchParams(params: SearchProductsParams): string | null {
-  if (!params.query || typeof params.query !== 'string') {
-    return 'Query is required and must be a string';
+  // At least one search criterion is required
+  if (!params.query && !params.vendor && !params.productType && 
+      !params.tags?.length && !params.sku && !params.barcode && 
+      !params.collectionId) {
+    return 'At least one search parameter is required (query, vendor, productType, tags, sku, barcode, or collectionId)';
   }
 
-  if (params.query.trim().length === 0) {
-    return 'Query cannot be empty';
-  }
-
-  if (params.query.length > 100) {
+  if (params.query && params.query.length > 100) {
     return 'Query cannot exceed 100 characters';
   }
 
@@ -138,35 +180,56 @@ function validateSearchParams(params: SearchProductsParams): string | null {
     }
   }
 
+  if (params.priceMin !== undefined && params.priceMin < 0) {
+    return 'Minimum price cannot be negative';
+  }
+
+  if (params.priceMax !== undefined && params.priceMax < 0) {
+    return 'Maximum price cannot be negative';
+  }
+
+  if (params.priceMin !== undefined && params.priceMax !== undefined && params.priceMin > params.priceMax) {
+    return 'Minimum price cannot be greater than maximum price';
+  }
+
   return null;
 }
 
 /**
- * Format product for search results
+ * Format product for customer-facing display (hide internal status/admin data)
  */
-function formatProductSummary(product: Record<string, unknown>) {
-  const tags = product.tags as string;
-  const variants = product.variants as Array<Record<string, unknown>>;
-  const images = product.images as Array<Record<string, unknown>>;
-  
+function formatCustomerProductSummary(product: ShopifyProduct) {
   return {
     id: String(product.id || ''),
     title: String(product.title || ''),
     handle: String(product.handle || ''),
     vendor: String(product.vendor || ''),
     productType: String(product.product_type || ''),
-    tags: tags ? tags.split(',').map((tag: string) => tag.trim()) : [],
-    status: String(product.status || ''),
-    variants: variants?.map((variant: Record<string, unknown>) => ({
+    description: String(product.body_html || '').replace(/<[^>]*>/g, ''), // Strip HTML tags
+    tags: product.tags ? (typeof product.tags === 'string' ? product.tags.split(',').map((tag: string) => tag.trim()) : product.tags) : [],
+    collections: product.collections || [],
+    variants: product.variants?.map((variant) => ({
       id: String(variant.id || ''),
+      title: String(variant.title || ''),
       price: String(variant.price || ''),
-      availableForSale: (variant.inventory_quantity as number) > 0,
-      inventoryQuantity: Number(variant.inventory_quantity || 0)
+      compareAtPrice: variant.compareAtPrice ? String(variant.compareAtPrice) : undefined,
+      sku: String(variant.sku || ''),
+      barcode: variant.barcode ? String(variant.barcode) : undefined,
+      availableForSale: Boolean(variant.availableForSale),
+      inventoryQuantity: Number(variant.inventoryQuantity || 0),
+      weight: Number(variant.weight || 0),
+      weightUnit: String(variant.weightUnit || variant.weight_unit || 'kg'),
+      onSale: Boolean(variant.onSale),
+      salePercentage: variant.salePercentage ? Number(variant.salePercentage) : undefined
     })) || [],
-    images: images?.map((image: Record<string, unknown>) => ({
+    images: product.images?.map((image) => ({
       id: String(image.id || ''),
-      src: String(image.src || ''),
-      altText: String(image.alt || '')
-    })) || []
+      src: String(image.src || image.url || ''),
+      altText: image.altText ? String(image.altText) : undefined
+    })) || [],
+    priceRange: product.priceRange || { min: '0', max: '0' },
+    onSale: Boolean(product.onSale),
+    totalInventory: Number(product.totalInventory || 0),
+    onlineStoreUrl: product.onlineStoreUrl ? String(product.onlineStoreUrl) : undefined
   };
 }

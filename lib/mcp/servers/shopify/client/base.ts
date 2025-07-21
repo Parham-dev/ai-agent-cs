@@ -16,7 +16,7 @@ export abstract class BaseShopifyClient {
   constructor(credentials: MCPServerCredentials['credentials'], settings?: MCPServerCredentials['settings']) {
     this.credentials = credentials;
     this.settings = settings || {};
-    this.baseUrl = `https://${cleanStoreName(credentials.shopUrl as string)}.myshopify.com/admin/api/2024-01`;
+    this.baseUrl = `https://${cleanStoreName(credentials.shopUrl as string)}.myshopify.com/admin/api/2024-10`;
   }
 
   /**
@@ -32,6 +32,36 @@ export abstract class BaseShopifyClient {
     });
 
     return response;
+  }
+
+  /**
+   * Make GraphQL request to Shopify API
+   */
+  protected async makeGraphQLRequest(query: string, variables?: Record<string, unknown>): Promise<{ data: Record<string, unknown>; errors?: Array<Record<string, unknown>> }> {
+    const response = await fetch(`${this.baseUrl}/graphql.json`, {
+      method: 'POST',
+      headers: {
+        'X-Shopify-Access-Token': this.credentials.accessToken as string,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query,
+        variables
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`GraphQL request failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (result.errors) {
+      logger.error('GraphQL errors', { errors: result.errors });
+      throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
+    }
+    
+    return result;
   }
 
   /**
@@ -170,7 +200,7 @@ export abstract class BaseShopifyClient {
   } {
     return {
       shopUrl: this.credentials.shopUrl as string,
-      apiVersion: '2024-01',
+      apiVersion: '2024-10',
       connected: true, // Simplified for now
       lastActivity: new Date()
     };

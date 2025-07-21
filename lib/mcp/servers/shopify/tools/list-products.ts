@@ -29,7 +29,7 @@ export const listProductsTool = createShopifyTool<ListProductsParams, ListProduc
     return validators.limit(params.limit) || validators.status(params.status);
   },
   handler: async (client, params) => {
-    const response = await client.listProducts(params.limit || 50, params.status);
+    const response = await client.listProducts({ limit: params.limit || 50, status: params.status });
     return {
       products: response.map((product: unknown) => formatProductListing(product as Record<string, unknown>)),
       totalCount: response.length,

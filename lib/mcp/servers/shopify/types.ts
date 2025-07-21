@@ -23,6 +23,17 @@ export interface ShopifyProduct {
   variants: ShopifyVariant[];
   images: ShopifyImage[];
   options: ShopifyOption[];
+  collections?: Array<{
+    id: string;
+    title: string;
+  }>;
+  priceRange?: {
+    min: string;
+    max: string;
+  };
+  onSale?: boolean;
+  totalInventory?: number;
+  onlineStoreUrl?: string;
 }
 
 export interface ShopifyVariant {
@@ -30,17 +41,26 @@ export interface ShopifyVariant {
   title: string;
   price: string;
   compare_at_price: string | null;
+  compareAtPrice?: string;
   sku: string;
+  barcode?: string;
   inventory_quantity: number;
+  inventoryQuantity?: number;
   available: boolean;
+  availableForSale?: boolean;
   weight: number;
   weight_unit: string;
+  weightUnit?: string;
+  onSale?: boolean;
+  salePercentage?: number;
 }
 
 export interface ShopifyImage {
   id: number;
   src: string;
+  url?: string;
   alt: string | null;
+  altText?: string;
 }
 
 export interface ShopifyOption {
@@ -327,7 +347,17 @@ export interface MCPToolResponse<T = unknown> {
 
 // Tool parameter types
 export interface SearchProductsParams {
-  query: string;
+  query?: string;
+  vendor?: string;
+  productType?: string;
+  tags?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  inStockOnly?: boolean;
+  onSaleOnly?: boolean;
+  sku?: string;
+  barcode?: string;
+  collectionId?: string;
   limit?: number;
 }
 
@@ -337,7 +367,7 @@ export interface GetProductDetailsParams {
 
 export interface ListProductsParams {
   limit?: number;
-  status?: 'active' | 'archived' | 'draft';
+  status?: 'active' | 'archived' | 'draft' | 'all';
 }
 
 // Tool response types
@@ -348,19 +378,38 @@ export interface SearchProductsResponse {
     handle: string;
     vendor: string;
     productType: string;
+    description: string;
     tags: string[];
-    status: string;
+    collections: Array<{
+      id: string;
+      title: string;
+    }>;
     variants: Array<{
       id: string;
+      title: string;
       price: string;
+      compareAtPrice?: string;
+      sku: string;
+      barcode?: string;
       availableForSale: boolean;
       inventoryQuantity: number;
+      weight: number;
+      weightUnit: string;
+      onSale: boolean;
+      salePercentage?: number;
     }>;
     images: Array<{
       id: string;
       src: string;
       altText?: string;
     }>;
+    priceRange: {
+      min: string;
+      max: string;
+    };
+    onSale: boolean;
+    totalInventory: number;
+    onlineStoreUrl?: string;
   }>;
   totalCount: number;
 }
