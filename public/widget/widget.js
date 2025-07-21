@@ -153,6 +153,9 @@
           // Load modules in dependency order (defaults first!)
           const modulesToLoad = [
             `${config.apiUrl}/widget/config/defaults.js`,
+            `${config.apiUrl}/widget/security/xss-protection.js`,
+            `${config.apiUrl}/widget/parsers/markdown.js`,
+            `${config.apiUrl}/widget/parsers/rich-content.js`,
             `${config.apiUrl}/widget/widget-config.js`,
             `${config.apiUrl}/widget/widget-api.js`,
             `${config.apiUrl}/widget/widget-messages.js`,
@@ -185,8 +188,14 @@
             });
           };
 
-          // Load all modules sequentially
-          Promise.all(modulesToLoad.map(src => loadScript(src)))
+          // Load all modules sequentially (not concurrently)
+          const loadModulesSequentially = async () => {
+            for (const src of modulesToLoad) {
+              await loadScript(src);
+            }
+          };
+          
+          loadModulesSequentially()
             .then(() => {
               utils.log('All modules loaded successfully');
               

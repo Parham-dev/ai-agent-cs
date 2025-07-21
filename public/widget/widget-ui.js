@@ -15,6 +15,9 @@
       this.utils = utils;
       this.chatContainer = null;
       this.isTyping = false;
+      
+      // Initialize rich content parser
+      this.richContentParser = new window.CustomerAgentRichContentParser(utils);
     }
 
     /**
@@ -50,6 +53,15 @@
 
       container.innerHTML = this.getChatHTML();
       this.chatContainer = container;
+      
+      // Set greeting content safely using innerHTML after structure is created
+      const greetingEl = container.querySelector('.greeting-content');
+      if (greetingEl) {
+        const greeting = this.config.greeting || `Hello! How can I help you today?`;
+        const processedGreeting = this.renderMessageContent(greeting, 'assistant');
+        greetingEl.innerHTML = processedGreeting;
+      }
+      
       return container;
     }
 
@@ -146,7 +158,7 @@
                 <path d="M6 20h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
               </svg>
             </div>
-            <div style="
+            <div class="greeting-content" style="
               background: white;
               color: #333333;
               padding: 12px 16px;
@@ -155,7 +167,7 @@
               box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
               line-height: 1.4;
             ">
-              ${greeting}
+              <!-- Greeting content will be set via innerHTML after creation -->
             </div>
           </div>
         </div>
@@ -236,6 +248,7 @@
         ${isUser ? 'flex-direction: row-reverse;' : ''}
       `;
 
+      // Create the static HTML structure first (without dynamic content)
       messageEl.innerHTML = `
         ${!isUser ? `
           <div style="
@@ -272,7 +285,7 @@
           line-height: 1.4;
           word-wrap: break-word;
         ">
-          <div>${this.escapeHtml(message.content)}</div>
+          <div class="message-text"></div>
           <div style="
             font-size: 11px;
             opacity: 0.7;
@@ -283,6 +296,13 @@
           </div>
         </div>
       `;
+
+      // Now safely set the processed HTML content using innerHTML
+      const messageTextEl = messageEl.querySelector('.message-text');
+      if (messageTextEl) {
+        const processedContent = this.renderMessageContent(message.content, message.role);
+        messageTextEl.innerHTML = processedContent; // Safe because content is already sanitized
+      }
 
       messagesContainer.appendChild(messageEl);
     }
@@ -403,7 +423,40 @@
     }
 
     /**
-     * Escape HTML to prevent XSS
+     * Render message content with rich formatting
+     * @param {string} content - Message content
+     * @param {string} role - Message role ('user' or 'assistant')
+     * @returns {string} - Rendered HTML content
+     */
+    renderMessageContent(content, role) {
+      if (!content || typeof content !== 'string') {
+        return '';
+      }
+
+      try {
+        // Use rich content parser if available
+        if (this.richContentParser) {
+          const options = {
+            enableMarkdown: true,
+            enableAutoLinking: true,
+            allowImages: false, // Disabled for security in chat
+            allowLinks: true,
+            maxLength: 10000
+          };
+          
+          const processed = this.richContentParser.processContent(content, options);
+          return processed.html;
+        }
+      } catch (error) {
+        console.error('[CustomerAgent] Rich content parsing failed:', error);
+      }
+
+      // Fallback to basic HTML escaping
+      return this.escapeHtml(content);
+    }
+
+    /**
+     * Escape HTML to prevent XSS (fallback method)
      * @param {string} text - Text to escape
      * @returns {string} - Escaped text
      */

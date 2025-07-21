@@ -626,3 +626,138 @@
   width: 400px;
   height: 600px;
 }
+
+/* Rich content formatting styles */
+#customer-agent-chat .message-text h1,
+#customer-agent-chat .message-text h2,
+#customer-agent-chat .message-text h3,
+#customer-agent-chat .message-text h4,
+#customer-agent-chat .message-text h5,
+#customer-agent-chat .message-text h6 {
+  margin: 8px 0 4px 0;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+#customer-agent-chat .message-text h1 { font-size: 16px; }
+#customer-agent-chat .message-text h2 { font-size: 15px; }
+#customer-agent-chat .message-text h3 { font-size: 14px; }
+#customer-agent-chat .message-text h4 { font-size: 13px; }
+#customer-agent-chat .message-text h5 { font-size: 12px; }
+#customer-agent-chat .message-text h6 { font-size: 11px; }
+
+#customer-agent-chat .message-text p {
+  margin: 4px 0;
+  line-height: 1.4;
+}
+
+#customer-agent-chat .message-text strong {
+  font-weight: 600;
+}
+
+#customer-agent-chat .message-text em {
+  font-style: italic;
+}
+
+#customer-agent-chat .message-text u {
+  text-decoration: underline;
+}
+
+#customer-agent-chat .message-text del {
+  text-decoration: line-through;
+}
+
+#customer-agent-chat .message-text code {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+}
+
+#customer-agent-chat .message-text pre {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 8px;
+  margin: 4px 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+#customer-agent-chat .message-text pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 11px;
+}
+
+#customer-agent-chat .message-text blockquote {
+  border-left: 3px solid #007bff;
+  padding-left: 8px;
+  margin: 4px 0;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+#customer-agent-chat .message-text ul,
+#customer-agent-chat .message-text ol {
+  margin: 4px 0;
+  padding-left: 16px;
+}
+
+#customer-agent-chat .message-text li {
+  margin: 2px 0;
+}
+
+#customer-agent-chat .message-text a {
+  color: #007bff;
+  text-decoration: underline;
+}
+
+#customer-agent-chat .message-text a:hover {
+  color: #0056b3;
+}
+
+#customer-agent-chat .message-text hr {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 8px 0;
+}
+
+/* Dark theme adjustments for rich content */
+@media (prefers-color-scheme: dark) {
+  #customer-agent-chat .message.assistant .message-text code {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  #customer-agent-chat .message.assistant .message-text pre {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  #customer-agent-chat .message.assistant .message-text blockquote {
+    border-left-color: #4a9eff;
+  }
+  
+  #customer-agent-chat .message.assistant .message-text hr {
+    border-top-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.customer-agent-theme-dark #customer-agent-chat .message.assistant .message-text code {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.customer-agent-theme-dark #customer-agent-chat .message.assistant .message-text pre {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.customer-agent-theme-dark #customer-agent-chat .message.assistant .message-text blockquote {
+  border-left-color: #4a9eff;
+}
+
+.customer-agent-theme-dark #customer-agent-chat .message.assistant .message-text hr {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
