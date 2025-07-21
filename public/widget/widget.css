@@ -231,9 +231,17 @@
 }
 
 #customer-agent-chat .message.assistant .message-content {
-  background: white;
-  color: #333;
+  background: white !important;
+  color: #333333 !important;
   border-radius: 18px 18px 18px 4px;
+}
+
+/* Ensure all text elements in AI messages are dark */
+#customer-agent-chat .message.assistant .message-content,
+#customer-agent-chat .message.assistant .message-content *,
+#customer-agent-chat .message.assistant .message-content p,
+#customer-agent-chat .message.assistant .message-content span {
+  color: #333333 !important;
 }
 
 #customer-agent-chat .message.user .message-content {
@@ -487,8 +495,16 @@
   }
   
   #customer-agent-chat .message.assistant .message-content {
-    background: #21262d;
-    color: #e6edf3;
+    background: #21262d !important;
+    color: #e6edf3 !important;
+  }
+  
+  /* Ensure all text elements in AI messages are light in dark mode */
+  #customer-agent-chat .message.assistant .message-content,
+  #customer-agent-chat .message.assistant .message-content *,
+  #customer-agent-chat .message.assistant .message-content p,
+  #customer-agent-chat .message.assistant .message-content span {
+    color: #e6edf3 !important;
   }
   
   #customer-agent-chat .chat-input-container {
@@ -577,8 +593,16 @@
 }
 
 .customer-agent-theme-dark #customer-agent-chat .message.assistant .message-content {
-  background: #21262d;
-  color: #e6edf3;
+  background: #21262d !important;
+  color: #e6edf3 !important;
+}
+
+/* Ensure all text elements in AI messages are light in dark theme */
+.customer-agent-theme-dark #customer-agent-chat .message.assistant .message-content,
+.customer-agent-theme-dark #customer-agent-chat .message.assistant .message-content *,
+.customer-agent-theme-dark #customer-agent-chat .message.assistant .message-content p,
+.customer-agent-theme-dark #customer-agent-chat .message.assistant .message-content span {
+  color: #e6edf3 !important;
 }
 
 .customer-agent-theme-dark #customer-agent-chat .chat-input-container {

@@ -140,6 +140,7 @@
             </div>
             <div style="
               background: white;
+              color: #333333;
               padding: 12px 16px;
               border-radius: 18px 18px 18px 4px;
               max-width: 80%;
@@ -247,7 +248,7 @@
         
         <div style="
           background: ${isUser ? this.config.primaryColor : 'white'};
-          color: ${isUser ? 'white' : 'inherit'};
+          color: ${isUser ? 'white' : '#333333'};
           padding: 12px 16px;
           border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
           max-width: 80%;

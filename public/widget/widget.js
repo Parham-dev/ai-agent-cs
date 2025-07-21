@@ -145,9 +145,11 @@
       widgetConfig = utils.merge(widgetConfig, globalConfig);
       widgetConfig = utils.merge(widgetConfig, dataConfig);
       
-      // Set API URL if not provided
+      // Set API URL if not provided - derive from script source, not page location
       if (!widgetConfig.apiUrl) {
-        widgetConfig.apiUrl = window.location.origin;
+        const script = utils.getCurrentScript();
+        const scriptUrl = new URL(script.src);
+        widgetConfig.apiUrl = scriptUrl.origin;
       }
       
       utils.log('Configuration initialized:', widgetConfig);
@@ -433,20 +435,20 @@
       
       return new Promise((resolve, reject) => {
         try {
-          // Load CSS first
+          // Load CSS first using absolute URL
           const cssLink = document.createElement('link');
           cssLink.rel = 'stylesheet';
-          cssLink.href = '/widget/widget.css';
+          cssLink.href = `${widgetConfig.apiUrl}/widget/widget.css`;
           document.head.appendChild(cssLink);
 
-          // Load modules in order
+          // Load modules in order using absolute URLs
           const modulesToLoad = [
-            '/widget/widget-api.js',
-            '/widget/widget-messages.js',
-            '/widget/widget-ui.js',
-            '/widget/widget-events.js',
-            '/widget/widget-styles.js',
-            '/widget/widget-core.js'
+            `${widgetConfig.apiUrl}/widget/widget-api.js`,
+            `${widgetConfig.apiUrl}/widget/widget-messages.js`,
+            `${widgetConfig.apiUrl}/widget/widget-ui.js`,
+            `${widgetConfig.apiUrl}/widget/widget-events.js`,
+            `${widgetConfig.apiUrl}/widget/widget-styles.js`,
+            `${widgetConfig.apiUrl}/widget/widget-core.js`
           ];
 
           let loadedCount = 0;
@@ -550,30 +552,30 @@
     }
   };
 
-  // Auto-initialize when DOM is ready, but only if config is available
-  let initAttempts = 0;
-  const maxInitAttempts = 50; // 5 seconds max wait
-  
+  // Auto-initialize when DOM is ready
   function autoInit() {
-    initAttempts++;
-    
-    // Check if we have a valid configuration
+    // Parse configuration from script tag and global object
+    const script = utils.getCurrentScript();
+    const dataConfig = utils.parseDataAttributes(script);
     const globalConfig = window.CustomerAgent || {};
-    console.log(`[CustomerAgent] Init attempt ${initAttempts}:`, {
-      hasGlobalConfig: !!globalConfig,
-      agentId: globalConfig.agentId,
-      configKeys: Object.keys(globalConfig)
+    
+    // Merge configurations to get agentId
+    const mergedConfig = utils.merge(globalConfig, dataConfig);
+    
+    console.log('[CustomerAgent] Auto-initialization:', {
+      hasDataConfig: Object.keys(dataConfig).length > 0,
+      hasGlobalConfig: Object.keys(globalConfig).length > 0,
+      agentId: mergedConfig.agentId,
+      allConfigKeys: Object.keys(mergedConfig)
     });
     
-    if (globalConfig.agentId) {
-      console.log('[CustomerAgent] Configuration found, initializing...');
+    if (mergedConfig.agentId) {
+      console.log('[CustomerAgent] agentId found, initializing widget...');
       widget.init();
-    } else if (initAttempts < maxInitAttempts) {
-      // No config yet, wait a bit and try again
-      setTimeout(autoInit, 100);
     } else {
       console.error('[CustomerAgent] Error: agentId is required');
-      console.error('[CustomerAgent] Final config state:', globalConfig);
+      console.error('[CustomerAgent] Please ensure the script tag includes data-agent-id attribute');
+      console.error('[CustomerAgent] Example: <script src="..." data-agent-id="your-agent-id"></script>');
     }
   }
 
