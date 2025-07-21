@@ -2,9 +2,9 @@ import { logger } from '@/lib/utils/logger';
 import { ShopifyMCPClient } from '../client';
 import { 
   MCPToolContext, 
-  MCPToolResponse,
-  ShopifyShippingZone
+  MCPToolResponse
 } from '../types';
+import { DeliveryProfile } from '../client/commerce/get-shipping-zones';
 
 export const getShippingZonesTool = {
   name: 'getShippingZones',
@@ -18,16 +18,16 @@ export const getShippingZonesTool = {
   async handler(
     params: Record<string, unknown>,
     context: MCPToolContext
-  ): Promise<MCPToolResponse<{ shippingZones: ShopifyShippingZone[] }>> {
+  ): Promise<MCPToolResponse<{ deliveryProfiles: DeliveryProfile[] }>> {
     const startTime = Date.now();
     
     try {
       const client = new ShopifyMCPClient(context.credentials, context.settings);
-      const shippingZones = await client.getShippingZones();
+      const deliveryProfiles = await client.getShippingZones();
 
       return {
         success: true,
-        data: { shippingZones },
+        data: { deliveryProfiles },
         metadata: {
           requestId: context.requestId,
           timestamp: context.timestamp,

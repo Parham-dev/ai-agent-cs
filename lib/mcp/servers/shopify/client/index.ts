@@ -3,7 +3,7 @@ import { ProductsService } from './products/index';
 import { InventoryService } from './inventory';
 import { StoreService } from './store';
 import { MarketingService } from './marketing';
-import { CommerceService } from './commerce';
+import { CommerceService } from './commerce/index';
 
 /**
  * Main Shopify MCP client that composes all service domains

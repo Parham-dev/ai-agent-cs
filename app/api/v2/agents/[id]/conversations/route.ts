@@ -39,8 +39,9 @@ export const GET = withErrorHandling(async (request: NextRequest, context: { par
     // Transform conversations to thread list format
     const threads = conversations.map(conversation => ({
       status: conversation.isArchived ? 'archived' : 'regular',
-      remoteId: conversation.sessionId || conversation.id,
+      remoteId: conversation.id, // Use unique conversation ID instead of potentially duplicate sessionId
       externalId: conversation.id,
+      sessionId: conversation.sessionId, // Keep sessionId as separate field if needed
       title: conversation.title || 'Untitled Chat',
       createdAt: conversation.createdAt,
       lastMessageAt: conversation.lastMessageAt

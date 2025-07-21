@@ -14,6 +14,7 @@ import { DashboardLayout } from '@/components/dashboard/layout'
 import { useAgent } from '@/components/shared/hooks'
 import { renderError } from '@/lib/utils/error'
 import { useAuthContext } from '@/components/providers/auth-provider'
+import { generateMessageId } from '@/lib/assistant-ui/message-converter'
 
 
 export default function AgentChatPage() {
@@ -67,7 +68,7 @@ export default function AgentChatPage() {
       } else {
         // If no messages, start with welcome message
         const welcomeMessage = {
-          id: 'welcome',
+          id: generateMessageId('welcome'),
           role: 'assistant' as const,
           content: [
             {
@@ -92,7 +93,7 @@ How can I help you today?`,
       console.error('Failed to load conversation:', error)
       // Show error message to user
       const errorMessage = {
-        id: 'error',
+        id: generateMessageId('error'),
         role: 'assistant' as const,
         content: [
           {

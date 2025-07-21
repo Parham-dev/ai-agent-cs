@@ -148,11 +148,11 @@ const ThreadListItems: FC<ThreadListItemsProps> = ({ onThreadSelect }) => {
   return (
     <div className="p-2 space-y-1">
       {/* Show our custom conversation list */}
-      {conversations.map((conversation) => {
+      {conversations.map((conversation, index) => {
         const isActive = activeSessionId === conversation.remoteId
         return (
           <div 
-            key={conversation.remoteId} 
+            key={`${conversation.remoteId}-${index}`} 
             onClick={() => handleThreadClick(conversation)}
             className={`w-full p-3 rounded-lg cursor-pointer transition-colors border ${
               isActive 
