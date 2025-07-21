@@ -1,63 +1,101 @@
 /**
- * Token Provider - manages auth token retrieval for API clients
+ * Token Provider - manages auth token retrieval with cross-tab synchronization
  */
 
 import { createClientSupabaseClient } from '@/lib/database/clients';
 
 /**
- * Global token provider instance
+ * Cross-tab synchronized token provider
  */
 class TokenProvider {
   private supabase = createClientSupabaseClient();
-  private cachedToken: string | null = null;
-  private tokenExpiry: number = 0;
+  private authChangeListeners: Set<() => void> = new Set();
+
+  constructor() {
+    // Listen for storage changes from other tabs
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', this.handleStorageChange.bind(this));
+      
+      // Listen for Supabase auth state changes in this tab
+      this.supabase.auth.onAuthStateChange((event) => {
+        if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          this.notifyAuthChange();
+        }
+      });
+    }
+  }
 
   /**
-   * Get current auth token with caching
+   * Get current auth token directly from Supabase (no caching)
    */
   async getToken(): Promise<string | null> {
     try {
-      // Check if we have a cached token that's still valid
-      if (this.cachedToken && Date.now() < this.tokenExpiry) {
-        return this.cachedToken;
-      }
-
-      // Get fresh token from Supabase
       const { data: { session }, error } = await this.supabase.auth.getSession();
       
       if (error || !session?.access_token) {
-        this.cachedToken = null;
-        this.tokenExpiry = 0;
         return null;
       }
 
-      // Cache the token with 5 minute buffer before expiry
-      this.cachedToken = session.access_token;
-      this.tokenExpiry = (session.expires_at || 0) * 1000 - 5 * 60 * 1000; // 5 min buffer
+      // Validate token isn't expired (with 1 minute buffer)
+      const expiresAt = (session.expires_at || 0) * 1000;
+      if (expiresAt <= Date.now() + 60 * 1000) {
+        return null;
+      }
 
-      return this.cachedToken;
+      return session.access_token;
     } catch (error) {
       console.error('TokenProvider: Failed to get auth token:', error);
-      this.cachedToken = null;
-      this.tokenExpiry = 0;
       return null;
     }
   }
 
   /**
-   * Clear cached token (call on logout)
+   * Clear token (triggers logout)
    */
   clearToken(): void {
-    this.cachedToken = null;
-    this.tokenExpiry = 0;
+    // Supabase handles localStorage clearing
+    this.supabase.auth.signOut();
   }
 
   /**
-   * Set token manually (useful for testing or SSR)
+   * Handle storage changes from other tabs
    */
-  setToken(token: string, expiresAt?: number): void {
-    this.cachedToken = token;
-    this.tokenExpiry = expiresAt || Date.now() + 60 * 60 * 1000; // 1 hour default
+  private handleStorageChange(event: StorageEvent): void {
+    // Check if Supabase session storage was modified
+    if (event.key?.startsWith('sb-') && event.key.includes('-auth-token')) {
+      this.notifyAuthChange();
+    }
+  }
+
+  /**
+   * Notify listeners of auth changes
+   */
+  private notifyAuthChange(): void {
+    this.authChangeListeners.forEach(listener => {
+      try {
+        listener();
+      } catch (error) {
+        console.error('TokenProvider: Error in auth change listener:', error);
+      }
+    });
+  }
+
+  /**
+   * Subscribe to auth changes across tabs
+   */
+  onAuthChange(callback: () => void): () => void {
+    this.authChangeListeners.add(callback);
+    
+    return () => {
+      this.authChangeListeners.delete(callback);
+    };
+  }
+
+  /**
+   * Set token manually (for testing - not recommended)
+   */
+  setToken(token: string): void {
+    console.warn('TokenProvider.setToken() is deprecated. Use Supabase auth methods instead.');
   }
 }
 

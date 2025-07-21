@@ -20,19 +20,24 @@ export class AuthService {
     error?: string;
   }> {
     try {
-      const { data: { session }, error } = await this.supabase.auth.getSession();
+      // Use TokenProvider as single source of truth
+      const accessToken = await tokenProvider.getToken();
       
-      if (error) {
-        return { user: null, session: null, error: error.message };
-      }
-
-      if (!session) {
+      if (!accessToken) {
         return { user: null, session: null };
       }
 
-      const userData = await this.fetchUserData(session.access_token);
+      // Get session info from Supabase
+      const { data: { session }, error } = await this.supabase.auth.getSession();
+      if (error || !session) {
+        tokenProvider.clearToken();
+        return { user: null, session: null };
+      }
+
+      const userData = await this.fetchUserData(accessToken);
       if (!userData) {
-        // Invalid session, sign out
+        // Invalid token/session, clear everything
+        tokenProvider.clearToken();
         await this.supabase.auth.signOut();
         return { user: null, session: null };
       }
@@ -42,6 +47,7 @@ export class AuthService {
         session: this.convertSupabaseSession(session)
       };
     } catch {
+      tokenProvider.clearToken();
       return {
         user: null,
         session: null,

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { authService } from '@/lib/services/auth.service';
+import { tokenProvider } from '@/lib/api/base/token-provider';
 import type { User, LoginRequest, SignupRequest, AuthSession } from '@/lib/types/auth';
 
 interface AuthState {
@@ -20,30 +21,39 @@ export function useAuth() {
   });
 
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const initializingRef = useRef(false);
 
   // Initialize auth state
   useEffect(() => {
     let mounted = true;
 
     const initializeAuth = async () => {
-      const result = await authService.initializeAuth();
-      
-      if (mounted) {
-        setState({
-          user: result.user,
-          session: result.session,
-          loading: false,
-          error: result.error || null
-        });
+      if (initializingRef.current) return;
+      initializingRef.current = true;
+
+      try {
+        const result = await authService.initializeAuth();
+        
+        if (mounted) {
+          setState({
+            user: result.user,
+            session: result.session,
+            loading: false,
+            error: result.error || null
+          });
+        }
+      } finally {
+        initializingRef.current = false;
       }
     };
 
+    // Initial auth check
     initializeAuth();
 
-    // Listen for auth changes
+    // Listen for auth changes from Supabase
     const { data: { subscription } } = authService.onAuthStateChange(
       async (event, session) => {
-        if (!mounted || isSigningUp) return;
+        if (!mounted || isSigningUp || initializingRef.current) return;
 
         if (event === 'SIGNED_OUT' || !session) {
           setState({
@@ -52,26 +62,39 @@ export function useAuth() {
             loading: false,
             error: null
           });
-        } else if (event === 'SIGNED_IN' && session) {
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           setState(prev => ({ ...prev, loading: true }));
           
-          // Small delay to ensure database sync completes
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          const result = await authService.initializeAuth();
-          setState({
-            user: result.user,
-            session: result.session,
-            loading: false,
-            error: result.error || null
-          });
+          initializingRef.current = true;
+          try {
+            const result = await authService.initializeAuth();
+            if (mounted) {
+              setState({
+                user: result.user,
+                session: result.session,
+                loading: false,
+                error: result.error || null
+              });
+            }
+          } finally {
+            initializingRef.current = false;
+          }
         }
       }
     );
 
+    // Listen for cross-tab auth changes
+    const unsubscribeTokenProvider = tokenProvider.onAuthChange(() => {
+      if (!mounted || isSigningUp || initializingRef.current) return;
+      
+      // Re-initialize auth when other tabs trigger changes
+      initializeAuth();
+    });
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      unsubscribeTokenProvider();
     };
   }, [isSigningUp]);
 
