@@ -102,7 +102,7 @@ export function ToolsStep({ form }: StepProps) {
           <Stack gap="sm" align="center">
             <Text c="dimmed">No tools configured yet</Text>
             <Text size="sm" c="dimmed">
-              Available tools: Web Search, Add Numbers, and more
+              Available tools: Web Search, Customer Memory, and more
             </Text>
             <Button
               leftSection={<Plus size={16} />}

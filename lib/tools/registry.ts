@@ -1,4 +1,4 @@
-import { addNumbers, customerMemory } from './custom';
+import { customerMemory } from './custom';
 import { webSearchTool } from './openai';
 
 export interface ToolConfig {
@@ -11,14 +11,6 @@ export interface ToolConfig {
 }
 
 export const AVAILABLE_TOOLS: ToolConfig[] = [
-  {
-    id: 'add_numbers',
-    name: 'Add Numbers',
-    description: 'Perform basic arithmetic operations like addition',
-    type: 'custom',
-    category: 'calculation',
-    enabled: true,
-  },
   {
     id: 'customer_memory',
     name: 'Customer Memory',
@@ -39,10 +31,6 @@ export const AVAILABLE_TOOLS: ToolConfig[] = [
 
 export function getCustomTools(enabledToolIds?: string[]) {
   const tools = [];
-  
-  if (!enabledToolIds || enabledToolIds.includes('add_numbers')) {
-    tools.push(addNumbers);
-  }
   
   if (!enabledToolIds || enabledToolIds.includes('customer_memory')) {
     tools.push(customerMemory);

@@ -160,8 +160,8 @@ Direct integration with OpenAI's hosted capabilities:
 - **File Search** - Knowledge base queries and document search
 
 #### **Custom Functions** ✅  
-Mathematical and utility operations:
-- **Add Numbers** - Arithmetic calculations and number processing
+Utility and business logic operations:
+- **Customer Memory** - Save and retrieve customer context and preferences
 - *Easily extensible for additional custom business logic*
 
 ### Guardrails System ✅
@@ -223,7 +223,7 @@ const mcpIntegrations = [
 const toolSelection = [
   "web-search",          // OpenAI hosted web search
   "file-search",         // OpenAI hosted file search  
-  "add-numbers",         // Custom mathematical functions
+  "customer-memory",     // Custom memory functions
   // MCP tools automatically included from integrations
 ];
 ```

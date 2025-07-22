@@ -42,7 +42,31 @@ export function Sidebar() {
       {/* Navigation */}
       <div style={{ flex: 1, padding: '16px', paddingTop: '24px' }}>
         {navigation.map((item) => {
-          const isActive = pathname === item.href
+          // Enhanced active state logic
+          let isActive = pathname === item.href
+          
+          // Handle null pathname
+          if (!pathname) {
+            isActive = false
+          } else {
+            // Special cases for nested routes
+            if (item.href === '/agents') {
+              // Highlight Agents for:
+              // - /agents (exact match)
+              // - /agents/* (any agents sub-page)
+              // - /chat/* (chat is agent-related)
+              isActive = pathname === '/agents' || 
+                        pathname.startsWith('/agents/') || 
+                        pathname.startsWith('/chat/')
+            } else if (item.href === '/') {
+              // Only highlight Overview for exact match to avoid conflicts
+              isActive = pathname === '/'
+            } else {
+              // For other items, check if pathname starts with the href
+              isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+            }
+          }
+          
           return (
             <NavLink
               key={item.name}
@@ -134,7 +158,31 @@ export function Sidebar() {
             <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ flex: 1 }}>
                 {navigation.map((item) => {
-                  const isActive = pathname === item.href
+                  // Enhanced active state logic for mobile
+                  let isActive = pathname === item.href
+                  
+                  // Handle null pathname
+                  if (!pathname) {
+                    isActive = false
+                  } else {
+                    // Special cases for nested routes
+                    if (item.href === '/agents') {
+                      // Highlight Agents for:
+                      // - /agents (exact match)
+                      // - /agents/* (any agents sub-page)
+                      // - /chat/* (chat is agent-related)
+                      isActive = pathname === '/agents' || 
+                                pathname.startsWith('/agents/') || 
+                                pathname.startsWith('/chat/')
+                    } else if (item.href === '/') {
+                      // Only highlight Overview for exact match to avoid conflicts
+                      isActive = pathname === '/'
+                    } else {
+                      // For other items, check if pathname starts with the href
+                      isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                    }
+                  }
+                  
                   return (
                     <NavLink
                       key={item.name}

@@ -35,22 +35,26 @@ export function IntegrationCard({
   onConfigureCredentials,
   onConfigureTools,
   showToolsButton = true,
-  showToolsCount = true
+  showToolsCount = true,
+  mode = 'wizard'
 }: IntegrationCardProps) {
   const Icon = getIntegrationIcon(integration.type)
   const colors = getIntegrationColors(integration.type)
   const isTemporary = integration.id.startsWith('temp-')
+  const showSwitch = mode !== 'management' // Hide switch in management mode
 
   return (
     <Grid.Col span={6} key={integration.id}>
       <Card
         withBorder
-        className={`transition-all cursor-pointer ${
+        className={`transition-all ${
+          showSwitch ? 'cursor-pointer' : ''
+        } ${
           isSelected 
             ? colors.light
             : colors.hover
         }`}
-        onClick={() => onToggle(integration)}
+        onClick={showSwitch ? () => onToggle(integration) : undefined}
       >
         <Stack gap="sm">
           <Group justify="space-between">
@@ -62,17 +66,20 @@ export function IntegrationCard({
               </Stack>
             </Group>
             
-            <Switch
-              checked={isSelected}
-              onChange={() => onToggle(integration)}
-              size="sm"
-              color="blue"
-            />
+            {showSwitch && (
+              <Switch
+                checked={isSelected}
+                onChange={() => onToggle(integration)}
+                size="sm"
+                color="blue"
+              />
+            )}
           </Group>
 
-          {isSelected && (
+          {/* In management mode, always show the settings button */}
+          {(isSelected || mode === 'management') && (
             <Group justify="space-between" pt="xs">
-              {showToolsCount && (
+              {showToolsCount && isSelected && (
                 <Group gap="xs">
                   <Text size="xs" c="dimmed">Tools selected:</Text>
                   <Badge size="xs" variant="outline">
@@ -81,7 +88,7 @@ export function IntegrationCard({
                 </Group>
               )}
               
-              <Group gap="xs" style={{ marginLeft: showToolsCount ? 'auto' : 0 }}>
+              <Group gap="xs" style={{ marginLeft: (showToolsCount && isSelected) ? 'auto' : 0 }}>
                 <Button
                   variant="subtle"
                   size="xs"
