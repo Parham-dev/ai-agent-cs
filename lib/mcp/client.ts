@@ -1,4 +1,4 @@
-import { MCPServerStdio } from '@openai/agents';
+import { MCPServerStdio, MCPServerStreamableHttp, hostedMcpTool } from '@openai/agents';
 import { logger } from '@/lib/utils/logger';
 import { 
   MCPServerConfig, 
@@ -11,12 +11,20 @@ import {
   getIntegrationMapping, 
   MCP_CLIENT_DEFAULTS 
 } from './config/servers';
+import { createCustomMcpServer, CustomMcpServerResult } from './servers/custom';
+import { CustomMcpCredentials } from '@/lib/types/integrations';
+
+export interface MCPClientResult {
+  servers: (MCPServerStdio | MCPServerStreamableHttp)[];
+  hostedTools: ReturnType<typeof hostedMcpTool>[];
+}
 
 /**
  * MCP Client for managing server connections and lifecycle
  */
 export class MCPClient {
   private servers: Map<string, MCPServerInstance> = new Map();
+  private customServers: Map<string, CustomMcpServerResult> = new Map();
   private defaults: MCPClientDefaults;
 
   constructor(defaults: MCPClientDefaults = MCP_CLIENT_DEFAULTS) {
@@ -26,34 +34,96 @@ export class MCPClient {
   /**
    * Initialize MCP servers based on agent integrations
    */
-  async initializeServers(integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown>; selectedTools?: string[] }>): Promise<MCPServerStdio[]> {
-    const mcpServers: MCPServerStdio[] = [];
+  async initializeServers(integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown>; selectedTools?: string[] }>): Promise<MCPClientResult> {
+    const mcpServers: (MCPServerStdio | MCPServerStreamableHttp)[] = [];
+    const hostedTools: ReturnType<typeof hostedMcpTool>[] = [];
     
     try {
-      // Get unique integration types
-      const integrationTypes = [...new Set(integrations.map(i => i.type))];
+      // Separate custom-mcp integrations from regular ones
+      const customMcpIntegrations = integrations.filter(i => i.type === 'custom-mcp');
+      const regularIntegrations = integrations.filter(i => i.type !== 'custom-mcp');
       
-      // Get required server configurations
-      const serverConfigs = getServersForIntegrations(integrationTypes);
+      // Handle regular integrations (stdio servers)
+      if (regularIntegrations.length > 0) {
+        const integrationTypes = [...new Set(regularIntegrations.map(i => i.type))];
+        const serverConfigs = getServersForIntegrations(integrationTypes);
+        
+        for (const config of serverConfigs) {
+          const server = await this.initializeServer(config, regularIntegrations);
+          if (server) {
+            mcpServers.push(server);
+          }
+        }
+      }
       
-      // Initialize each server
-      for (const config of serverConfigs) {
-        const server = await this.initializeServer(config, integrations);
-        if (server) {
-          mcpServers.push(server);
+      // Handle custom MCP integrations
+      for (const integration of customMcpIntegrations) {
+        const customServer = await this.initializeCustomServer(integration);
+        if (customServer) {
+          if (customServer.server) {
+            mcpServers.push(customServer.server);
+          }
+          if (customServer.hostedTool) {
+            hostedTools.push(customServer.hostedTool);
+          }
         }
       }
       
       logger.info('MCP servers initialized', { 
-        serverCount: mcpServers.length,
-        integrationTypes 
+        regularServerCount: mcpServers.length,
+        hostedToolCount: hostedTools.length,
+        totalIntegrations: integrations.length
       });
       
-      return mcpServers;
+      return { servers: mcpServers, hostedTools };
       
     } catch (error) {
       logger.error('Failed to initialize MCP servers', {}, error as Error);
       throw error;
+    }
+  }
+
+  /**
+   * Initialize a custom MCP server
+   */
+  private async initializeCustomServer(
+    integration: { type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown>; selectedTools?: string[] }
+  ): Promise<CustomMcpServerResult | null> {
+    try {
+      const credentials = integration.credentials as unknown as CustomMcpCredentials;
+      
+      if (!credentials.serverType || !credentials.name) {
+        logger.error('Invalid custom MCP credentials', { 
+          hasServerType: !!credentials.serverType,
+          hasName: !!credentials.name 
+        });
+        return null;
+      }
+      
+      const customServer = await createCustomMcpServer(credentials);
+      if (!customServer) {
+        logger.error('Failed to create custom MCP server', { name: credentials.name });
+        return null;
+      }
+      
+      // Connect to server if it's not hosted
+      if (customServer.server) {
+        await customServer.server.connect();
+      }
+      
+      // Store custom server instance
+      this.customServers.set(credentials.name, customServer);
+      
+      logger.info('Custom MCP server initialized', { 
+        name: credentials.name,
+        type: credentials.serverType
+      });
+      
+      return customServer;
+      
+    } catch (error) {
+      logger.error('Failed to initialize custom MCP server', {}, error as Error);
+      return null;
     }
   }
 
@@ -213,6 +283,7 @@ export class MCPClient {
   async closeAll(): Promise<void> {
     const closePromises: Promise<void>[] = [];
     
+    // Close regular servers
     for (const [serverName, instance] of this.servers.entries()) {
       if (instance.connected && instance.process) {
         closePromises.push(
@@ -223,8 +294,20 @@ export class MCPClient {
       }
     }
     
+    // Close custom servers
+    for (const [serverName, customInstance] of this.customServers.entries()) {
+      if (customInstance.server) {
+        closePromises.push(
+          customInstance.server.close().catch((error: Error) => {
+            logger.error('Failed to close custom server', { serverName }, error);
+          })
+        );
+      }
+    }
+    
     await Promise.all(closePromises);
     this.servers.clear();
+    this.customServers.clear();
     
     logger.info('All MCP servers closed');
   }
@@ -303,11 +386,11 @@ export class MCPClient {
  */
 export async function createMCPClient(
   integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown>; selectedTools?: string[] }>
-): Promise<{ client: MCPClient; servers: MCPServerStdio[] }> {
+): Promise<{ client: MCPClient; servers: (MCPServerStdio | MCPServerStreamableHttp)[]; hostedTools: ReturnType<typeof hostedMcpTool>[] }> {
   const client = new MCPClient();
-  const servers = await client.initializeServers(integrations);
+  const result = await client.initializeServers(integrations);
   
-  return { client, servers };
+  return { client, servers: result.servers, hostedTools: result.hostedTools };
 }
 
 /**

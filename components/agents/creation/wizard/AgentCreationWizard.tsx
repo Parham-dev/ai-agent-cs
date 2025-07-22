@@ -135,14 +135,9 @@ export function AgentCreationWizard({
 
   // Check if current step is valid and Next button should be enabled
   const isCurrentStepValid = () => {
-    const formValues = form.getValues()
-    
-    if (activeStep === 0) { // Basic Info step
-      return !!(formValues.name?.trim() && formValues.systemPrompt?.trim())
-    }
-    
-    // All other steps (integrations, tools, advanced, review) are always valid
-    return true
+    const currentStepId = WIZARD_STEPS[activeStep].id
+    const validation = validateStep(currentStepId, form.getValues())
+    return validation.isValid
   }
 
   // Handle form submission

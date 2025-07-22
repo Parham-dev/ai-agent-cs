@@ -11,8 +11,7 @@ import {
 } from '@mantine/core'
 import { toast } from 'sonner'
 import { getIntegrationDisplayName, getIntegrationIcon, getIntegrationColors } from './integration-utils'
-
-type AvailableIntegrationType = 'shopify' | 'stripe'
+import { type AvailableIntegrationType } from '@/lib/constants'
 
 interface AddIntegrationModalProps {
   opened: boolean

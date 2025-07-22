@@ -47,6 +47,23 @@ export default function NewAgentPage() {
         isActive: agent.isActive
       })
 
+      // Validate that there are no temp integrations without credentials
+      if (data.selectedIntegrations && data.selectedIntegrations.length > 0) {
+        const tempIntegrations = data.selectedIntegrations.filter(integration => 
+          integration.integrationId.startsWith('temp-')
+        );
+        
+        if (tempIntegrations.length > 0) {
+          logger.error('Cannot create agent with unconfigured integrations', {
+            tempIntegrationsCount: tempIntegrations.length,
+            tempIntegrations: tempIntegrations.map(int => int.integrationId)
+          });
+          
+          toast.error('Please configure credentials for all selected integrations before creating the agent.');
+          return;
+        }
+      }
+
       // Create agent-integration relationships if there are any configured integrations
       if (data.selectedIntegrations && data.selectedIntegrations.length > 0) {
         logger.info('Creating agent-integration relationships', {

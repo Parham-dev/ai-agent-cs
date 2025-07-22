@@ -67,18 +67,34 @@ export function useIntegrations() {
     tempId?: string
   ): Promise<ApiIntegration> => {
     try {
+      console.log('🏪 saveIntegrationCredentials called', {
+        hasId: 'id' in integrationData,
+        integrationId: 'id' in integrationData ? integrationData.id : 'new',
+        tempId,
+        type: integrationData.type,
+        name: integrationData.name
+      })
+
       // Optimistic update for immediate UI feedback
       if (tempId?.startsWith('temp-')) {
+        console.log('🏪 Removing temp integration from UI state', { tempId })
         setTempIntegrations(prev => prev.filter(temp => temp.id !== tempId))
       }
 
       // If integrationData is already a saved integration, just return it
       if ('id' in integrationData && !integrationData.id.startsWith('temp-')) {
+        console.log('🏪 Integration already saved, refreshing cache', { id: integrationData.id })
         await mutate() // Refresh SWR cache
         return integrationData
       }
 
       // Otherwise, create new integration
+      console.log('🏪 Creating new integration via API...', {
+        name: integrationData.name,
+        type: integrationData.type,
+        hasCredentials: !!integrationData.credentials
+      })
+      
       const savedIntegration = await api.integrations.createIntegration({
         name: integrationData.name,
         type: integrationData.type,
@@ -86,13 +102,23 @@ export function useIntegrations() {
         description: integrationData.description || undefined
       })
       
+      console.log('🏪 Integration created successfully, refreshing SWR cache', { 
+        id: savedIntegration.id,
+        name: savedIntegration.name,
+        type: savedIntegration.type
+      })
+      
       // SWR automatically refreshes data, ensuring all components get updated
       await mutate()
+      console.log('🏪 SWR cache refreshed')
       
       return savedIntegration
     } catch (error) {
+      console.error('🏪 Failed to save integration credentials:', error)
+      
       // Rollback optimistic update on error
       if (tempId?.startsWith('temp-')) {
+        console.log('🏪 Rolling back temp integration removal', { tempId })
         const tempIntegration = tempIntegrations.find(t => t.id === tempId)
         if (tempIntegration) {
           setTempIntegrations(prev => [...prev, tempIntegration])

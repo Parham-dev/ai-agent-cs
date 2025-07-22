@@ -86,23 +86,33 @@ export function IntegrationsStep({ form }: StepProps) {
   const handleCredentialsSaved = async (savedIntegration: ApiIntegration) => {
     try {
       const tempId = selectedIntegrationForCredentials?.id
+      console.log('🔄 Handling credentials saved...', {
+        tempId,
+        savedIntegrationId: savedIntegration.id,
+        savedIntegrationType: savedIntegration.type
+      })
       
       // Process the saved integration (will handle temp→real promotion internally)
+      console.log('🔄 Calling saveIntegrationCredentials...')
       await saveIntegrationCredentials(savedIntegration, tempId)
+      console.log('🔄 saveIntegrationCredentials completed')
       
       // Update form to use the new real integration ID if this was a temp integration
       if (tempId?.startsWith('temp-')) {
+        console.log('🔄 Updating form integration ID...', { from: tempId, to: savedIntegration.id })
         updateIntegrationId(tempId, savedIntegration.id)
+        console.log('🔄 Form integration ID updated')
       }
 
       // Clear the selected integration and close modals
       setSelectedIntegrationForCredentials(null)
       setCredentialsFormOpened(false)
 
+      console.log('🔄 Integration configuration completed successfully')
       toast.success('Integration configured successfully!')
       
     } catch (error) {
-      console.error('Failed to save integration:', error)
+      console.error('🔄 Failed to save integration:', error)
       toast.error('Failed to configure integration')
     }
   }

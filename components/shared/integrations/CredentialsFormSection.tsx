@@ -2,6 +2,7 @@
 
 import { Card } from '@mantine/core'
 import { ShopifyCredentialsForm, StripeCredentialsForm } from '@/components/shared/integrations/credentials'
+import { CustomMcpCredentialsForm } from '@/components/shared/integrations/credentials/CustomMcpCredentialsForm'
 import type { ApiIntegration } from '@/lib/types'
 
 interface CredentialsFormSectionProps {
@@ -25,6 +26,13 @@ export function CredentialsFormSection({
       
       {integration.type === 'stripe' && (
         <StripeCredentialsForm
+          integration={integration}
+          onSaved={onSave}
+        />
+      )}
+      
+      {integration.type === 'custom-mcp' && (
+        <CustomMcpCredentialsForm
           integration={integration}
           onSaved={onSave}
         />

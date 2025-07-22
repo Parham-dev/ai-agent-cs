@@ -97,11 +97,35 @@ export const validateStep = (
       }
       break
 
-    // Other steps are optional for now
     case 'integrations':
+      // Validate that there are no temp integrations without credentials
+      if (formData.selectedIntegrations) {
+        const tempIntegrations = formData.selectedIntegrations.filter(integration => 
+          integration.integrationId.startsWith('temp-')
+        );
+        
+        if (tempIntegrations.length > 0) {
+          errors.push('Please configure credentials for all selected integrations.');
+        }
+      }
+      break
+      
+    case 'review':
+      // Final validation - ensure no temp integrations
+      if (formData.selectedIntegrations) {
+        const tempIntegrations = formData.selectedIntegrations.filter(integration => 
+          integration.integrationId.startsWith('temp-')
+        );
+        
+        if (tempIntegrations.length > 0) {
+          errors.push('Cannot create agent with unconfigured integrations. Please go back and configure credentials for all selected integrations.');
+        }
+      }
+      break
+      
+    // Other steps are optional for now
     case 'tools':
     case 'advanced':
-    case 'review':
       break
 
     default:

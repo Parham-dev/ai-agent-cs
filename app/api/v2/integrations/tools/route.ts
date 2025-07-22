@@ -40,9 +40,14 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       tools = [];
       break;
       
-    case 'custom':
-      // TODO: Add custom tools when implemented
-      tools = [];
+    case 'custom-mcp':
+      // Custom MCP servers have dynamic tools that can't be pre-determined
+      // Return empty array as tools are discovered at runtime
+      tools = [{
+        name: 'dynamic-tools',
+        displayName: 'Dynamic MCP Tools',
+        description: 'Tools will be discovered automatically when the MCP server connects'
+      }];
       break;
       
     default:

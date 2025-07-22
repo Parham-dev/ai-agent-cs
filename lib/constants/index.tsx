@@ -33,7 +33,7 @@ export const DEFAULT_AI_MODEL = 'gpt-4o-mini'
  * Available integration types
  * Centralized list of all supported integrations
  */
-export const AVAILABLE_INTEGRATIONS: ('shopify' | 'stripe')[] = ['shopify', 'stripe']
+export const AVAILABLE_INTEGRATIONS: ('shopify' | 'stripe' | 'custom-mcp')[] = ['shopify', 'stripe', 'custom-mcp']
 
 /**
  * Integration display names mapping
@@ -41,6 +41,7 @@ export const AVAILABLE_INTEGRATIONS: ('shopify' | 'stripe')[] = ['shopify', 'str
 export const INTEGRATION_DISPLAY_NAMES: Record<string, string> = {
   shopify: 'Shopify',
   stripe: 'Stripe',
+  'custom-mcp': 'Custom MCP Server',
 }
 
 /**
@@ -49,6 +50,7 @@ export const INTEGRATION_DISPLAY_NAMES: Record<string, string> = {
 export const INTEGRATION_DESCRIPTIONS: Record<string, string> = {
   shopify: 'E-commerce platform integration for product and order management',
   stripe: 'Payment processing integration for transactions and billing',
+  'custom-mcp': 'Connect to any Model Context Protocol (MCP) server for custom tools and capabilities',
 }
 
 // =============================================================================

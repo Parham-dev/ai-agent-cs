@@ -3,7 +3,7 @@
  * Extracted from chat API to be reusable by database session store
  */
 
-import { Agent, type MCPServerStdio } from '@openai/agents'
+import { Agent, type MCPServerStdio, type MCPServerStreamableHttp, hostedMcpTool } from '@openai/agents'
 import { createMCPClient, type MCPClient } from '@/lib/mcp/client'
 import { getAllTools } from '@/lib/tools'
 import { getInputGuardrails, getOutputGuardrails } from '@/lib/guardrails'
@@ -13,7 +13,7 @@ import type { AgentWithRelations } from '@/lib/types/database'
 export interface AgentFactoryResult {
   agent: Agent
   mcpClient: MCPClient | null
-  mcpServers: MCPServerStdio[]
+  mcpServers: (MCPServerStdio | MCPServerStreamableHttp)[]
 }
 
 /**
@@ -38,7 +38,8 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
 
   // Initialize MCP servers for this agent
   let mcpClient: MCPClient | null = null
-  let mcpServers: MCPServerStdio[] = []
+  let mcpServers: (MCPServerStdio | MCPServerStreamableHttp)[] = []
+  let hostedTools: ReturnType<typeof hostedMcpTool>[] = []
   
   if (agentIntegrations.length > 0) {
     logger.debug('Using MCP servers for integrations')
@@ -66,16 +67,19 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
         const mcpResult = await createMCPClient(mcpIntegrations)
         mcpClient = mcpResult.client
         mcpServers = mcpResult.servers
+        hostedTools = mcpResult.hostedTools
         
         logger.info('MCP servers initialized', { 
           integrationsCount: mcpIntegrations.length,
-          serversCount: mcpServers.length 
+          serversCount: mcpServers.length,
+          hostedToolsCount: hostedTools.length
         })
       }
     } catch (error) {
       logger.error('Failed to initialize MCP servers, proceeding without integrations', {}, error as Error)
       mcpClient = null
       mcpServers = []
+      hostedTools = []
     }
   }
 
@@ -135,12 +139,18 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
     outputGuardrails: guardrailsConfig?.output || []
   })
 
+  // Combine regular tools with hosted MCP tools
+  const combinedTools = [
+    ...allTools,
+    ...hostedTools
+  ]
+
   const openaiAgent = new Agent({
     name: agentData.name,
     instructions: agentData.systemPrompt || `You are ${agentData.name}, an AI assistant.`,
     model: agentData.model,
     mcpServers: mcpServers.length > 0 ? mcpServers : undefined,
-    tools: allTools.length > 0 ? allTools : undefined,
+    tools: combinedTools.length > 0 ? combinedTools : undefined,
     inputGuardrails: inputGuardrails.length > 0 ? inputGuardrails : undefined,
     outputGuardrails: outputGuardrails.length > 0 ? outputGuardrails : undefined,
     ...cleanAgentConfig
@@ -150,8 +160,10 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
     agentId: agentData.id,
     agentName: agentData.name,
     model: agentData.model,
-    hasTools: allTools.length > 0,
-    hasMCPServers: mcpServers.length > 0,
+    regularToolsCount: allTools.length,
+    hostedToolsCount: hostedTools.length,
+    totalToolsCount: combinedTools.length,
+    mcpServersCount: mcpServers.length,
     hasGuardrails: inputGuardrails.length > 0 || outputGuardrails.length > 0
   })
 

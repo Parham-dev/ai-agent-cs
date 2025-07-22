@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { testCustomMcpServerConnection } from '@/lib/mcp/servers/custom'
+import type { CustomMcpCredentials } from '@/lib/types/integrations'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +20,8 @@ export async function POST(request: NextRequest) {
         return await testShopifyConnection(credentials)
       case 'stripe':
         return await testStripeConnection(credentials)
+      case 'custom-mcp':
+        return await testCustomMcpConnection(credentials)
       default:
         return NextResponse.json({ 
           error: 'Unsupported integration type' 
@@ -157,6 +161,107 @@ async function testStripeConnection(credentials: StripeCredentials) {
     console.error('Stripe connection test error:', error)
     return NextResponse.json({ 
       error: 'Failed to connect to Stripe. Please check your credentials and try again.' 
+    }, { status: 500 })
+  }
+}
+
+async function testCustomMcpConnection(credentials: CustomMcpCredentials) {
+  try {
+    // Server-side validation and testing (avoids CORS issues)
+    
+    // Basic validation
+    if (!credentials.name || credentials.name.trim() === '') {
+      return NextResponse.json({
+        error: 'Server name is required'
+      }, { status: 400 })
+    }
+    
+    if (credentials.serverType === 'hosted') {
+      // Hosted server validation
+      if (!credentials.serverUrl || !credentials.serverLabel) {
+        return NextResponse.json({
+          error: 'Server URL and label are required for hosted servers'
+        }, { status: 400 })
+      }
+      
+      // Validate URL format
+      try {
+        const url = new URL(credentials.serverUrl)
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          return NextResponse.json({
+            error: 'Server URL must use HTTP or HTTPS protocol'
+          }, { status: 400 })
+        }
+      } catch {
+        return NextResponse.json({
+          error: 'Invalid server URL format'
+        }, { status: 400 })
+      }
+      
+      // Test connectivity from server-side (no CORS issues)
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 10000)
+        
+        const response = await fetch(credentials.serverUrl, {
+          method: 'HEAD',
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Custom-MCP-Client/1.0'
+          }
+        })
+        
+        clearTimeout(timeoutId)
+        
+        if (response.status >= 500) {
+          return NextResponse.json({
+            error: `Server error: ${response.status} ${response.statusText}`
+          }, { status: 400 })
+        }
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Hosted MCP server connection successful!',
+          serverType: credentials.serverType,
+          serverName: credentials.name,
+          serverUrl: credentials.serverUrl
+        })
+        
+      } catch (fetchError) {
+        const error = fetchError as Error
+        if (error.name === 'AbortError') {
+          return NextResponse.json({
+            error: 'Connection timeout - server took too long to respond'
+          }, { status: 400 })
+        }
+        return NextResponse.json({
+          error: `Failed to connect to server: ${error.message}`
+        }, { status: 400 })
+      }
+    }
+    
+    // For other server types, use the existing client-side function
+    // (HTTP and stdio servers don't have CORS issues when tested client-side)
+    const result = await testCustomMcpServerConnection(credentials)
+    
+    if (result.success) {
+      return NextResponse.json({
+        success: true,
+        message: 'Custom MCP server connection successful!',
+        serverType: credentials.serverType,
+        serverName: credentials.name,
+        tools: result.tools || []
+      })
+    } else {
+      return NextResponse.json({
+        error: result.error || 'Connection test failed'
+      }, { status: 400 })
+    }
+    
+  } catch (error) {
+    console.error('Custom MCP connection test error:', error)
+    return NextResponse.json({
+      error: 'Failed to test custom MCP server connection. Please check your configuration.'
     }, { status: 500 })
   }
 }
