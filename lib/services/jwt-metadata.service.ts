@@ -30,16 +30,19 @@ export async function updateUserJWTMetadata(supabaseUserId: string): Promise<voi
       role: user.role,
     };
 
-    // Update Supabase user metadata
+    // Update both app_metadata (for auth) and user_metadata (for profile data)
     const { error } = await supabase.auth.admin.updateUserById(supabaseUserId, {
-      app_metadata: metadata
+      app_metadata: metadata,
+      user_metadata: {
+        name: user.name || null
+      }
     });
 
     if (error) {
       throw new Error(`Failed to update JWT metadata: ${error.message}`);
     }
 
-    logger.info('Updated JWT metadata for user', { userId: user.id, metadata });
+    logger.info('Updated JWT metadata for user', { userId: user.id, metadata, name: user.name });
   } catch (error) {
     logger.error('Error updating JWT metadata', {}, error as Error);
     throw error;
@@ -59,15 +62,20 @@ export async function syncUserJWTMetadata(supabaseUserId: string, userData: Part
       role: userData.role || 'USER',
     };
 
+    // Update both app_metadata (for auth) and user_metadata (for profile data)
+    // This ensures auth middleware gets fresh name from user_metadata
     const { error } = await supabase.auth.admin.updateUserById(supabaseUserId, {
-      app_metadata: metadata
+      app_metadata: metadata,
+      user_metadata: {
+        name: userData.name || null
+      }
     });
 
     if (error) {
       throw new Error(`Failed to sync JWT metadata: ${error.message}`);
     }
 
-    logger.info('Synced JWT metadata for user', { userId: userData.id, metadata });
+    logger.info('Synced JWT metadata for user', { userId: userData.id, metadata, name: userData.name });
   } catch (error) {
     logger.error('Error syncing JWT metadata', {}, error as Error);
     throw error;

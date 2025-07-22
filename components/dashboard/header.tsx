@@ -129,7 +129,11 @@ export function Header({ title = "Dashboard", subtitle }: HeaderProps) {
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Item leftSection={<UserIcon size={16} />}>
+              <Menu.Item 
+                leftSection={<UserIcon size={16} />}
+                component={Link}
+                href="/profile"
+              >
                 Profile
               </Menu.Item>
               <Menu.Divider />

@@ -8,6 +8,7 @@ import { IntegrationApiClient } from '../services/integration-client';
 import { AgentIntegrationApiClient } from '../services/agent-integration-client';
 import { ModelsApiClient } from '../services/models-client';
 import { OrganizationApiClient } from '../services/organization-client';
+import { UserApiClient } from '../services/user-client';
 import type { BaseApiClientOptions } from '../base/types';
 
 export class ApiManager {
@@ -16,6 +17,7 @@ export class ApiManager {
   public readonly agentIntegrations: AgentIntegrationApiClient;
   public readonly models: ModelsApiClient;
   public readonly organization: OrganizationApiClient;
+  public readonly user: UserApiClient;
 
   constructor(options: BaseApiClientOptions = {}) {
     this.agents = new AgentApiClient(options);
@@ -23,6 +25,7 @@ export class ApiManager {
     this.agentIntegrations = new AgentIntegrationApiClient(options);
     this.models = new ModelsApiClient(options);
     this.organization = new OrganizationApiClient(options);
+    this.user = new UserApiClient(options);
   }
 
   /**
