@@ -171,12 +171,6 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     let response;
     
     try {
-      // Log context being passed to agent
-      console.log('🔧 Agent context being passed:', {
-        agentId: session.agentId,
-        organizationId: session.organizationId,
-        sessionId,
-      });
 
       // Run agent execution within request-scoped context for cost tracking
       response = await runInContext(
@@ -303,9 +297,8 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     // Force flush traces to ensure cost tracking is captured
     try {
       await getGlobalTraceProvider().forceFlush();
-      console.log('✅ Traces flushed successfully');
     } catch (flushError) {
-      console.warn('⚠️  Failed to flush traces:', flushError);
+      logger.error('Failed to flush traces', {}, flushError as Error);
       // Don't fail the request if trace flushing fails
     }
 

@@ -2,6 +2,7 @@
 import { setDefaultOpenAIKey, addTraceProcessor, getGlobalTraceProvider } from '@openai/agents';
 import type { TracingProcessor, Span, Trace } from '@openai/agents';
 import { costTrackingService } from './cost-tracking.service';
+import { logger } from '@/lib/utils/logger';
 
 interface SpanData {
   type: string;
@@ -40,7 +41,7 @@ class CostTrackingTraceProcessor implements TracingProcessor {
         await this.handleResponseSpan(span);
       }
     } catch (error) {
-      console.error('❌ Error in cost tracking trace processor:', error);
+      logger.error('Error in cost tracking trace processor', {}, error as Error);
       // Don't throw - tracing should not break the main flow
     }
   }
@@ -57,31 +58,29 @@ class CostTrackingTraceProcessor implements TracingProcessor {
     const spanData = span.spanData;
     const usage = spanData.usage;
 
-    console.log('🔍 Generation span detected:', {
+    logger.debug('Generation span detected', {
       spanId: span.spanId,
       hasUsage: !!usage,
       hasModel: !!spanData.model,
       model: spanData.model,
-      usage: usage,
-      spanDataKeys: Object.keys(spanData || {}),
     });
 
     if (!usage || !spanData.model) {
-      console.warn('⚠️  No usage data or model found in generation span');
+      logger.warn('No usage data or model found in generation span', { spanId: span.spanId });
       return;
     }
 
     // Extract context from span - try to get organizationId from trace metadata
     let organizationId = this.extractOrganizationId(span);
     if (!organizationId) {
-      console.warn('⚠️  No organizationId found in span context');
+      logger.warn('No organizationId found in span context');
       // TEMPORARY: Use a default organizationId for testing
       // TODO: Figure out how to properly extract organizationId from context
-      organizationId = 'test-org-id';
-      console.warn('🔧 Using temporary organizationId for testing:', organizationId);
+      organizationId = 'cmdc1e4lp0000jg9oxvrdqh5j';
+      logger.warn('Using temporary organizationId for testing', { organizationId });
     }
 
-    console.log('✅ Tracking usage:', {
+    logger.info('Tracking usage from generation span', {
       organizationId,
       model: spanData.model,
       inputTokens: usage.prompt_tokens,
@@ -104,7 +103,11 @@ class CostTrackingTraceProcessor implements TracingProcessor {
       },
     });
 
-    console.debug(`Cost tracking: ${spanData.model} - ${usage.prompt_tokens}/${usage.completion_tokens} tokens`);
+    logger.debug('Cost tracking completed for generation span', {
+      model: spanData.model,
+      promptTokens: usage.prompt_tokens,
+      completionTokens: usage.completion_tokens
+    });
   }
 
   private extractOrganizationId(span: Span<any>): string | null {
@@ -130,14 +133,11 @@ class CostTrackingTraceProcessor implements TracingProcessor {
       return metadata.organizationId;
     }
 
-    // For now, log what we have available for debugging
-    console.warn('🔍 Unable to extract organizationId. Available data:', {
+    // Log minimal data for debugging (removed verbose spanData dump)
+    logger.debug('Unable to extract organizationId from span', {
       spanId: span.spanId,
       traceId: span.traceId,
-      spanDataKeys: Object.keys(spanData || {}),
       hasInputContext: !!spanData?._input?.context,
-      inputContextKeys: spanData?._input?.context ? Object.keys(spanData._input.context) : [],
-      spanData: JSON.stringify(spanData, null, 2),
     });
 
     return null;
@@ -154,19 +154,17 @@ class CostTrackingTraceProcessor implements TracingProcessor {
       // Get organization ID from span or global context
       const organizationId = this.extractOrganizationId(span) || context.organizationId;
       if (!organizationId) {
-        console.warn('⚠️ No organizationId available for cost tracking');
+        logger.warn('No organizationId available for cost tracking');
         return;
       }
 
       // Validate that we have essential context for proper cost tracking
       if (!context.agentId) {
-        console.warn('⚠️ No agentId available for cost tracking - this may indicate a context propagation issue');
+        logger.warn('No agentId available for cost tracking - this may indicate a context propagation issue');
       }
 
       if (!context.conversationId) {
-        console.warn('⚠️ No conversationId available for cost tracking - costs will not be linked to specific conversations');
-        console.debug('Current context:', context);
-        console.debug('Span data keys:', Object.keys(spanData || {}));
+        logger.warn('No conversationId available for cost tracking - costs will not be linked to specific conversations');
       }
 
       // Extract token counts - handle different formats
@@ -175,8 +173,10 @@ class CostTrackingTraceProcessor implements TracingProcessor {
 
       // Validate token counts
       if (inputTokens === 0 && outputTokens === 0) {
-        console.warn('⚠️ Both input and output tokens are 0 - this may indicate a usage extraction issue');
-        console.debug('Raw usage data:', usage);
+        logger.warn('Both input and output tokens are 0 - this may indicate a usage extraction issue', {
+          model: response.model,
+          spanId: span.spanId
+        });
       }
 
       // Track usage through existing cost tracking service
@@ -206,14 +206,12 @@ class CostTrackingTraceProcessor implements TracingProcessor {
         },
       });
 
-      // Log successful cost tracking for debugging
-      console.debug('✅ Cost tracking completed:', {
-        organizationId,
-        agentId: context.agentId,
-        conversationId: context.conversationId,
+      // Log successful cost tracking (only essential info)
+      logger.info('Cost tracking completed', {
         model: response.model,
         inputTokens,
         outputTokens,
+        hasConversationId: !!context.conversationId,
         spanId: span.spanId,
       });
     }
@@ -226,14 +224,14 @@ function initializeOpenAIAgents(): void {
   if (process.env.OPENAI_API_KEY) {
     setDefaultOpenAIKey(process.env.OPENAI_API_KEY);
   } else {
-    console.warn('OPENAI_API_KEY not found in environment variables');
+    logger.warn('OPENAI_API_KEY not found in environment variables');
   }
 
   // Add cost tracking processor
   const costProcessor = new CostTrackingTraceProcessor();
   addTraceProcessor(costProcessor);
 
-  console.log('OpenAI Agents SDK initialized with cost tracking');
+  logger.info('OpenAI Agents SDK initialized with cost tracking');
 }
 
 // Use AsyncLocalStorage for request-scoped context (Node.js 14+)
@@ -268,7 +266,7 @@ export function setCurrentContext(context: {
     Object.assign(currentRequestContext, context);
   } else {
     // Fallback: store in a Map keyed by request ID (if we can identify the request)
-    console.warn('⚠️ setCurrentContext called outside of request context');
+    logger.warn('setCurrentContext called outside of request context');
   }
 }
 

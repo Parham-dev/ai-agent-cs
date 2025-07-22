@@ -11,6 +11,7 @@
 import { usageRecordsService } from '@/lib/database/services/usage-records.service';
 import type { CreateUsageRecordData } from '@/lib/types/database';
 import { CostCalculatorService } from './cost-calculator.service';
+import { logger } from '@/lib/utils/logger';
 
 export interface OpenAIUsage {
   prompt_tokens: number;
@@ -48,7 +49,7 @@ export class UsageTrackerService {
   ): Promise<void> {
     try {
       if (!response.usage || !response.model) {
-        console.warn('No usage data in OpenAI response');
+        logger.warn('No usage data in OpenAI response');
         return;
       }
 
@@ -65,7 +66,7 @@ export class UsageTrackerService {
         metadata
       });
     } catch (error) {
-      console.error('Failed to track usage from response:', error);
+      logger.error('Failed to track usage from response', {}, error as Error);
       // Don't throw - usage tracking shouldn't break the main flow
     }
   }
@@ -81,7 +82,7 @@ export class UsageTrackerService {
   ): Promise<void> {
     try {
       if (!response.usage || !response.model) {
-        console.warn('No usage data in embedding response');
+        logger.warn('No usage data in embedding response');
         return;
       }
 
@@ -96,7 +97,7 @@ export class UsageTrackerService {
         metadata
       });
     } catch (error) {
-      console.error('Failed to track embedding usage:', error);
+      logger.error('Failed to track embedding usage', {}, error as Error);
     }
   }
 
@@ -141,7 +142,12 @@ export class UsageTrackerService {
 
       await usageRecordsService.createUsageRecord(usageData);
     } catch (error) {
-      console.error('Failed to track usage:', error);
+      logger.error('Failed to track usage', {
+        organizationId: params.organizationId,
+        agentId: params.agentId || undefined,
+        model: params.model,
+        source: params.source
+      }, error as Error);
       // Don't throw - usage tracking shouldn't break the main flow
     }
   }
@@ -180,7 +186,12 @@ export class UsageTrackerService {
 
       await usageRecordsService.createUsageRecord(usageData);
     } catch (error) {
-      console.error('Failed to track embedding usage:', error);
+      logger.error('Failed to track embedding usage', {
+        organizationId: params.organizationId,
+        agentId: params.agentId || undefined,
+        model: params.model,
+        source: params.source
+      }, error as Error);
     }
   }
 }
