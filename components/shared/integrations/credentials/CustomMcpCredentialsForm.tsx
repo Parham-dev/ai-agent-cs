@@ -162,7 +162,7 @@ const customMcpConfig = {
       </Text>
     </Stack>
   ),
-  testConnection: async (credentials: Record<string, string>): Promise<boolean> => {
+  testConnection: async (credentials: Record<string, string>): Promise<{ success: boolean; tools?: string[]; message?: string; error?: string }> => {
     try {
       const response = await fetch('/api/v2/integrations/test', {
         method: 'POST',
@@ -178,14 +178,32 @@ const customMcpConfig = {
       if (!response.ok) {
         const error = await response.json()
         console.error('Custom MCP server connection test failed:', error)
-        return false
+        return { 
+          success: false, 
+          error: error.error || 'Connection test failed',
+          tools: [],
+          message: undefined
+        }
       }
 
       const result = await response.json()
-      return result.success
+      console.log('🔗 API response received:', result)
+      
+      // Return the full result object so BaseCredentialsForm can access tools
+      return {
+        success: result.success,
+        tools: result.tools || [],
+        message: result.message,
+        error: result.error
+      }
     } catch (error) {
       console.error('Custom MCP server connection test failed:', error)
-      return false
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Connection test failed',
+        tools: [],
+        message: undefined
+      }
     }
   }
 }

@@ -32,7 +32,7 @@ interface BaseCredentialsConfig {
     dependsOn?: { field: string; value: string }
   }>
   helpText?: ReactNode
-  testConnection: (credentials: Record<string, string>) => Promise<boolean>
+  testConnection: (credentials: Record<string, string>) => Promise<boolean | { success: boolean; tools?: string[]; message?: string; error?: string }>
 }
 
 interface BaseCredentialsFormProps {
@@ -117,6 +117,9 @@ export function BaseCredentialsForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [integration?.credentials, config.fields, isEditing])
 
+  // State to store discovered tools
+  const [discoveredTools, setDiscoveredTools] = useState<string[]>([])
+
   const handleTestConnection = async () => {
     console.log('🔗 Starting connection test...', { 
       integrationType: config.type,
@@ -127,28 +130,43 @@ export function BaseCredentialsForm({
     setTestStatus('testing')
     setFieldsChanged(false) // Reset the changed flag since we're testing current values
     try {
-      const success = await config.testConnection(form.values)
-      console.log('🔗 Connection test result:', { success, integrationType: config.type })
+      const result = await config.testConnection(form.values)
+      const success = typeof result === 'boolean' ? result : result.success
+      console.log('🔗 Connection test result:', { success, result, integrationType: config.type })
       
       setTestStatus(success ? 'success' : 'error')
+      
+      // Store discovered tools if available
+      if (success && typeof result === 'object' && result.tools && Array.isArray(result.tools)) {
+        setDiscoveredTools(result.tools)
+        console.log('🔗 Tools discovered and stored:', result.tools)
+      }
       
       // Log button state after test
       setTimeout(() => {
         console.log('🔗 Button state after connection test:', {
           testStatus: success ? 'success' : 'error',
           fieldsChanged: false,
-          saveButtonEnabled: success && !false
+          saveButtonEnabled: success && !false,
+          discoveredTools: typeof result === 'object' ? result.tools : []
         })
       }, 100)
       
       if (success) {
-        toast.success(`${config.displayName} connection successful!`)
+        const toolMessage = typeof result === 'object' && result.message 
+          ? result.message 
+          : `${config.displayName} connection successful!`
+        toast.success(toolMessage)
       } else {
-        toast.error(`${config.displayName} connection failed. Please check your credentials.`)
+        const errorMessage = typeof result === 'object' && result.error
+          ? result.error
+          : `${config.displayName} connection failed. Please check your credentials.`
+        toast.error(errorMessage)
       }
     } catch (error) {
       console.error('🔗 Connection test failed:', error)
       setTestStatus('error')
+      setDiscoveredTools([])
       toast.error('Connection test failed')
     }
   }
@@ -167,22 +185,46 @@ export function BaseCredentialsForm({
 
       if (integration?.id && !integration.id.startsWith('temp-')) {
         // Update existing integration
-        console.log('💾 Updating existing integration...', { integrationId: integration.id })
-        savedIntegration = await api.integrations.updateIntegration(integration.id, {
-          credentials: values
+        console.log('💾 Updating existing integration...', { 
+          integrationId: integration.id,
+          discoveredTools: discoveredTools.length
         })
-        console.log('💾 Integration updated successfully:', { id: savedIntegration.id })
+        
+        // Store discovered tools in credentials for updates
+        // Always override completely - each Custom MCP integration supports only one server type at a time
+        const credentialsWithTools = {
+          ...values,
+          _discoveredTools: discoveredTools.length > 0 ? discoveredTools : undefined,
+          _discoveredAt: new Date().toISOString()
+        }
+        
+        savedIntegration = await api.integrations.updateIntegration(integration.id, {
+          credentials: credentialsWithTools
+        })
+        console.log('💾 Integration updated successfully:', { 
+          id: savedIntegration.id,
+          toolsStored: discoveredTools.length
+        })
       } else {
         // Create new integration - organizationId will be auto-extracted from JWT
         console.log('💾 Creating new integration...', { 
           name: config.displayName, 
           type: config.type,
-          tempId: integration?.id 
+          tempId: integration?.id,
+          discoveredTools: discoveredTools.length
         })
+        
+        // Store discovered tools in credentials for now (until we have dedicated fields)
+        const credentialsWithTools = {
+          ...values,
+          _discoveredTools: discoveredTools.length > 0 ? discoveredTools : undefined,
+          _discoveredAt: new Date().toISOString()
+        }
+        
         savedIntegration = await api.integrations.createIntegration({
           name: config.displayName,
           type: config.type,
-          credentials: values
+          credentials: credentialsWithTools
         })
         console.log('💾 Integration created successfully:', { 
           id: savedIntegration.id, 

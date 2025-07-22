@@ -219,12 +219,44 @@ async function testCustomMcpConnection(credentials: CustomMcpCredentials) {
           }, { status: 400 })
         }
         
+        // Log hosted server information for tool discovery
+        console.log('🔧 Testing hosted MCP server:', {
+          serverUrl: credentials.serverUrl,
+          serverLabel: credentials.serverLabel,
+          serverName: credentials.name
+        })
+        
+        // For hosted servers, we can provide hints about known tools
+        let tools: string[] = []
+        const knownHostedServers: Record<string, string[]> = {
+          'gitmcp.io': ['git-status', 'git-log', 'git-diff', 'git-commit', 'git-push', 'git-pull'],
+          'github.com': ['github-issues', 'github-pr', 'github-repos'],
+          // Add more known servers as needed
+        }
+        
+        // Check if we know about this server
+        const urlHost = new URL(credentials.serverUrl).hostname
+        for (const [domain, serverTools] of Object.entries(knownHostedServers)) {
+          if (urlHost.includes(domain)) {
+            tools = serverTools
+            console.log('🔧 Known hosted server detected:', { domain, tools })
+            break
+          }
+        }
+        
+        if (tools.length === 0) {
+          tools = ['Tools will be discovered when agent connects']
+        }
+        
         return NextResponse.json({
           success: true,
-          message: 'Hosted MCP server connection successful!',
+          message: `Hosted MCP server connection successful! ${tools.length} tool(s) available. All tools will be auto-selected as the OpenAI SDK doesn't support tool filtering for Custom MCP servers yet.`,
           serverType: credentials.serverType,
           serverName: credentials.name,
-          serverUrl: credentials.serverUrl
+          serverUrl: credentials.serverUrl,
+          tools,
+          allToolsSelected: true,
+          reason: 'OpenAI SDK limitation - Custom MCP servers expose all tools'
         })
         
       } catch (fetchError) {
@@ -245,12 +277,21 @@ async function testCustomMcpConnection(credentials: CustomMcpCredentials) {
     const result = await testCustomMcpServerConnection(credentials)
     
     if (result.success) {
-      return NextResponse.json({
-        success: true,
-        message: 'Custom MCP server connection successful!',
+      console.log('🔧 MCP server test result:', {
         serverType: credentials.serverType,
         serverName: credentials.name,
-        tools: result.tools || []
+        tools: result.tools,
+        message: result.message
+      })
+      
+      return NextResponse.json({
+        success: true,
+        message: `${result.message || 'Custom MCP server connection successful!'} All tools will be auto-selected as the OpenAI SDK doesn't support tool filtering for Custom MCP servers yet.`,
+        serverType: credentials.serverType,
+        serverName: credentials.name,
+        tools: result.tools || [],
+        allToolsSelected: true,
+        reason: 'OpenAI SDK limitation - Custom MCP servers expose all tools'
       })
     } else {
       return NextResponse.json({

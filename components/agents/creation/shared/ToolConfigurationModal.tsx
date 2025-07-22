@@ -13,10 +13,12 @@ import {
   Card,
   Badge,
   ScrollArea,
+  Alert,
 } from '@mantine/core'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 import type { ApiIntegration, IntegrationTool } from '@/lib/types'
+import { Info } from 'lucide-react'
 
 interface ToolConfigurationModalProps {
   opened: boolean
@@ -58,7 +60,23 @@ export function ToolConfigurationModal({
     }
   }, [opened, selectedTools, loadAvailableTools])
 
+  // Auto-select all tools for Custom MCP servers when tools are loaded
+  useEffect(() => {
+    if (integration.type === 'custom-mcp' && availableTools.length > 0 && opened) {
+      // For Custom MCP servers, auto-select all tools since OpenAI SDK doesn't support filtering
+      const allToolNames = availableTools.map(tool => tool.name)
+      setLocalSelection(allToolNames)
+      
+      // Don't auto-close - let user review the tools and manually save
+    }
+  }, [integration.type, availableTools, opened])
+
   const handleToolToggle = (toolName: string) => {
+    // Disable tool toggling for Custom MCP servers
+    if (integration.type === 'custom-mcp') {
+      return
+    }
+    
     setLocalSelection(current => 
       current.includes(toolName) 
         ? current.filter(name => name !== toolName)
@@ -67,6 +85,11 @@ export function ToolConfigurationModal({
   }
 
   const handleToggleAll = () => {
+    // Disable toggle all for Custom MCP servers
+    if (integration.type === 'custom-mcp') {
+      return
+    }
+    
     if (localSelection.length === availableTools.length) {
       // All selected -> deselect all
       setLocalSelection([])
@@ -79,8 +102,18 @@ export function ToolConfigurationModal({
   const isAllSelected = localSelection.length === availableTools.length && availableTools.length > 0
 
   const handleSave = () => {
-    onToolsChanged(localSelection)
-    toast.success(`Updated tools for ${integration.name}`)
+    // For Custom MCP servers, ensure all tools are selected
+    const finalSelection = integration.type === 'custom-mcp' 
+      ? availableTools.map(tool => tool.name)
+      : localSelection
+      
+    onToolsChanged(finalSelection)
+    
+    const message = integration.type === 'custom-mcp'
+      ? `All ${finalSelection.length} tools auto-selected for ${integration.name}`
+      : `Updated tools for ${integration.name}`
+    
+    toast.success(message)
     onClose()
   }
 
@@ -113,6 +146,15 @@ export function ToolConfigurationModal({
       <LoadingOverlay visible={loading} />
       
       <Stack gap="md">
+        {/* Custom MCP Server Notice */}
+        {integration.type === 'custom-mcp' && (
+          <Alert variant="light" color="blue" icon={<Info size={16} />}>
+            <Text size="sm">
+              <strong>All tools auto-selected:</strong> Custom MCP servers don&apos;t support tool filtering in the OpenAI SDK yet. 
+              All available tools will be accessible to your agent.
+            </Text>
+          </Alert>
+        )}
         {/* Selection Summary & Controls */}
         <Card withBorder p="sm">
           <Group justify="space-between">
@@ -123,7 +165,7 @@ export function ToolConfigurationModal({
               </Badge>
             </div>
             
-            {availableTools.length > 0 && (
+            {availableTools.length > 0 && integration.type !== 'custom-mcp' && (
               <Button
                 variant="subtle"
                 size="xs"
@@ -132,6 +174,12 @@ export function ToolConfigurationModal({
               >
                 {isAllSelected ? 'Deselect All' : 'Select All'}
               </Button>
+            )}
+            
+            {integration.type === 'custom-mcp' && availableTools.length > 0 && (
+              <Badge variant="filled" color="blue" size="sm">
+                All Tools Required
+              </Badge>
             )}
           </Group>
         </Card>
@@ -151,10 +199,10 @@ export function ToolConfigurationModal({
                   key={tool.name}
                   withBorder
                   p="sm"
-                  className={`cursor-pointer transition-all ${
+                  className={`${integration.type !== 'custom-mcp' ? 'cursor-pointer' : 'cursor-not-allowed'} transition-all ${
                     localSelection.includes(tool.name)
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'hover:border-gray-300'
+                      : integration.type !== 'custom-mcp' ? 'hover:border-gray-300' : ''
                   }`}
                   onClick={() => handleToolToggle(tool.name)}
                 >
@@ -163,6 +211,7 @@ export function ToolConfigurationModal({
                       checked={localSelection.includes(tool.name)}
                       onChange={() => handleToolToggle(tool.name)}
                       size="sm"
+                      disabled={integration.type === 'custom-mcp'}
                       onClick={(e) => e.stopPropagation()} // Prevent double-triggering
                     />
                     <Stack gap={2} flex={1}>

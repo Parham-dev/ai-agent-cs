@@ -100,7 +100,14 @@ export class MCPClient {
         return null;
       }
       
-      const customServer = await createCustomMcpServer(credentials);
+      console.log('🔧 Creating custom MCP server (all tools will be available):', {
+        serverName: credentials.name,
+        serverType: credentials.serverType,
+        selectedToolsIgnored: integration.selectedTools?.length || 0,
+        reason: 'Custom MCP servers expose all tools due to OpenAI SDK limitation'
+      });
+      
+      const customServer = await createCustomMcpServer(credentials, integration.selectedTools);
       if (!customServer) {
         logger.error('Failed to create custom MCP server', { name: credentials.name });
         return null;
