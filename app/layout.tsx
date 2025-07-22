@@ -7,6 +7,7 @@ import { MantineThemeProvider, AuthProvider } from "@/components/providers";
 import { ColorSchemeScript } from "@mantine/core";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import "@/lib/services/openai-initialization.service";
 
 export const metadata: Metadata = {
   title: "AI Customer Service Platform",

@@ -9,7 +9,7 @@ import { logger } from '@/lib/utils/logger'
 import { conversationsService } from '@/lib/database/services/conversations.service'
 import { agentsService } from '@/lib/database/services/agents.service'
 import { createAgent } from '@/lib/agents/agent-factory'
-import { type SessionData } from './session-types'
+import { type SessionData, type PendingSessionData } from './session-types'
 
 /**
  * Database-backed session store
@@ -107,13 +107,12 @@ class DatabaseSessionStore {
    * Create or update session data
    * Updates memory cache and conversation metadata
    */
-  async set(sessionId: string, sessionData: SessionData): Promise<void> {
+  async set(sessionId: string, sessionData: SessionData | PendingSessionData): Promise<void> {
     try {
       // Update memory cache
       sessionData.lastActivity = new Date()
-      this.activeSessions.set(sessionId, sessionData)
 
-      // Create conversation if it doesn't exist
+      // Create conversation if it doesn't exist (for PendingSessionData)
       if (!sessionData.conversationId) {
         const conversation = await conversationsService.createConversation(
           sessionData.organizationId,
@@ -126,10 +125,19 @@ class DatabaseSessionStore {
         sessionData.conversationId = conversation.id
       }
 
+      // Ensure we have a complete SessionData with conversationId
+      const completeSessionData: SessionData = {
+        ...sessionData,
+        conversationId: sessionData.conversationId!
+      }
+
+      // Store in memory cache
+      this.activeSessions.set(sessionId, completeSessionData)
+
       // Update conversation context and last activity
       await conversationsService.updateConversation(
         sessionData.organizationId,
-        sessionData.conversationId,
+        sessionData.conversationId!,
         {
           context: sessionData.metadata,
           lastMessageAt: sessionData.lastActivity

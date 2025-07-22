@@ -111,9 +111,13 @@ export class UsageTrackerService {
     outputTokens: number;
     source: string;
     metadata?: Record<string, unknown>;
+    conversationId?: string; // Add explicit conversationId parameter
   }): Promise<void> {
     try {
-      const { organizationId, agentId, model, inputTokens, outputTokens, source, metadata = {} } = params;
+      const { organizationId, agentId, model, inputTokens, outputTokens, source, metadata = {}, conversationId } = params;
+      
+      // Extract conversationId from metadata if not provided directly
+      const finalConversationId = conversationId || (metadata.conversationId as string | undefined);
       
       // Calculate costs
       const costs = this.costCalculator.calculateCosts(model, inputTokens, outputTokens);
@@ -131,6 +135,7 @@ export class UsageTrackerService {
         outputCost: costs.outputCost,
         totalCost: costs.totalCost,
         source,
+        conversationId: finalConversationId, // Extract conversationId from metadata
         metadata
       };
 

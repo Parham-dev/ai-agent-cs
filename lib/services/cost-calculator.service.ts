@@ -246,8 +246,8 @@ export class CostCalculatorService {
     if (!pricing) {
       console.warn(`Unknown model pricing for: ${model}, using gpt-4o-mini as fallback`);
       const fallbackPricing = MODEL_PRICING['gpt-4o-mini'];
-      const inputCost = inputTokens * fallbackPricing.input;
-      const outputCost = outputTokens * fallbackPricing.output;
+      const inputCost = (inputTokens / 1_000_000) * fallbackPricing.input;
+      const outputCost = (outputTokens / 1_000_000) * fallbackPricing.output;
       
       return {
         totalCost: inputCost + outputCost,
@@ -259,8 +259,9 @@ export class CostCalculatorService {
       };
     }
 
-    const inputCost = inputTokens * pricing.input;
-    const outputCost = outputTokens * pricing.output;
+    // Convert tokens to millions and calculate cost
+    const inputCost = (inputTokens / 1_000_000) * pricing.input;
+    const outputCost = (outputTokens / 1_000_000) * pricing.output;
 
     return {
       totalCost: inputCost + outputCost,

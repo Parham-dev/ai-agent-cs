@@ -8,6 +8,7 @@ import { verifyWidgetToken, extractBearerToken } from '@/lib/utils/jwt';
 import { sessionStore } from '@/lib/session/database-session-store';
 import { createAgent } from '@/lib/agents/agent-factory';
 import { conversationsService } from '@/lib/database/services/conversations.service';
+import { getGlobalTraceProvider, runInContext } from '@/lib/services/openai-initialization.service';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -115,6 +116,15 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     if (!session) {
       logger.debug('Creating new session', { sessionId, agentId });
       
+      // Create conversation using service
+      const conversation = await conversationsService.createConversation(
+        agentData.organizationId,
+        {
+          agentId,
+          sessionId,
+        }
+      );
+      
       // Create Agent and MCP using factory
       const { agent, mcpClient } = await createAgent(agentData);
 
@@ -122,7 +132,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
         sessionId,
         agentId,
         organizationId: agentData.organizationId,
-        conversationId: undefined, // Will be created when first message is sent
+        conversationId: conversation.id, // Use the created conversation ID
         thread: [],
         agent,
         mcpClient,
@@ -139,7 +149,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
 
       // Store session
       await sessionStore.set(sessionId, session);
-      logger.info('New session created', { sessionId, agentId });
+      logger.info('New session created', { sessionId, agentId, conversationId: conversation.id });
       
     } else if (session.agentId !== agentId) {
       logger.warn('Agent mismatch with existing session');
@@ -161,17 +171,34 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
     let response;
     
     try {
-      response = await logger.time('agent-execution', async () => {
-        return await run(session.agent, currentThread, {
-          context: {
-            agentId: session.agentId,
-            organizationId: session.organizationId,
-            sessionId,
-            ...(session.metadata || {}),
-            ...context
-          },
-        });
+      // Log context being passed to agent
+      console.log('🔧 Agent context being passed:', {
+        agentId: session.agentId,
+        organizationId: session.organizationId,
+        sessionId,
       });
+
+      // Run agent execution within request-scoped context for cost tracking
+      response = await runInContext(
+        {
+          organizationId: session.organizationId,
+          agentId: session.agentId,
+          conversationId: session.conversationId,
+        },
+        async () => {
+          return await logger.time('agent-execution', async () => {
+            return await run(session.agent, currentThread, {
+              context: {
+                agentId: session.agentId,
+                organizationId: session.organizationId,
+                sessionId,
+                ...(session.metadata || {}),
+                ...context
+              },
+            });
+          });
+        }
+      );
       
       logger.info('🚀 Agent execution completed:', { 
         finalOutput: response.finalOutput,
@@ -272,6 +299,15 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       responseLength: response.finalOutput?.length || 0,
       threadLength: session.thread.length
     });
+
+    // Force flush traces to ensure cost tracking is captured
+    try {
+      await getGlobalTraceProvider().forceFlush();
+      console.log('✅ Traces flushed successfully');
+    } catch (flushError) {
+      console.warn('⚠️  Failed to flush traces:', flushError);
+      // Don't fail the request if trace flushing fails
+    }
 
     const apiResult = Api.success(finalResponse);
     

@@ -41,6 +41,7 @@ export class CostTrackingService {
     outputTokens: number;
     source: string;
     metadata?: Record<string, unknown>;
+    conversationId?: string;
   }): Promise<void> {
     return usageTrackerService.trackUsage(params);
   }
