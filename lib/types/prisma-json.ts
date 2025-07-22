@@ -119,6 +119,14 @@ declare global {
           conditions?: string[]
           action?: 'escalate' | 'flag' | 'transfer'
         }[]
+        guardrails?: {
+          input?: string[]
+          output?: string[]
+          customInstructions?: {
+            input?: string
+            output?: string
+          }
+        }
       }
       [key: string]: unknown
     }

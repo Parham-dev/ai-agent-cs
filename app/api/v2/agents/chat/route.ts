@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { run, type AgentInputItem } from '@openai/agents';
+import { InputGuardrailTripwireTriggered, OutputGuardrailTripwireTriggered } from '@openai/agents-core';
 import { agentsService } from '@/lib/database/services';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
@@ -230,10 +231,31 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       logger.debug('Session updated', { sessionId, threadLength: session.thread.length });
       
     } catch (agentError) {
-      const errorMessage = agentError instanceof Error ? agentError.message : 'Unknown error';
       logger.error('Agent execution failed', { sessionId, agentId }, agentError as Error);
       
-      return Api.error('INTERNAL_ERROR', errorMessage);
+      // Handle specific guardrail errors with user-friendly messages
+      if (agentError instanceof InputGuardrailTripwireTriggered) {
+        return Api.error('GUARDRAIL_BLOCKED', 
+          'Your message was blocked by our safety filters. Please try rephrasing your request.',
+          { 
+            guardrailType: 'input',
+            reason: 'Content safety check failed'
+          }
+        );
+      }
+      
+      if (agentError instanceof OutputGuardrailTripwireTriggered) {
+        return Api.error('RESPONSE_BLOCKED', 
+          'The response was filtered for quality and safety. Please try your request again.',
+          { 
+            guardrailType: 'output',
+            reason: 'Response quality check failed'
+          }
+        );
+      }
+      
+      // Handle generic errors
+      return Api.error('INTERNAL_ERROR', 'An error occurred while processing your request. Please try again.');
     }
 
     // Return successful response

@@ -2,8 +2,8 @@ import { InputGuardrail, OutputGuardrail } from '@openai/agents';
 import { GuardrailConfig, InputGuardrailFactory, OutputGuardrailFactory } from './types';
 
 // Import guardrail factories
-import { createContentSafetyGuardrail, createPrivacyProtectionGuardrail } from './input';
-import { createProfessionalToneGuardrail, createFactualAccuracyGuardrail } from './output';
+import { createContentSafetyGuardrail, createPrivacyProtectionGuardrail, createCustomInputGuardrail } from './input';
+import { createProfessionalToneGuardrail, createFactualAccuracyGuardrail, createCustomOutputGuardrail } from './output';
 
 // Available guardrails registry
 export const AVAILABLE_GUARDRAILS: GuardrailConfig[] = [
@@ -67,6 +67,35 @@ export const AVAILABLE_GUARDRAILS: GuardrailConfig[] = [
       accuracyScore: 0.7,
     },
   },
+  
+  // Custom Guardrails
+  {
+    id: 'custom-input',
+    name: 'Custom Input Check',
+    description: 'Apply custom validation rules to user input',
+    type: 'input',
+    category: 'safety',
+    enabled: true,
+    configurable: true,
+    defaultThreshold: 0.7,
+    thresholds: {
+      customScore: 0.7,
+    },
+  },
+  
+  {
+    id: 'custom-output',
+    name: 'Custom Output Check',
+    description: 'Apply custom validation rules to agent responses',
+    type: 'output',
+    category: 'quality',
+    enabled: true,
+    configurable: true,
+    defaultThreshold: 0.7,
+    thresholds: {
+      customScore: 0.7,
+    },
+  },
 ];
 
 // Input guardrail factories registry
@@ -103,11 +132,24 @@ export function getGuardrailConfig(id: string): GuardrailConfig | undefined {
  */
 export function getInputGuardrails(
   guardrailIds: string[] = [],
-  thresholds?: Record<string, number>
+  thresholds?: Record<string, number>,
+  customInstructions?: { input?: string; output?: string }
 ): InputGuardrail[] {
   const guardrails: InputGuardrail[] = [];
   
   for (const id of guardrailIds) {
+    // Handle custom guardrail specially
+    if (id === 'custom-input' && customInstructions?.input) {
+      try {
+        const threshold = thresholds?.[id] ?? 0.7;
+        const guardrail = createCustomInputGuardrail(customInstructions.input, threshold);
+        guardrails.push(guardrail);
+      } catch (error) {
+        console.error(`Failed to create custom input guardrail:`, error);
+      }
+      continue;
+    }
+    
     const config = getGuardrailConfig(id);
     if (!config || config.type !== 'input') {
       console.warn(`Unknown or invalid input guardrail: ${id}`);
@@ -138,11 +180,24 @@ export function getInputGuardrails(
  */
 export function getOutputGuardrails(
   guardrailIds: string[] = [],
-  thresholds?: Record<string, number>
+  thresholds?: Record<string, number>,
+  customInstructions?: { input?: string; output?: string }
 ): OutputGuardrail[] {
   const guardrails: OutputGuardrail[] = [];
   
   for (const id of guardrailIds) {
+    // Handle custom guardrail specially
+    if (id === 'custom-output' && customInstructions?.output) {
+      try {
+        const threshold = thresholds?.[id] ?? 0.7;
+        const guardrail = createCustomOutputGuardrail(customInstructions.output, threshold);
+        guardrails.push(guardrail);
+      } catch (error) {
+        console.error(`Failed to create custom output guardrail:`, error);
+      }
+      continue;
+    }
+    
     const config = getGuardrailConfig(id);
     if (!config || config.type !== 'output') {
       console.warn(`Unknown or invalid output guardrail: ${id}`);

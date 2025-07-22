@@ -7,6 +7,8 @@ import {
   Switch,
   Badge,
   Stack,
+  Textarea,
+  Collapse,
 } from '@mantine/core'
 import { Shield, CheckCircle, AlertTriangle, Zap } from 'lucide-react'
 import { AVAILABLE_GUARDRAILS } from '@/lib/guardrails'
@@ -15,6 +17,8 @@ interface GuardrailCardProps {
   guardrailId: string
   isSelected: boolean
   onToggle: (guardrailId: string) => void
+  customInstructions?: string
+  onCustomInstructionsChange?: (instructions: string) => void
 }
 
 function getGuardrailIcon(category: string) {
@@ -72,6 +76,10 @@ function getGuardrailDescription(guardrailId: string): string {
       return 'Ensures responses maintain professional and appropriate tone'
     case 'factual-accuracy':
       return 'Validates for factual correctness & appropriate uncertainty'
+    case 'custom-input':
+      return 'Apply custom validation rules to user input'
+    case 'custom-output':
+      return 'Apply custom validation rules to agent responses'
     default:
       return 'Provides additional safety and quality checks'
   }
@@ -80,7 +88,9 @@ function getGuardrailDescription(guardrailId: string): string {
 export function GuardrailCard({
   guardrailId,
   isSelected,
-  onToggle
+  onToggle,
+  customInstructions = '',
+  onCustomInstructionsChange
 }: GuardrailCardProps) {
   const guardrail = AVAILABLE_GUARDRAILS.find(g => g.id === guardrailId)
   
@@ -91,6 +101,7 @@ export function GuardrailCard({
   const Icon = getGuardrailIcon(guardrail.category)
   const colors = getGuardrailColors(guardrail.category)
   const description = getGuardrailDescription(guardrailId)
+  const isCustom = guardrailId === 'custom-input' || guardrailId === 'custom-output'
 
   return (
     <Card
@@ -120,6 +131,29 @@ export function GuardrailCard({
           onChange={() => onToggle(guardrailId)}
         />
       </Group>
+      
+      {/* Custom Instructions Section */}
+      {isCustom && (
+        <Collapse in={isSelected}>
+          <Stack gap="sm" mt="md">
+            <Text size="xs" fw={500}>
+              Custom Instructions
+            </Text>
+            <Textarea
+              placeholder={`Enter your custom ${guardrailId === 'custom-input' ? 'input' : 'output'} validation rules...`}
+              value={customInstructions}
+              onChange={(e) => onCustomInstructionsChange?.(e.currentTarget.value)}
+              minRows={5}
+              maxRows={10}
+              size="sm"
+              autosize
+            />
+            <Text size="xs" c="dimmed">
+              Describe what content should be blocked or what requirements must be met.
+            </Text>
+          </Stack>
+        </Collapse>
+      )}
     </Card>
   )
 }

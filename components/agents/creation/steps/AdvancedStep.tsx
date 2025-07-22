@@ -28,6 +28,14 @@ export function AdvancedStep({ form }: StepProps) {
   const handleToggleOutputGuardrail = (guardrailId: string) => {
     handleToggleGuardrail(guardrailId, 'output')
   }
+  
+  const handleCustomInputInstructions = (instructions: string) => {
+    form.setFieldValue('rules.guardrails.customInstructions.input', instructions)
+  }
+  
+  const handleCustomOutputInstructions = (instructions: string) => {
+    form.setFieldValue('rules.guardrails.customInstructions.output', instructions)
+  }
 
   return (
     <Stack gap="lg">
@@ -43,12 +51,16 @@ export function AdvancedStep({ form }: StepProps) {
           type="input"
           selectedGuardrails={form.values.rules.guardrails?.input || []}
           onToggleGuardrail={handleToggleInputGuardrail}
+          customInstructions={form.values.rules.guardrails?.customInstructions?.input || ''}
+          onCustomInstructionsChange={handleCustomInputInstructions}
         />
 
         <GuardrailSection
           type="output"
           selectedGuardrails={form.values.rules.guardrails?.output || []}
           onToggleGuardrail={handleToggleOutputGuardrail}
+          customInstructions={form.values.rules.guardrails?.customInstructions?.output || ''}
+          onCustomInstructionsChange={handleCustomOutputInstructions}
         />
       </Stack>
     </Stack>

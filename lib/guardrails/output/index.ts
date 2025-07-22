@@ -7,3 +7,7 @@ export {
   createFactualAccuracyGuardrail,
   factualAccuracyGuardrail
 } from './factual-accuracy';
+
+export {
+  createCustomOutputGuardrail
+} from './custom-output';

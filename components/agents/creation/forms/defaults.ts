@@ -25,7 +25,11 @@ export const getDefaultValues = (
     outputType: (orgSettings?.defaultOutputType === 'json' ? 'structured' : orgSettings?.defaultOutputType) || 'text',
     toolChoice: orgSettings?.defaultToolChoice || 'auto',
     handoffs: [],
-    guardrails: { input: [], output: [] },
+    guardrails: { 
+      input: [], 
+      output: [], 
+      customInstructions: { input: '', output: '' } 
+    },
     customInstructions: []
   },
   

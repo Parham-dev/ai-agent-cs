@@ -105,13 +105,28 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { tools: _tools, guardrails: guardrailsConfig, ...cleanAgentConfig } = agentConfig as {
     tools?: unknown
-    guardrails?: { input?: string[], output?: string[] }
+    guardrails?: { 
+      input?: string[]
+      output?: string[]
+      customInstructions?: {
+        input?: string
+        output?: string
+      }
+    }
     [key: string]: unknown
   }
 
   // Configure guardrails if they exist
-  const inputGuardrails = guardrailsConfig?.input ? getInputGuardrails(guardrailsConfig.input) : []
-  const outputGuardrails = guardrailsConfig?.output ? getOutputGuardrails(guardrailsConfig.output) : []
+  const inputGuardrails = guardrailsConfig?.input ? getInputGuardrails(
+    guardrailsConfig.input,
+    undefined, // thresholds - not implemented yet
+    guardrailsConfig.customInstructions
+  ) : []
+  const outputGuardrails = guardrailsConfig?.output ? getOutputGuardrails(
+    guardrailsConfig.output,
+    undefined, // thresholds - not implemented yet
+    guardrailsConfig.customInstructions
+  ) : []
   
   logger.info('Guardrails configured', {
     inputGuardrailsCount: inputGuardrails.length,

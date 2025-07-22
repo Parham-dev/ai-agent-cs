@@ -7,3 +7,7 @@ export {
   createPrivacyProtectionGuardrail,
   privacyProtectionGuardrail
 } from './privacy-protection';
+
+export {
+  createCustomInputGuardrail
+} from './custom-input';

@@ -9,12 +9,16 @@ interface GuardrailSectionProps {
   type: 'input' | 'output'
   selectedGuardrails: string[]
   onToggleGuardrail: (guardrailId: string) => void
+  customInstructions?: string
+  onCustomInstructionsChange?: (instructions: string) => void
 }
 
 export function GuardrailSection({
   type,
   selectedGuardrails,
-  onToggleGuardrail
+  onToggleGuardrail,
+  customInstructions = '',
+  onCustomInstructionsChange
 }: GuardrailSectionProps) {
   const availableGuardrails = getAvailableGuardrails(type)
   const Icon = type === 'input' ? Download : Upload
@@ -38,15 +42,20 @@ export function GuardrailSection({
       </div>
       
       <Grid>
-        {availableGuardrails.map((guardrail) => (
-          <Grid.Col key={guardrail.id} span={{ base: 12, sm: 6 }}>
-            <GuardrailCard
-              guardrailId={guardrail.id}
-              isSelected={selectedGuardrails.includes(guardrail.id)}
-              onToggle={onToggleGuardrail}
-            />
-          </Grid.Col>
-        ))}
+        {availableGuardrails.map((guardrail) => {
+          const isCustom = guardrail.id === `custom-${type}`;
+          return (
+            <Grid.Col key={guardrail.id} span={isCustom ? 12 : { base: 12, sm: 6 }}>
+              <GuardrailCard
+                guardrailId={guardrail.id}
+                isSelected={selectedGuardrails.includes(guardrail.id)}
+                onToggle={onToggleGuardrail}
+                customInstructions={isCustom ? customInstructions : undefined}
+                onCustomInstructionsChange={isCustom ? onCustomInstructionsChange : undefined}
+              />
+            </Grid.Col>
+          );
+        })}
       </Grid>
     </Stack>
   )

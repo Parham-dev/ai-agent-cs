@@ -20,6 +20,10 @@ export interface AgentFormData {
     guardrails?: {
       input: string[]
       output: string[]
+      customInstructions?: {
+        input?: string
+        output?: string
+      }
     }
     customInstructions?: string[]
   }
