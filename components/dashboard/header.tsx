@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from 'react'
-import { Bell, Search, User, ChevronDown, Zap, LogOut, Settings, UserIcon } from 'lucide-react'
-import { Group, TextInput, ActionIcon, Badge, Avatar, Menu, Title, Text } from '@mantine/core'
+import { User, ChevronDown, Zap, LogOut, UserIcon } from 'lucide-react'
+import { Group, Avatar, Menu, Title, Text } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import { MantineThemeToggle, useAuthContext } from '@/components/providers'
@@ -104,47 +104,8 @@ export function Header({ title = "Dashboard", subtitle }: HeaderProps) {
           )}
         </div>
 
-        {/* Right side - Search, Notifications, Theme, Profile */}
+        {/* Right side - Theme, Profile */}
         <Group gap="sm">
-          {/* Search */}
-          <TextInput
-            placeholder="Search conversations..."
-            leftSection={<Search size={16} />}
-            w={250}
-            visibleFrom="md"
-          />
-
-          {/* Notifications */}
-          <ActionIcon 
-            variant="subtle" 
-            size="lg" 
-            pos="relative"
-            style={{ overflow: 'visible' }}
-          >
-            <Bell size={18} />
-            <Badge 
-              size="xs" 
-              variant="filled" 
-              color="red" 
-              pos="absolute" 
-              top={-8} 
-              right={-8}
-              style={{ 
-                minWidth: 18, 
-                height: 18, 
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '10px',
-                fontWeight: 600,
-                zIndex: 10
-              }}
-            >
-              3
-            </Badge>
-          </ActionIcon>
-
           {/* Theme Toggle */}
           <MantineThemeToggle />
 
@@ -170,9 +131,6 @@ export function Header({ title = "Dashboard", subtitle }: HeaderProps) {
             <Menu.Dropdown>
               <Menu.Item leftSection={<UserIcon size={16} />}>
                 Profile
-              </Menu.Item>
-              <Menu.Item leftSection={<Settings size={16} />}>
-                Settings
               </Menu.Item>
               <Menu.Divider />
               <Menu.Item 
