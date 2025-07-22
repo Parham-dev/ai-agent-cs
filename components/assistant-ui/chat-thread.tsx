@@ -10,7 +10,6 @@ import {
   Bot,
   CheckIcon,
   CopyIcon,
-  RefreshCwIcon,
   SendHorizontalIcon,
 } from "lucide-react";
 
@@ -211,8 +210,8 @@ const ComposerAction: FC = () => {
 
 const UserMessage: FC = () => {
   return (
-    <MessagePrimitive.Root className="grid w-full auto-rows-auto grid-cols-[minmax(72px,1fr)_auto] gap-y-2 py-4 [&:where(>*)]:col-start-2">
-      <div className="bg-muted text-foreground col-start-2 row-start-2 max-w-[80%] break-words rounded-3xl px-5 py-2.5">
+    <MessagePrimitive.Root className="flex w-full justify-end py-4">
+      <div className="bg-muted text-foreground max-w-[min(80%,32rem)] break-normal rounded-3xl px-5 py-2.5">
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>
@@ -238,12 +237,13 @@ const EditComposer: FC = () => {
 
 const AssistantMessage: FC = () => {
   return (
-    <MessagePrimitive.Root className="relative grid w-full grid-cols-[auto_auto_1fr] grid-rows-[auto_1fr] py-4">
-      <div className="text-foreground col-span-2 col-start-2 row-start-1 my-1.5 max-w-[80%] break-words leading-7">
+    <MessagePrimitive.Root className="flex w-full flex-col justify-start py-4">
+      <div className="text-foreground max-w-[min(80%,32rem)] break-normal leading-7">
         <MessagePrimitive.Parts components={{ Text: MarkdownText }} />
       </div>
-
-      <AssistantActionBar />
+      <div className="mt-2">
+        <AssistantActionBar />
+      </div>
     </MessagePrimitive.Root>
   );
 };
@@ -253,7 +253,7 @@ const AssistantActionBar: FC = () => {
     <ActionBarPrimitive.Root
       hideWhenRunning
       autohide="never"
-      className="text-muted-foreground col-start-3 row-start-2 -ml-1 flex gap-1"
+      className="text-muted-foreground flex gap-1"
     >
       <MessagePrimitive.If last>
         <ActionBarPrimitive.Copy asChild>
@@ -266,11 +266,6 @@ const AssistantActionBar: FC = () => {
             </MessagePrimitive.If>
           </Button>
         </ActionBarPrimitive.Copy>
-        <ActionBarPrimitive.Reload asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <RefreshCwIcon className="h-4 w-4" />
-          </Button>
-        </ActionBarPrimitive.Reload>
       </MessagePrimitive.If>
     </ActionBarPrimitive.Root>
   );
