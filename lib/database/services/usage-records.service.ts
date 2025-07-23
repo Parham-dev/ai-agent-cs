@@ -250,7 +250,8 @@ class UsageRecordsService {
         }
       })
 
-      return dailyUsage.map(day => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return dailyUsage.map((day: any) => ({
         date: day.createdAt.toISOString().split('T')[0],
         totalCost: day._sum.totalCost || 0,
         totalTokens: day._sum.totalTokens || 0,

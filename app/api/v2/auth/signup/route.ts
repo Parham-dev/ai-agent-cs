@@ -43,7 +43,8 @@ export const POST = rateLimitedHandler(async function(request: NextRequest): Pro
     }
 
     // Use database transaction to ensure atomicity
-    const result = await prisma.$transaction(async (tx) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await prisma.$transaction(async (tx: any) => {
       // Generate a unique slug for the organization
       const timestamp = Date.now();
       const randomString = Math.random().toString(36).substring(2, 8);

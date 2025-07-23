@@ -488,7 +488,8 @@ class ConversationsService {
               in: await prisma.conversation.findMany({
                 where: { sessionId: session.sessionId, organizationId },
                 select: { id: true }
-              }).then(convs => convs.map(c => c.id))
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              }).then((convs: any) => convs.map((c: any) => c.id))
             }
           },
           _sum: { totalCost: true, totalTokens: true }
@@ -592,7 +593,8 @@ class ConversationsService {
 
       // Get agent details for top agents
       const topAgents = await Promise.all(
-        topAgentsData.map(async (agentData) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        topAgentsData.map(async (agentData: any) => {
           const agent = await prisma.agent.findUnique({
             where: { id: agentData.agentId },
             select: { name: true }

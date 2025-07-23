@@ -61,7 +61,8 @@ export const GET = withAuth(async (request: NextRequest, context: AuthContext): 
       
       console.log('🔧 Found custom-mcp integrations:', customMcpIntegrations.length);
       
-      customMcpIntegrations.forEach((integration, index) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      customMcpIntegrations.forEach((integration: any, index: number) => {
         const credentials = integration.credentials as Record<string, unknown>;
         console.log(`🔧 Integration ${index + 1}:`, {
           id: integration.id,
