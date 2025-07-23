@@ -5,22 +5,22 @@
 A powerful open-source platform for creating intelligent AI customer service agents with advanced safety features, MCP integration, and embeddable widgets. Built with Next.js, OpenAI's latest models, and comprehensive guardrails.
 
 **Key Features:**
-- 🧙‍♂️ **5-Step Agent Wizard** - No coding required to create production-ready AI agents
-- 🛡️ **Multi-Layer Guardrails** - Advanced safety protection with content filtering and privacy controls  
-- 🔧 **MCP Integration** - Connect to business systems via Model Context Protocol servers (Shopify support available, more integrations coming)
-- 📊 **Tool Calling** - OpenAI hosted tools (web search, file search) and custom business functions
-- 💬 **Embeddable Widget** - Deploy anywhere with secure JWT authentication (in development)
+- 🧙‍♂️ **5-Step Agent Wizard** - No coding required to create production-ready AI agents ✅
+- 🛡️ **Multi-Layer Guardrails** - Advanced safety protection with content filtering and privacy controls ✅
+- 🔧 **MCP Integration** - Connect to business systems via Model Context Protocol servers (Shopify with 12 tools available) ✅
+- 📊 **Tool Calling** - OpenAI hosted tools (web search, file search) and custom business functions ✅
+- 💬 **Embeddable Widget** - Deploy anywhere with secure JWT authentication ✅
 
 
 ## 🌟 What This Platform Does
 
 ### For Business Owners
-Create AI customer service agents through our **5-Step Wizard** (in development):
+Create AI customer service agents through our **5-Step Wizard** ✅:
 1. **Basic Information** - Configure agent name, model selection (GPT-4.1, o3, etc.), instructions, and behavior
 2. **Integrations** - Connect business systems via Model Context Protocol (MCP) servers  
 3. **Tools** - Select from OpenAI hosted tools, custom functions, and MCP capabilities
 4. **Guardrails** - Enable multi-layer safety and quality protection
-5. **Review & Deploy** - Launch your agent with embeddable widget support (coming soon)
+5. **Review & Deploy** - Launch your agent with embeddable widget support ✅
 
 
 ### For Developers
@@ -37,25 +37,23 @@ Our technical documentation covers:
 
 ## 🚀 Current Features
 
-### ✅ Implemented
-- **🧙‍♂️ Agent Creation Architecture** - Foundation for 5-step guided setup process
-- **🛡️ Multi-Layer Guardrails System** - Input/output safety and quality protection
+### ✅ Implemented & Production Ready
+- **🧙‍♂️ Complete 5-Step Agent Wizard** - Full guided setup process with all steps functional
+- **🛡️ Multi-Layer Guardrails System** - Comprehensive input/output safety and quality protection
 - **🔧 MCP Integration Architecture** - Model Context Protocol server support with native and custom tools
-- **🛒 Native Tool Support** - OpenAI hosted tools (web search, file search) and custom functions (calculations, data processing)
-- **🛒 Shopify Integration** - Complete MCP server with 12 tools (products, inventory, policies, shipping, store management)
-- **💬 Chat Interface Foundation** - Basic chat interface with guardrail monitoring
+- **🛒 Shopify Integration Complete** - Full MCP server with 12 tools (products, inventory, policies, shipping, store management)
+- **🛒 OpenAI Hosted Tools** - Web search, file search integration 
+- **💬 Embeddable Widget System** - Complete widget implementation with authentication and chat interface
 - **🔐 Authentication Framework** - JWT-based security infrastructure with domain validation
 - **🎨 Modern UI/UX** - Mantine + Tailwind CSS with dark/light theme support
+- **📊 Cost Tracking Services** - Token usage monitoring and cost calculation backend
 
 ### 🔄 In Active Development  
-- **🧙‍♂️ Complete Agent Wizard** - Full 5-step guided setup interface
-- **💬 Enhanced Chat Experience** - Advanced real-time chat with streaming responses
-- **📱 Embeddable Widget** - Cross-domain widget deployment system
-- **📊 Cost Tracking** - Comprehensive token usage and cost monitoring
 - **📈 Analytics Dashboard** - Conversation metrics and performance insights
 - **⚡ Rate Limiting** - API protection and abuse prevention
 - **🌐 CDN Distribution** - Global widget delivery infrastructure
-- **📱 Mobile Optimization** - Enhanced mobile chat experience
+- **📱 Mobile Widget Optimization** - Enhanced mobile chat experience
+- **🔗 Additional MCP Integrations** - Stripe and other business platform connections
 
 ## 🛠️ Technology Stack
 
@@ -121,12 +119,12 @@ npm run dev
 
 1. **Access the Platform**: Navigate to `http://localhost:3000`
 2. **Create Account**: Sign up or log in to access the dashboard
-3. **Agent Wizard**: Click "Create New Agent" to start the 5-step wizard (in development)
+3. **Agent Wizard**: Click "Create New Agent" to start the 5-step wizard ✅
 4. **Configure Agent**: Set name, select AI model (GPT-4.1, o3, etc.), write instructions
 5. **Connect Integrations**: Link business systems via MCP servers (optional)
 6. **Select Tools**: Choose capabilities (web search, calculations, business data)
 7. **Configure Guardrails**: Enable safety protection (content safety, privacy, tone, accuracy)
-8. **Deploy**: Test your agent and deploy as embeddable widget (coming soon)
+8. **Deploy**: Test your agent and get embeddable widget code ✅
 
 ## 💻 Available Integrations & Tools
 
@@ -174,15 +172,15 @@ Utility and business logic operations:
 - **Professional Tone** - Ensures responses maintain appropriate customer service tone
 - **Factual Accuracy** - Validates responses for correctness and uncertainty indicators
 
-### Cost Management (In Development)
+### Cost Management ✅
 Comprehensive tracking for 40+ AI models:
 - **Real-time Cost Calculation** - Token usage tracking with precise pricing
 - **Model Support** - GPT-4.1, GPT-4o, o1/o3 series, embeddings, and more
 - **Usage Analytics** - Detailed breakdowns by agent, conversation, and time period
 
-## 🔧 Agent Configuration (In Development)
+## 🔧 Agent Configuration
 
-Business owners will customize AI agents through the **5-step wizard** (coming soon):
+Business owners can customize AI agents through the **5-Step Wizard** ✅:
 
 ### Step 1: Basic Information
 ```typescript
@@ -248,16 +246,16 @@ const guardrailsConfig = {
 };
 ```
 
-### Step 5: Review & Deploy (Coming Soon)
+### Step 5: Review & Deploy ✅
 - **Live Preview** - Test agent configuration in real-time  
 - **Validation** - Ensure all settings are properly configured  
-- **One-Click Deploy** - Launch agent with generated widget code
+- **Widget Code Generation** - Get embeddable widget code for your website
 
-## 🚀 Deployment Options (In Development)
+## 🚀 Deployment Options
 
-### Embeddable Widget (Coming Soon)
+### Embeddable Widget ✅
 ```html
-<!-- Add to any website (widget in development) -->
+<!-- Add to any website -->
 <script>
   window.CustomerAgent = {
     agentId: 'your-agent-id-here',
@@ -270,14 +268,14 @@ const guardrailsConfig = {
 <script src="https://your-domain.com/widget/widget.js"></script>
 ```
 
-### Widget Security Features (Planned)
+### Widget Security Features ✅
 - **JWT Authentication** - Secure API access with signed tokens
 - **Domain Validation** - Restrict widget usage to authorized domains
 - **CORS Protection** - Cross-origin request security with domain whitelisting
-- **Rate Limiting** - API abuse prevention and spam protection
-- **CDN Distribution** - Fast global widget delivery (coming soon)
+- **Session Management** - Secure conversation persistence
+- **CDN Distribution** - Fast global widget delivery (in development)
 
-### Chat Interface (In Development)
+### Chat Interface ✅
 Direct integration for custom implementations:
 ```javascript
 // Direct chat interface (embedded in your application)
@@ -291,7 +289,7 @@ import { AgentChatInterface } from '@ai-cs-platform/components';
 />
 ```
 
-### REST API Integration (Coming Soon)
+### REST API Integration ✅
 ```javascript
 // RESTful API for custom integrations with guardrail protection
 const response = await fetch('/api/v2/agents/chat', {
@@ -387,12 +385,21 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## 📚 Documentation
 
-- [Getting Started Guide](docs/getting-started.md) - Complete setup walkthrough
-- [MCP Integration Plan](docs/MCP_INTEGRATION_PLAN.md) - Technical integration details
-- [Guardrails System](lib/guardrails/README.md) - Safety and quality system documentation
-- [API Reference](docs/api-reference.md) - RESTful API documentation
-- [Widget Documentation](docs/WIDGET.md) - Embeddable widget integration guide
-- [Development Roadmap](docs/ROADMAP.md) - Future development plans
+### Core Documentation
+- **[Complete Installation Guide →](docs/INSTALLATION.md)** - Setup, environment configuration, and troubleshooting
+- **[Architecture Overview →](docs/ARCHITECTURE.md)** - System design, components, and technical implementation
+- **[Database Schema →](docs/DATABASE.md)** - Database structure and data models
+- **[Development Roadmap →](docs/ROADMAP.md)** - Future development plans and priorities
+
+### Feature Documentation  
+- **[MCP Integration →](lib/mcp/README.md)** - Model Context Protocol implementation and server setup
+- **[Guardrails System →](lib/guardrails/README.md)** - Safety and quality protection system
+- **[Shopify Integration →](lib/mcp/servers/shopify/README.md)** - Complete e-commerce integration guide
+- **[Widget System →](docs/WIDGET.md)** - Embeddable widget implementation and deployment
+
+### Contributing
+- **[Contributing Guidelines →](CONTRIBUTING.md)** - How to contribute to the project
+- **[Code of Conduct →](CODE_OF_CONDUCT.md)** - Community guidelines and standards
 
 ## 🙏 Acknowledgments
 
@@ -408,7 +415,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support & Community
 
-- 📧 **Email**: info@appwebdev.co.ukissues)
+- 📧 **Email**: info@appwebdev.co.uk
+- 🐛 **Issues**: [GitHub Issues](https://github.com/Parham-dev/ai-agent-cs/issues)
+- 💡 **Features**: [Feature Requests](https://github.com/Parham-dev/ai-agent-cs/issues)
 
 ---
 
@@ -418,4 +427,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <p align="center">
   <a href="https://github.com/Parham-dev/ai-agent-cs/stargazers">⭐ Star us on GitHub</a> •
+  <a href="docs/INSTALLATION.md">📖 Get Started</a> •
+  <a href="docs/WIDGET.md">🚀 Deploy Widget</a>
 </p> 
