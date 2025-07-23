@@ -9,6 +9,8 @@ import { sessionStore } from '@/lib/session/database-session-store';
 import { createAgent } from '@/lib/agents/agent-factory';
 import { conversationsService } from '@/lib/database/services/conversations.service';
 import { getGlobalTraceProvider, runInContext } from '@/lib/services/openai-initialization.service';
+import { checkOrganizationCredits, estimateMessageTokens } from '@/lib/auth/credit-check';
+import { organizationCreditsService } from '@/lib/database/services/organization-credits.service';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -109,6 +111,50 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       logger.warn('Attempted to use inactive agent');
       return Api.error('VALIDATION_ERROR', 'Agent is not active');
     }
+
+    // Check organization credits before processing
+    logger.info('Checking organization credits', { 
+      organizationId: agentData.organizationId,
+      model: agentData.model
+    });
+
+    // Initialize credits if needed (for new organizations)
+    try {
+      const credits = await organizationCreditsService.getOrganizationCredits(agentData.organizationId);
+      if (!credits) {
+        logger.info('Initializing credits for new organization');
+        await organizationCreditsService.initializeOrganizationCredits(agentData.organizationId);
+      }
+    } catch (error) {
+      logger.error('Failed to initialize credits', {}, error as Error);
+    }
+
+    const estimatedTokens = estimateMessageTokens(message);
+    const creditCheck = await checkOrganizationCredits(agentData.organizationId, {
+      estimatedTokens,
+      model: agentData.model,
+      errorMessage: 'Your organization has insufficient credits to process this request. Please add credits to continue.'
+    });
+
+    if (!creditCheck.hasCredits) {
+      logger.warn('Insufficient credits', {
+        organizationId: agentData.organizationId,
+        currentBalance: creditCheck.currentBalance,
+        estimatedCost: creditCheck.estimatedCost
+      });
+      
+      return Api.error('VALIDATION_ERROR', creditCheck.message || 'Insufficient credits', {
+        currentBalance: creditCheck.currentBalance,
+        estimatedCost: creditCheck.estimatedCost,
+        requiredCredits: creditCheck.estimatedCost,
+        addCreditsUrl: '/api/v2/organization/credits'
+      });
+    }
+
+    logger.info('Credit check passed', {
+      currentBalance: creditCheck.currentBalance,
+      estimatedCost: creditCheck.estimatedCost
+    });
 
     // Try to get existing session
     let session = await sessionStore.get(sessionId, agentData.organizationId);

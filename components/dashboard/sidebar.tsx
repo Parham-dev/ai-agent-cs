@@ -7,7 +7,8 @@ import {
   Menu, 
   X,
   Bot,
-  Puzzle
+  Puzzle,
+  CreditCard
 } from 'lucide-react'
 import { NavLink, Group, Text, ActionIcon, Indicator } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
@@ -23,6 +24,7 @@ const navigation: NavItem[] = [
   { name: 'Overview', href: '/', icon: Home },
   { name: 'Agents', href: '/agents', icon: Bot },
   { name: 'Integrations', href: '/integrations', icon: Puzzle },
+  { name: 'Usage & Billing', href: '/billing', icon: CreditCard },
 ]
 
 export function Sidebar() {

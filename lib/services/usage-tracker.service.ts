@@ -9,8 +9,11 @@
  */
 
 import { usageRecordsService } from '@/lib/database/services/usage-records.service';
+import { organizationCreditsService } from '@/lib/database/services/organization-credits.service';
+import { creditTransactionsService } from '@/lib/database/services/credit-transactions.service';
 import type { CreateUsageRecordData } from '@/lib/types/database';
 import { CostCalculatorService } from './cost-calculator.service';
+import { userPricingService } from './user-pricing.service';
 import { logger } from '@/lib/utils/logger';
 
 export interface OpenAIUsage {
@@ -122,6 +125,7 @@ export class UsageTrackerService {
       
       // Calculate costs
       const costs = this.costCalculator.calculateCosts(model, inputTokens, outputTokens);
+      const userCost = userPricingService.calculateUserCost(costs.totalCost);
       
       // Create usage record
       const usageData: CreateUsageRecordData = {
@@ -135,12 +139,36 @@ export class UsageTrackerService {
         inputCost: costs.inputCost,
         outputCost: costs.outputCost,
         totalCost: costs.totalCost,
+        userCost,
         source,
         conversationId: finalConversationId, // Extract conversationId from metadata
         metadata
       };
 
-      await usageRecordsService.createUsageRecord(usageData);
+      const usageRecord = await usageRecordsService.createUsageRecord(usageData);
+
+      // Deduct credits from organization
+      try {
+        await organizationCreditsService.deductCredits(organizationId, userCost);
+        
+        // Create credit transaction for the deduction
+        await creditTransactionsService.createUsageDeduction({
+          organizationId,
+          amount: userCost,
+          usageRecordId: usageRecord.id,
+          conversationId: finalConversationId,
+          agentId: agentId || undefined,
+          model,
+          description: `${model} API usage - ${inputTokens + outputTokens} tokens`
+        });
+      } catch (creditError) {
+        logger.error('Failed to deduct credits', {
+          organizationId,
+          userCost,
+          usageRecordId: usageRecord.id
+        }, creditError as Error);
+        // Don't throw - we still want to track usage even if credit deduction fails
+      }
     } catch (error) {
       logger.error('Failed to track usage', {
         organizationId: params.organizationId,
@@ -168,6 +196,7 @@ export class UsageTrackerService {
       
       // For embeddings, all tokens are input tokens
       const costs = this.costCalculator.calculateCosts(model, tokens, 0);
+      const userCost = userPricingService.calculateUserCost(costs.totalCost);
       
       const usageData: CreateUsageRecordData = {
         organizationId,
@@ -180,11 +209,33 @@ export class UsageTrackerService {
         inputCost: costs.inputCost,
         outputCost: 0,
         totalCost: costs.totalCost,
+        userCost,
         source,
         metadata
       };
 
-      await usageRecordsService.createUsageRecord(usageData);
+      const usageRecord = await usageRecordsService.createUsageRecord(usageData);
+
+      // Deduct credits from organization
+      try {
+        await organizationCreditsService.deductCredits(organizationId, userCost);
+        
+        // Create credit transaction for the deduction
+        await creditTransactionsService.createUsageDeduction({
+          organizationId,
+          amount: userCost,
+          usageRecordId: usageRecord.id,
+          model,
+          description: `${model} embedding - ${tokens} tokens`
+        });
+      } catch (creditError) {
+        logger.error('Failed to deduct credits for embedding', {
+          organizationId,
+          userCost,
+          usageRecordId: usageRecord.id
+        }, creditError as Error);
+        // Don't throw - we still want to track usage even if credit deduction fails
+      }
     } catch (error) {
       logger.error('Failed to track embedding usage', {
         organizationId: params.organizationId,

@@ -224,6 +224,31 @@ declare global {
         condition?: string
       }[]
     }
+
+    // Credit transaction metadata
+    interface CreditTransactionMetadata {
+      // Payment information (for CREDIT_PURCHASE)
+      paymentMethod?: 'stripe' | 'paypal' | 'manual'
+      paymentId?: string
+      invoiceId?: string
+      
+      // Usage information (for USAGE_DEDUCTION)
+      usageRecordId?: string
+      conversationId?: string
+      agentId?: string
+      model?: string
+      
+      // Refund information (for REFUND)
+      refundReason?: string
+      originalTransactionId?: string
+      
+      // Admin notes
+      adminNotes?: string
+      performedBy?: string
+      
+      // Custom fields
+      [key: string]: unknown
+    }
   }
 }
 

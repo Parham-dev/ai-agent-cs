@@ -206,6 +206,7 @@ export interface UsageRecord {
   inputCost: number
   outputCost: number
   totalCost: number
+  userCost: number
   source: string
   requestId?: string | null
   conversationId?: string | null
@@ -224,6 +225,7 @@ export interface CreateUsageRecordData {
   inputCost: number
   outputCost: number
   totalCost: number
+  userCost?: number
   source: string
   requestId?: string
   conversationId?: string
@@ -466,6 +468,68 @@ export interface WidgetConfig {
   lastAccessedAt?: Date | null
   createdAt: Date
   updatedAt: Date
+}
+
+// Organization Credits Types
+export interface OrganizationCredits {
+  id: string
+  organizationId: string
+  credits: number
+  freeCredits: number
+  paidCredits: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface OrganizationCreditsWithRelations extends OrganizationCredits {
+  organization?: Pick<Organization, 'name' | 'slug'>
+}
+
+export interface CreateOrganizationCreditsData {
+  organizationId: string
+  credits?: number
+  freeCredits?: number
+  paidCredits?: number
+}
+
+export interface UpdateOrganizationCreditsData {
+  credits?: number
+  freeCredits?: number
+  paidCredits?: number
+}
+
+// Credit Transaction Types
+export type TransactionType = 'CREDIT_PURCHASE' | 'USAGE_DEDUCTION' | 'FREE_CREDIT' | 'REFUND'
+
+export interface CreditTransaction {
+  id: string
+  organizationId: string
+  amount: number
+  type: TransactionType
+  description?: string | null
+  metadata?: PrismaJson.CreditTransactionMetadata | null
+  createdAt: Date
+}
+
+export interface CreditTransactionWithRelations extends CreditTransaction {
+  organization?: Pick<Organization, 'name' | 'slug'>
+}
+
+export interface CreateCreditTransactionData {
+  organizationId: string
+  amount: number
+  type: TransactionType
+  description?: string
+  metadata?: PrismaJson.CreditTransactionMetadata
+}
+
+export interface CreditTransactionFilters {
+  organizationId?: string
+  type?: TransactionType
+  startDate?: Date
+  endDate?: Date
+  limit?: number
+  offset?: number
 }
 
 export interface WidgetConfigWithRelations extends WidgetConfig {

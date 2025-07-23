@@ -3,6 +3,7 @@ import { agentsService, widgetConfigsService } from '@/lib/database/services';
 import { Api, withErrorHandling, validateMethod } from '@/lib/api';
 import { createApiLogger } from '@/lib/utils/logger';
 import { sign } from 'jsonwebtoken';
+import { getCreditStatus } from '@/lib/auth/credit-check';
 import '@/lib/types/prisma-json';
 
 interface WidgetAuthRequest {
@@ -25,6 +26,13 @@ interface WidgetAuthResponse {
     allowedDomains?: string[];
     features: string[];
     branding?: Record<string, unknown>;
+  };
+  credits?: {
+    hasCredits: boolean;
+    balance: number;
+    formattedBalance: string;
+    isLow: boolean;
+    warning?: string;
   };
 }
 
@@ -103,6 +111,22 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
       timestamp: Date.now()
     });
 
+    // Get credit status for the organization
+    let creditStatus;
+    try {
+      creditStatus = await getCreditStatus(agent.organizationId);
+      logger.info('Credit status retrieved', {
+        organizationId: agent.organizationId,
+        hasCredits: creditStatus.hasCredits,
+        balance: creditStatus.balance
+      });
+    } catch (error) {
+      logger.error('Failed to get credit status', {
+        organizationId: agent.organizationId
+      }, error as Error);
+      // Continue without credit status - don't break widget auth
+    }
+
     // Prepare response
     const response: WidgetAuthResponse = {
       sessionToken,
@@ -122,6 +146,11 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
         }
       }
     };
+
+    // Include credit status if available
+    if (creditStatus) {
+      response.credits = creditStatus;
+    }
 
     // Add integration-specific features
     const agentIntegrations = agent.agentIntegrations || [];

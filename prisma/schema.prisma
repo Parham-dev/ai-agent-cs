@@ -41,6 +41,8 @@ model Organization {
   users            User[]
   usageRecords     UsageRecord[]
   billingConfig    BillingConfig?
+  organizationCredits OrganizationCredits?
+  creditTransactions CreditTransaction[]
 
   @@map("organizations")
 }
@@ -282,9 +284,10 @@ model UsageRecord {
   totalTokens    Int         @default(0)
   
   // Cost Calculation
-  inputCost      Float       @default(0) // Cost for input tokens
-  outputCost     Float       @default(0) // Cost for output tokens  
-  totalCost      Float       @default(0) // Total cost for this call
+  inputCost      Float       @default(0) // Cost for input tokens (system cost)
+  outputCost     Float       @default(0) // Cost for output tokens (system cost)
+  totalCost      Float       @default(0) // Total system cost for this call
+  userCost       Float       @default(0) // Total user cost (with margin applied)
   
   // Context & Metadata
   source         String      // "agent_chat", "embedding", "guardrail", "moderation"
@@ -339,4 +342,49 @@ model BillingConfig {
   organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   
   @@map("billing_configs")
+}
+
+// Organization credit balance tracking
+model OrganizationCredits {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  credits        Float        @default(0) // Total available credits in USD
+  freeCredits    Float        @default(0.30) // Initial free credits (30p)
+  paidCredits    Float        @default(0) // Purchased credits
+  
+  // Timestamps
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("organization_credits")
+}
+
+// Credit transaction history
+model CreditTransaction {
+  id             String              @id @default(cuid())
+  organizationId String
+  amount         Float               // Positive for credits, negative for usage
+  type           TransactionType     // Type of transaction
+  description    String?             // Human readable description
+  /// [CreditTransactionMetadata]
+  metadata       Json?               @default("{}") // Additional transaction data
+  
+  // Timestamps
+  createdAt      DateTime            @default(now())
+  
+  // Relations
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@index([organizationId, createdAt])
+  @@map("credit_transactions")
+}
+
+enum TransactionType {
+  CREDIT_PURCHASE   // Credits purchased by organization
+  USAGE_DEDUCTION   // Credits deducted for API usage
+  FREE_CREDIT       // Initial or promotional credits
+  REFUND            // Refunded credits
 }

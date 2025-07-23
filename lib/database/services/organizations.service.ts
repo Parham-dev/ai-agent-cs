@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/database/database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
+import { organizationCreditsService } from './organization-credits.service'
+import { creditTransactionsService } from './credit-transactions.service'
 import type {
   Organization,
   OrganizationWithStats,
@@ -173,6 +175,22 @@ class OrganizationsService {
           description: data.description?.trim() || null
         }
       })
+
+      // Initialize credits for new organization
+      try {
+        await organizationCreditsService.initializeOrganizationCredits(organization.id)
+        
+        // Create initial free credit transaction
+        await creditTransactionsService.createFreeCredit({
+          organizationId: organization.id,
+          amount: 0.30,
+          description: 'Welcome credit for new organization',
+          adminNotes: 'Auto-granted on organization creation'
+        })
+      } catch (creditError) {
+        // Log error but don't fail organization creation
+        console.error('Failed to initialize credits for new organization:', creditError)
+      }
 
       return organization as Organization
     } catch (error) {

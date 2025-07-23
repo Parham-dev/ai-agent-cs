@@ -5,6 +5,7 @@ import { withRateLimit, RateLimits } from '@/lib/auth/rate-limiting';
 import { createServerSupabaseClient } from '@/lib/database/clients';
 import { prisma } from '@/lib/database';
 import { syncUserJWTMetadata } from '@/lib/services/jwt-metadata.service';
+import { organizationCreditsService } from '@/lib/database/services/organization-credits.service';
 import { z } from 'zod';
 import type { SignupRequest } from '@/lib/types/auth';
 
@@ -93,6 +94,15 @@ export const POST = rateLimitedHandler(async function(request: NextRequest): Pro
         supabaseUser: authData.user
       };
     });
+
+    // Initialize organization credits with free credits
+    try {
+      await organizationCreditsService.initializeOrganizationCredits(result.organization.id);
+      console.log('Initialized organization credits for:', result.organization.id);
+    } catch (error) {
+      console.error('Failed to initialize organization credits during signup:', error);
+      // Don't fail the signup, but log the error
+    }
 
     // Sync JWT metadata with the user data
     try {

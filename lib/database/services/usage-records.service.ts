@@ -131,6 +131,7 @@ class UsageRecordsService {
           inputCost: data.inputCost || 0,
           outputCost: data.outputCost || 0,
           totalCost: data.totalCost,
+          userCost: data.userCost || data.totalCost, // Default to system cost if not provided
           source: data.source.trim(),
           requestId: data.requestId?.trim() || null,
           conversationId: data.conversationId?.trim() || null,
