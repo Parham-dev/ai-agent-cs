@@ -97,12 +97,11 @@ class IntegrationsService {
     type: string
   ): Promise<Integration | null> {
     try {
-      const integration = await prisma.integration.findUnique({
+      // Since we changed the unique constraint to include name, use findFirst for this query
+      const integration = await prisma.integration.findFirst({
         where: {
-          organizationId_type: {
-            organizationId,
-            type
-          }
+          organizationId,
+          type
         }
       })
 
@@ -127,19 +126,39 @@ class IntegrationsService {
         throw new ValidationError('Integration credentials are required', 'credentials')
       }
 
-      // Check if integration of this type already exists for this organization
-      const existingIntegration = await this.getIntegrationByOrganizationAndType(
-        organizationId, 
-        data.type
-      )
-      
-      if (existingIntegration) {
-        // If integration exists, update its credentials instead of creating new one
-        return this.updateIntegration(existingIntegration.id, {
-          credentials: data.credentials,
-          name: data.name,
-          description: data.description
-        }, organizationId)
+      // Check if integration already exists
+      if (data.type === 'custom-mcp') {
+        // For custom MCP, check by organizationId, type, and name to allow multiple
+        const existingCustomMcp = await prisma.integration.findFirst({
+          where: {
+            organizationId,
+            type: data.type,
+            name: data.name.trim()
+          }
+        })
+        
+        if (existingCustomMcp) {
+          // Update existing custom MCP with same name
+          return this.updateIntegration(existingCustomMcp.id, {
+            credentials: data.credentials,
+            description: data.description
+          }, organizationId)
+        }
+      } else {
+        // For other integrations, maintain single instance per type
+        const existingIntegration = await this.getIntegrationByOrganizationAndType(
+          organizationId, 
+          data.type
+        )
+        
+        if (existingIntegration) {
+          // If integration exists, update its credentials instead of creating new one
+          return this.updateIntegration(existingIntegration.id, {
+            credentials: data.credentials,
+            name: data.name,
+            description: data.description
+          }, organizationId)
+        }
       }
 
       const integration = await prisma.integration.create({

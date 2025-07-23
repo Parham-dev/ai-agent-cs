@@ -8,8 +8,7 @@ import type { CustomMcpCredentials } from '@/lib/types/integrations';
 import type { CustomMcpServerResult } from './types';
 import { 
   createHostedMcpServer, 
-  createStreamableHttpMcpServer, 
-  createStdioMcpServer 
+  createStreamableHttpMcpServer
 } from './creators';
 
 /**
@@ -41,9 +40,6 @@ export async function createCustomMcpServer(
         
       case 'streamable-http':
         return await createStreamableHttpMcpServer(credentials, selectedTools);
-        
-      case 'stdio':
-        return await createStdioMcpServer(credentials, selectedTools);
         
       default:
         throw new Error(`Unsupported MCP server type: ${credentials.serverType}`);

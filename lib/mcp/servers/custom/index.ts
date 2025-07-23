@@ -12,8 +12,7 @@ export { createCustomMcpServer } from './factory';
 // Export server creators (for advanced use cases)
 export { 
   createHostedMcpServer, 
-  createStreamableHttpMcpServer, 
-  createStdioMcpServer 
+  createStreamableHttpMcpServer
 } from './creators';
 
 // Export testing functionality

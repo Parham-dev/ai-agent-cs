@@ -104,7 +104,7 @@ export function IntegrationGrid({
           
           {availableTypes.length === 0 && allIntegrations.length > 0 && (
             <Text size="sm" c="dimmed">
-              All available integration types have been added
+              All single-instance integration types have been added. Custom MCP servers can still be added.
             </Text>
           )}
         </Group>

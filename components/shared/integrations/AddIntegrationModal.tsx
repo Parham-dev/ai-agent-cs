@@ -49,7 +49,7 @@ export function AddIntegrationModal({
         {availableTypes.length === 0 ? (
           <Card withBorder p="md">
             <Text c="dimmed" ta="center">
-              All available integration types are already added
+              All single-instance integration types are already added
             </Text>
           </Card>
         ) : (

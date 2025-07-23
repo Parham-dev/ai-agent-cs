@@ -42,13 +42,23 @@ export function useIntegrations() {
   const addTempIntegration = (type: string): ApiIntegration => {
     // Check if integration of this type already exists (real or temp)
     const existingTypes = allIntegrations.map(int => int.type)
-    if (existingTypes.includes(type)) {
+    
+    // For non-custom MCP integrations, enforce single instance
+    if (type !== 'custom-mcp' && existingTypes.includes(type)) {
       throw new Error(`Integration of type '${type}' already exists`)
+    }
+
+    // Generate unique name for custom MCP integrations
+    let integrationName = type.charAt(0).toUpperCase() + type.slice(1)
+    if (type === 'custom-mcp') {
+      const existingCustomMcps = allIntegrations.filter(int => int.type === 'custom-mcp')
+      const count = existingCustomMcps.length + 1
+      integrationName = `Custom MCP ${count}`
     }
 
     const tempIntegration: ApiIntegration = {
       id: `temp-${type}-${Date.now()}`,
-      name: type.charAt(0).toUpperCase() + type.slice(1),
+      name: integrationName,
       type,
       description: `${type} integration`,
       isActive: true,
@@ -133,7 +143,14 @@ export function useIntegrations() {
 
   const getAvailableTypes = <T extends string>(availableTypes: readonly T[]): T[] => {
     const existingTypes = allIntegrations.map(int => int.type)
-    return availableTypes.filter(type => !existingTypes.includes(type))
+    return availableTypes.filter(type => {
+      // Always allow custom-mcp to be added (multiple instances allowed)
+      if (type === 'custom-mcp') {
+        return true
+      }
+      // For other types, enforce single instance
+      return !existingTypes.includes(type)
+    })
   }
 
   return {

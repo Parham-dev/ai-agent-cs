@@ -2,7 +2,7 @@
  * Custom MCP Server Connection Testing and Validation
  */
 
-import { MCPServerStdio, MCPServerStreamableHttp } from '@openai/agents';
+import { MCPServerStreamableHttp } from '@openai/agents';
 import { logger } from '@/lib/utils/logger';
 import type { CustomMcpCredentials } from '@/lib/types/integrations';
 import type { CustomMcpTestResult } from './types';
@@ -96,7 +96,7 @@ async function testHostedServer(credentials: CustomMcpCredentials): Promise<Cust
  * Test server connection for HTTP and stdio servers
  */
 async function testServerConnection(
-  result: { server: MCPServerStdio | MCPServerStreamableHttp; type: string; name: string },
+  result: { server: MCPServerStreamableHttp; type: string; name: string },
   credentials: CustomMcpCredentials
 ): Promise<CustomMcpTestResult> {
   // Validate configuration first
@@ -105,10 +105,6 @@ async function testServerConnection(
     if (!httpValidation.success) return httpValidation;
   }
   
-  if (result.type === 'stdio') {
-    const stdioValidation = validateStdioServer(credentials);
-    if (!stdioValidation.success) return stdioValidation;
-  }
 
   try {
     await result.server.connect();
@@ -181,33 +177,11 @@ function validateHttpServer(credentials: CustomMcpCredentials): CustomMcpTestRes
   return { success: true };
 }
 
-/**
- * Validate stdio server configuration
- */
-function validateStdioServer(credentials: CustomMcpCredentials): CustomMcpTestResult {
-  if (!credentials.command || credentials.command.trim() === '') {
-    return { success: false, error: 'Command is required for stdio MCP servers' };
-  }
-  
-  // Basic command validation - check if it contains valid command structure
-  const command = credentials.command.trim();
-  if (!command.includes(' ') && !command.startsWith('npx') && !command.startsWith('node') && !command.startsWith('python')) {
-    return { success: false, error: 'Command should be a complete command with arguments (e.g., "npx @modelcontextprotocol/server-filesystem /tmp")' };
-  }
-  
-  // Log command for debugging
-  console.log('🔧 Stdio MCP Server command:', {
-    command: credentials.command,
-    hint: 'Common servers: @modelcontextprotocol/server-filesystem, @modelcontextprotocol/server-sqlite'
-  });
-  
-  return { success: true };
-}
 
 /**
  * Discover tools from connected server
  */
-async function discoverTools(server: MCPServerStdio | MCPServerStreamableHttp, credentials: CustomMcpCredentials): Promise<string[]> {
+async function discoverTools(server: MCPServerStreamableHttp, credentials: CustomMcpCredentials): Promise<string[]> {
   let discoveredTools: string[] = [];
   
   try {

@@ -24,11 +24,11 @@ export interface IntegrationCredentials {
 
 /**
  * Custom MCP Server credentials interface
- * Supports all three MCP server types: hosted, streamable-http, and stdio
+ * Supports secure MCP server types: hosted and streamable-http (stdio disabled for security)
  */
 export interface CustomMcpCredentials {
   /** MCP server type */
-  serverType: 'hosted' | 'streamable-http' | 'stdio';
+  serverType: 'hosted' | 'streamable-http';
   /** Display name for the server */
   name: string;
   
@@ -53,14 +53,6 @@ export interface CustomMcpCredentials {
   password?: string;
   /** Session ID for HTTP servers */
   sessionId?: string;
-  
-  // Stdio MCP Server fields
-  /** Command to execute for stdio servers */
-  command?: string;
-  /** Working directory for stdio servers */
-  workingDirectory?: string;
-  /** Environment variables for stdio servers */
-  environment?: Record<string, string>;
 }
 
 export interface ConfiguredIntegration {

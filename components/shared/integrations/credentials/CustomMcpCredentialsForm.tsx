@@ -1,6 +1,6 @@
 'use client'
 
-import { Text, Code, Stack } from '@mantine/core'
+import { Text, Stack } from '@mantine/core'
 import { BaseCredentialsForm } from './BaseCredentialsForm'
 import type { ApiIntegration } from '@/lib/types'
 import type { CustomMcpCredentials } from '@/lib/types/integrations'
@@ -30,8 +30,7 @@ const customMcpConfig = {
       description: 'Choose the type of MCP server you want to connect to',
       options: [
         { value: 'hosted', label: 'Hosted MCP Server Tools (Recommended)' },
-        { value: 'streamable-http', label: 'HTTP MCP Server' },
-        { value: 'stdio', label: 'Command-Line MCP Server' }
+        { value: 'streamable-http', label: 'HTTP MCP Server' }
       ],
       validate: (value: string) => value ? null : 'Server type is required'
     },
@@ -124,24 +123,6 @@ const customMcpConfig = {
       dependsOn: { field: 'authType', value: 'basic' }
     },
 
-    // Stdio MCP Server fields
-    {
-      key: 'command',
-      label: 'Command',
-      type: 'text' as const,
-      placeholder: 'npx @modelcontextprotocol/server-filesystem /path/to/directory',
-      description: 'The full command to execute the MCP server',
-      dependsOn: { field: 'serverType', value: 'stdio' },
-      validate: (value: string) => value.trim() ? null : 'Command is required for stdio servers'
-    },
-    {
-      key: 'workingDirectory',
-      label: 'Working Directory (Optional)',
-      type: 'text' as const,
-      placeholder: '/path/to/working/directory',
-      description: 'Directory to run the command from',
-      dependsOn: { field: 'serverType', value: 'stdio' }
-    }
   ],
   helpText: (
     <Stack gap="xs">
@@ -153,12 +134,6 @@ const customMcpConfig = {
       </Text>
       <Text size="sm" c="dimmed">
         <strong>HTTP:</strong> Connect to local or remote HTTP MCP servers
-      </Text>
-      <Text size="sm" c="dimmed">
-        <strong>Stdio:</strong> Run local MCP server processes via command line
-      </Text>
-      <Text size="xs" c="dimmed">
-        Examples: <Code>npx @modelcontextprotocol/server-filesystem /data</Code>, <Code>python mcp_server.py</Code>
       </Text>
     </Stack>
   ),
