@@ -16,17 +16,24 @@
 ### Core Platform ✓
 - **OpenAI Agents SDK Integration** - Full TypeScript implementation
 - **Next.js 15 Foundation** - Modern React with TypeScript and Tailwind v4
-- **Shopify Integration** - Product catalog, search, and inventory tools
-- **Dynamic Tool System** - Configurable agent capabilities
+- **Complete 5-Step Agent Wizard** - Full guided setup with BasicInfo, Integrations, Tools, Advanced, Review steps
+- **Shopify Integration** - Complete MCP server with 12 tools (product catalog, search, inventory, policies, shipping)
+- **Multi-Layer Guardrails System** - Input/output safety and quality protection
+- **Dynamic Tool System** - Configurable agent capabilities with MCP architecture
+- **Embeddable Widget System** - Production-ready JavaScript widget with authentication
+- **Cost Tracking Services** - Token usage monitoring and cost calculation backend
 - **Real-time Validation** - Test integrations before deployment
-- **Embeddable Chat Interface** - Ready-to-use customer widget
+- **JWT Authentication** - Secure API access and session management
 
-### Working Demo ✓
-- Setup flow for business owners (`/setup/shopify`)
-- Chat interface with real Shopify data (`/chat/shopify`)
-- API endpoints for validation and chat
-- Working product search and catalog browsing
-- Professional customer service responses
+### Working Production Features ✓
+- Complete agent creation and management flow
+- Functional 5-step wizard for business owners
+- Chat interface with real business data (Shopify integration)
+- Widget deployment with customizable configurations
+- Comprehensive guardrail protection (content safety, privacy, professional tone, factual accuracy)
+- API endpoints for agents, chat, and widget deployment
+- Agent listing, editing, activation/deactivation
+- Integration management and validation
 
 ---
 
