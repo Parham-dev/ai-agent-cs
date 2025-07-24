@@ -50,7 +50,7 @@ export default function SignupPage() {
         return null;
       },
       password: (value) => {
-        if (value.length < 8) return 'Password must be at least 8 characters';
+        if (value.length < 6) return 'Password must be at least 6 characters';
         if (!/(?=.*[a-z])/.test(value)) return 'Password must contain at least one lowercase letter';
         if (!/(?=.*[A-Z])/.test(value)) return 'Password must contain at least one uppercase letter';
         if (!/(?=.*\d)/.test(value)) return 'Password must contain at least one number';
@@ -183,7 +183,7 @@ export default function SignupPage() {
               >
                 <Text size="xs">
                   Password must contain:
-                  <br />• At least 8 characters
+                  <br />• At least 6 characters
                   <br />• One uppercase letter
                   <br />• One lowercase letter  
                   <br />• One number

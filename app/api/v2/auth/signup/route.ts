@@ -12,7 +12,7 @@ import type { SignupRequest } from '@/lib/types/auth';
 const signupSchema = z.object({
   email: z.string().email('Invalid email format'),
   password: z.string()
-    .min(8, 'Password must be at least 8 characters')
+    .min(6, 'Password must be at least 6 characters')
     .regex(/(?=.*[a-z])/, 'Password must contain at least one lowercase letter')
     .regex(/(?=.*[A-Z])/, 'Password must contain at least one uppercase letter')
     .regex(/(?=.*\d)/, 'Password must contain at least one number'),
@@ -68,7 +68,7 @@ export const POST = rateLimitedHandler(async function(request: NextRequest): Pro
         password,
         options: {
           data: { name },
-          emailRedirectTo: undefined // Skip email confirmation in development
+          emailRedirectTo: undefined // Email confirmation disabled in Supabase settings
         }
       });
 
