@@ -2,48 +2,74 @@
 
 > **⚠️ ACTIVE DEVELOPMENT** - This project is under active development. Features may change, and breaking changes may occur. DO NOT use in production yet. Contributions and feedback welcome!
 
-A powerful open-source platform for creating intelligent AI customer service agents with advanced safety features, MCP integration, and embeddable widgets. Built with Next.js, OpenAI's latest models, and comprehensive guardrails.
+A powerful open-source platform for creating intelligent AI customer service agents with advanced safety features, MCP integration, and embeddable widgets. Built with Next.js, OpenAI's latest SDK Agent, and comprehensive guardrails.
 
-## ✅ **Current Status: Fully Functional MVP**
-
-🎯 **Ready for Demo & Testing:**
-- Complete 5-Step Agent Creation Wizard
-- Shopify Integration with 12 Business Tools  
-- Multi-Layer Safety Guardrails
-- Embeddable Widget System
-- Cost Tracking & Analytics Backend
-- JWT Authentication & Security
 
 **Key Features:**
-- 🧙‍♂️ **5-Step Agent Wizard** - No coding required to create production-ready AI agents ✅
+- 🧙‍♂️ **5-Step Agent Wizard** - No coding required to create production-ready AI agents through guided setup: Basic Info (model & behavior), Integrations (Shopify, Custom MCP), Tools (memory & web search), Advanced (guardrails & security), and Review ✅
 - 🛡️ **Multi-Layer Guardrails** - Advanced safety protection with content filtering and privacy controls ✅
-- 🔧 **MCP Integration** - Connect to business systems via Model Context Protocol servers (Shopify with 12 tools available) ✅
-- 📊 **Tool Calling** - OpenAI hosted tools (web search, file search) and custom business functions ✅
+- 🔧 **MCP Integration** - Connect to business systems via Model Context Protocol servers (Shopify with 15+ tools, plus unlimited Custom MCP servers supporting hosted and HTTP connections) ✅
+- 📊 **Tool Calling** - OpenAI hosted tools (web search), customer memory, and custom business functions ✅
 - 💬 **Embeddable Widget** - Deploy anywhere with secure JWT authentication ✅
 
 
 ## 🌟 What This Platform Does
 
 ### For Business Owners
-Create AI customer service agents through our **5-Step Wizard** ✅:
-1. **Basic Information** - Configure agent name, model selection (GPT-4.1, o3, etc.), instructions, and behavior
-2. **Integrations** - Connect business systems via Model Context Protocol (MCP) servers  
-3. **Tools** - Select from OpenAI hosted tools, custom functions, and MCP capabilities
-4. **Guardrails** - Enable multi-layer safety and quality protection
-5. **Review & Deploy** - Launch your agent with embeddable widget support ✅
+
+**🚀 Two Deployment Options:**
+- **SaaS Solution**: Use our hosted platform with zero installation - create your first agent for free
+- **Self-Hosted**: Deploy on your own infrastructure with full control and customization
+
+**💡 No-Code AI Agent Creation:**
+Build powerful, scalable customer service agents through our intuitive 5-step wizard - no coding required! Advanced configurable settings include:
+
+- **Smart Integrations**: Bespoke Shopify MCP integration with 15+ e-commerce tools, plus unlimited custom MCP servers
+- **Customer Memory**: AI remembers preferences and conversation history across sessions
+- **Knowledge Base (RAG)**: Upload documents for intelligent, context-aware responses(in development)  
+- **Multi-Layer Security**: Input/output guardrails with PII protection and content filtering
+- **Universal Deployment**: Embed anywhere with just 3 lines of code on any website
+
+**🔌 Integration Ecosystem:**
+- **Current**: Full Shopify integration with products, inventory, orders, and policies
+- **Expanding**: WooCommerce, Wix, and many more planned
+- **Extensible**: Easy-to-add new integrations through our modular MCP architecture
+- **Custom**: Connect any system via hosted or HTTP MCP servers
+
+**⚡ Enterprise Features:**
+- Real-time cost tracking across 40+ AI models
+- Domain-restricted widget deployment
+- JWT-secured API access
+- Rate limiting and abuse protection
+- Analytics and conversation insights
 
 
 ### For Developers
-After understanding the business value, explore the technical architecture and implementation details:
 
-📋 **[View Architecture Overview →](docs/ARCHITECTURE.md)**
+After understanding the business value, the system is architected for **maximum extensibility and ease of customization**:
 
-Our technical documentation covers:
-- **System Architecture** - Component interaction and data flow
-- **Technology Stack** - Frontend, backend, and AI integration
-- **Security Design** - Multi-layer protection and authentication  
-- **Deployment Architecture** - Production setup and scaling
-- **API Documentation** - RESTful endpoints and integration patterns
+**🔧 Modular Architecture:**
+- **Easy to Fork**: Clean separation of concerns with well-defined interfaces
+- **Custom Tools**: Add new agent capabilities through the standardized tool registry
+- **MCP Server Development**: Create new integrations using Model Context Protocol
+- **Plugin System**: Extend functionality without modifying core code
+
+**🏗️ Developer-Friendly Features:**
+- **TypeScript First**: Strict typing for reliability and developer experience
+- **Comprehensive APIs**: RESTful endpoints for all platform functionality
+- **Database Agnostic**: Prisma ORM supports multiple database backends
+- **Testing Suite**: Unit tests and integration examples included
+- **Documentation**: Inline code documentation and architectural guides
+
+**📋 [View Complete Architecture Overview →](docs/ARCHITECTURE.md)**
+
+**🚀 Quick Extension Examples:**
+- Add new e-commerce platforms (WooCommerce, BigCommerce)
+- Create custom guardrails for industry-specific compliance
+- Build specialized tools for CRM, helpdesk, or analytics systems
+- Develop domain-specific knowledge base integrations
+
+
 
 ## 🚀 Current Features
 
@@ -52,16 +78,14 @@ Our technical documentation covers:
 - **🛡️ Multi-Layer Guardrails System** - Comprehensive input/output safety and quality protection
 - **🔧 MCP Integration Architecture** - Model Context Protocol server support with native and custom tools
 - **🛒 Shopify Integration Complete** - Full MCP server with 12 tools (products, inventory, policies, shipping, store management)
-- **🛒 OpenAI Hosted Tools** - Web search, file search integration 
+- **🛒 OpenAI Hosted Tools** - Web search
 - **💬 Embeddable Widget System** - Complete widget implementation with authentication and chat interface
 - **🔐 Authentication Framework** - JWT-based security infrastructure with domain validation
 - **🎨 Modern UI/UX** - Mantine + Tailwind CSS with dark/light theme support
 - **📊 Cost Tracking Services** - Token usage monitoring and cost calculation backend
+- **⚡ Rate Limiting** - API protection and abuse prevention
 
 ### 🔄 In Active Development  
-- **📈 Analytics Dashboard** - Conversation metrics and performance insights
-- **⚡ Rate Limiting** - API protection and abuse prevention
-- **🌐 CDN Distribution** - Global widget delivery infrastructure
 - **📱 Mobile Widget Optimization** - Enhanced mobile chat experience
 - **🔗 Additional MCP Integrations** - Stripe and other business platform connections
 
@@ -100,15 +124,11 @@ Our technical documentation covers:
 
 ## 🛠️ Quick Start
 
-**📋 [Complete Installation Guide →](docs/INSTALLATION.md)**
-
-For a detailed setup walkthrough, environment configuration, and troubleshooting, see our comprehensive installation documentation.
-
 ### Prerequisites
 - **Node.js 18+** 
 - **Supabase Account** - PostgreSQL database with authentication
 - **OpenAI API key** - For AI model access
-- **Business platform credentials** (Optional: Shopify, Stripe, etc.)
+- **Business platform credentials** (Optional: Shopify, etc.)
 
 ### Quick Setup
 ```bash
@@ -127,17 +147,6 @@ npx prisma migrate dev
 # Start development server
 npm run dev
 ```
-
-### Create Your First Agent (Coming Soon)
-
-1. **Access the Platform**: Navigate to `http://localhost:3000`
-2. **Create Account**: Sign up or log in to access the dashboard
-3. **Agent Wizard**: Click "Create New Agent" to start the 5-step wizard ✅
-4. **Configure Agent**: Set name, select AI model (GPT-4.1, o3, etc.), write instructions
-5. **Connect Integrations**: Link business systems via MCP servers (optional)
-6. **Select Tools**: Choose capabilities (web search, calculations, business data)
-7. **Configure Guardrails**: Enable safety protection (content safety, privacy, tone, accuracy)
-8. **Deploy**: Test your agent and get embeddable widget code ✅
 
 ## 💻 Available Integrations & Tools
 
@@ -191,140 +200,12 @@ Comprehensive tracking for 40+ AI models:
 - **Model Support** - GPT-4.1, GPT-4o, o1/o3 series, embeddings, and more
 - **Usage Analytics** - Detailed breakdowns by agent, conversation, and time period
 
-## 🔧 Agent Configuration
-
-Business owners can customize AI agents through the **5-Step Wizard** ✅:
-
-### Step 1: Basic Information
-```typescript
-const basicConfig = {
-  name: "MyStore Customer Service Agent",
-  description: "Helpful assistant for customer inquiries",
-  model: "gpt-4.1",           // Choose from 40+ available models
-  temperature: 0.7,           // Response creativity (0.0-2.0)
-  maxTokens: 4000,           // Response length limit
-  systemPrompt: `You are a helpful customer service agent...`
-};
-```
-
-### Step 2: MCP Integrations
-```typescript
-const mcpIntegrations = [
-  {
-    type: "shopify",
-    name: "MyStore Shopify MCP", 
-    credentials: { /* securely encrypted */ },
-    selectedTools: [
-      "searchProducts",      // Product search and filtering
-      "getProductDetails",   // Detailed product information
-      "listProducts",        // Catalog browsing
-      "getInventoryLevels",  // Stock level checking
-      "getLocations",        // Store locations
-      "getPolicies",         // Store policies and terms
-      "getShippingZones",    // Shipping information
-      "getPages"             // Store content pages
-      // ... 4 additional tools available
-    ]
-  }
-];
-```
-
-### Step 3: Tools & Capabilities
-```typescript
-const toolSelection = [
-  "web-search",          // OpenAI hosted web search
-  "file-search",         // OpenAI hosted file search  
-  "customer-memory",     // Custom memory functions
-  // MCP tools automatically included from integrations
-];
-```
-
-### Step 4: Multi-Layer Guardrails
-```typescript
-const guardrailsConfig = {
-  input: [
-    "content-safety",     // Block toxic/inappropriate content (80% threshold)
-    "privacy-protection"  // Prevent PII exposure (70% threshold)
-  ],
-  output: [
-    "professional-tone",  // Ensure professional communication (60% threshold)
-    "factual-accuracy"   // Validate response correctness (70% threshold)
-  ],
-  thresholds: {
-    contentSafety: 0.8,
-    privacyProtection: 0.7,
-    professionalTone: 0.6,
-    factualAccuracy: 0.7
-  }
-};
-```
-
-### Step 5: Review & Deploy ✅
-- **Live Preview** - Test agent configuration in real-time  
-- **Validation** - Ensure all settings are properly configured  
-- **Widget Code Generation** - Get embeddable widget code for your website
-
-## 🚀 Deployment Options
-
-### Embeddable Widget ✅
-```html
-<!-- Add to any website -->
-<script>
-  window.CustomerAgent = {
-    agentId: 'your-agent-id-here',
-    position: 'bottom-right',
-    theme: 'auto',
-    primaryColor: '#007bff',
-    greeting: 'Hello! How can I help you today?'
-  };
-</script>
-<script src="https://your-domain.com/widget/widget.js"></script>
-```
-
 ### Widget Security Features ✅
 - **JWT Authentication** - Secure API access with signed tokens
 - **Domain Validation** - Restrict widget usage to authorized domains
 - **CORS Protection** - Cross-origin request security with domain whitelisting
 - **Session Management** - Secure conversation persistence
 - **CDN Distribution** - Fast global widget delivery (in development)
-
-### Chat Interface ✅
-Direct integration for custom implementations:
-```javascript
-// Direct chat interface (embedded in your application)
-import { AgentChatInterface } from '@ai-cs-platform/components';
-
-<AgentChatInterface 
-  agentId="your-agent-id"
-  theme="light"
-  enableGuardrails={true}
-  showCostTracking={false}
-/>
-```
-
-### REST API Integration ✅
-```javascript
-// RESTful API for custom integrations with guardrail protection
-const response = await fetch('/api/v2/agents/chat', {
-  method: 'POST',
-  headers: { 
-    'Authorization': 'Bearer your-jwt-token',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    agentId: 'your-agent-id',
-    message: 'Customer inquiry...',
-    conversationHistory: [...],
-    context: { customerId: '123', platform: 'website' }
-  })
-});
-
-// Response includes guardrail information and cost tracking
-const result = await response.json();
-if (result.blocked) {
-  console.log('Message blocked by guardrails:', result.reason);
-}
-```
 
 ## 🔐 Security & Privacy
 
@@ -369,21 +250,17 @@ if (result.blocked) {
 
 ### Phase 1: Multi-Integration Platform (Current)
 - ✅ Shopify MCP Server (Complete)
-- 🔄 Stripe MCP Server (In Development)
+- 📋 Knowledge Base
 - 📋 Additional e-commerce platforms
-- 📋 General MCP tools (file system, email, database)
-
-### Phase 2: Advanced Features 
-- 📋 Analytics dashboard and reporting
-- 📋 Multi-agent orchestration
+- 📋 Analytics dashboard and reporting Done
+- 📋 Multi-agent orchestration Done
 - 📋 Knowledge base integration
 - 📋 Advanced conversation features
 
 ### Phase 3: Enterprise & Scale
 - 📋 White-label deployment options
 - 📋 Enterprise security features
-- 📋 Custom MCP server development
-- 📋 Global CDN and scaling infrastructure
+- 📋 Custom MCP server development Done
 
 ## 🤝 Contributing
 
@@ -395,20 +272,6 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - **Prettier** - Consistent code formatting
 - **Testing** - Unit tests for critical functionality
 - **Documentation** - Clear inline documentation and README updates
-
-## 📚 Documentation
-
-### Core Documentation
-- **[Complete Installation Guide →](docs/INSTALLATION.md)** - Setup, environment configuration, and troubleshooting
-- **[Architecture Overview →](docs/ARCHITECTURE.md)** - System design, components, and technical implementation
-- **[Database Schema →](docs/DATABASE.md)** - Database structure and data models
-- **[Development Roadmap →](docs/ROADMAP.md)** - Future development plans and priorities
-
-### Feature Documentation  
-- **[MCP Integration →](lib/mcp/README.md)** - Model Context Protocol implementation and server setup
-- **[Guardrails System →](lib/guardrails/README.md)** - Safety and quality protection system
-- **[Shopify Integration →](lib/mcp/servers/shopify/README.md)** - Complete e-commerce integration guide
-- **[Widget System →](docs/WIDGET.md)** - Embeddable widget implementation and deployment
 
 ### Contributing
 - **[Contributing Guidelines →](CONTRIBUTING.md)** - How to contribute to the project
