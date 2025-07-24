@@ -28,7 +28,7 @@ export default function SignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  // Redirect if already authenticated - let auth context handle timing
+  // Redirect if already authenticated 
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
       router.replace('/');
@@ -43,7 +43,12 @@ export default function SignupPage() {
     },
     validate: {
       name: (value) => (value && value.length < 2 ? 'Name must be at least 2 characters' : null),
-      email: (value) => (/^\S+@\S+$/.test(value) ? null : 'Invalid email'),
+      email: (value) => {
+        if (!value) return 'Email is required';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) return 'Please enter a valid email address (e.g., user@example.com)';
+        return null;
+      },
       password: (value) => {
         if (value.length < 8) return 'Password must be at least 8 characters';
         if (!/(?=.*[a-z])/.test(value)) return 'Password must contain at least one lowercase letter';
@@ -61,32 +66,51 @@ export default function SignupPage() {
       const result = await signup(values);
       
       if (result.success) {
-        notifications.show({
-          title: 'Account created!',
-          message: result.message || 'Your account has been created successfully.',
-          color: 'green',
-          icon: <Check size={16} />,
-        });
-        
-        // If email confirmation is required, redirect to login
-        if (result.message?.includes('email') || result.message?.includes('confirm')) {
-          // Email confirmation required, redirect to login
-          router.replace('/auth/login');
-          setIsSubmitting(false);
+        if (result.user && result.session) {
+          // Auto-login successful - redirect to dashboard
+          notifications.show({
+            title: 'Welcome!',
+            message: 'Your account has been created and you are now logged in.',
+            color: 'green',
+            icon: <Check size={16} />,
+          });
+          
+          setTimeout(() => {
+            router.replace('/');
+          }, 1000);
         } else {
-          // Auto-login successful, let auth context handle redirect
-          // Keep loading state until auth context updates and redirects
-          // Note: Redirect is handled by auth context useEffect above
+          // Account created but auto-login failed - redirect to login
+          notifications.show({
+            title: 'Account created!',
+            message: result.message || 'Please log in to continue.',
+            color: 'blue',
+            icon: <Check size={16} />,
+          });
+          
+          setTimeout(() => {
+            router.replace('/auth/login');
+          }, 1500);
         }
       } else {
+        // Better error handling with specific messages
+        let errorMessage = result.error || 'Failed to create account. Please try again.';
+        
+        // Handle specific error cases
+        if (errorMessage.includes('invalid') && errorMessage.includes('email')) {
+          errorMessage = 'Please enter a valid email address (e.g., user@example.com)';
+        } else if (errorMessage.includes('already exists')) {
+          errorMessage = 'An account with this email already exists. Try logging in instead.';
+        }
+        
         notifications.show({
           title: 'Signup failed',
-          message: result.error || 'Failed to create account. Please try again.',
+          message: errorMessage,
           color: 'red',
+          autoClose: false, // Keep error visible
         });
         setIsSubmitting(false);
       }
-    } catch {
+    } catch (error) {
       notifications.show({
         title: 'Signup error',
         message: 'An unexpected error occurred. Please try again.',
@@ -158,7 +182,7 @@ export default function SignupPage() {
               >
                 <Text size="xs">
                   Password must contain:
-                  <br />• At least 6 characters
+                  <br />• At least 8 characters
                   <br />• One uppercase letter
                   <br />• One lowercase letter  
                   <br />• One number

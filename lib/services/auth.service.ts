@@ -109,43 +109,57 @@ export class AuthService {
         return { success: false, error: signupData.error?.message || 'Signup failed' };
       }
 
-      // Now sign in to get the session
-      const { data: authData, error: authError } = await this.supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password,
-      });
+      // Now auto-login the user since account was created successfully
+      try {
+        const { data: authData, error: authError } = await this.supabase.auth.signInWithPassword({
+          email: credentials.email,
+          password: credentials.password,
+        });
 
-      if (authError) {
-        return { success: false, error: authError.message };
+        if (authError) {
+          console.error('Auto-login failed after signup:', authError);
+          return { 
+            success: true, 
+            message: 'Account created successfully! Please log in manually.',
+            error: 'Auto-login failed - please log in manually'
+          };
+        }
+
+        if (!authData.session) {
+          return { 
+            success: true, 
+            message: 'Account created successfully! Please log in manually.',
+            error: 'Session creation failed - please log in manually'
+          };
+        }
+
+        // Wait briefly for JWT metadata to sync, then get user data
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const userData = await this.fetchUserData(authData.session.access_token);
+        if (!userData) {
+          // Fallback: return success but ask for manual login
+          return { 
+            success: true, 
+            message: 'Account created successfully! Please log in to continue.',
+            error: 'User data sync incomplete - please log in manually'
+          };
+        }
+
+        return {
+          success: true,
+          message: 'Account created and logged in successfully!',
+          user: userData,
+          session: this.convertSupabaseSession(authData.session)
+        };
+      } catch (loginError) {
+        console.error('Auto-login error after signup:', loginError);
+        return { 
+          success: true, 
+          message: 'Account created successfully! Please log in to continue.',
+          error: 'Auto-login failed - please log in manually'
+        };
       }
-
-      if (!authData.session) {
-        return { success: false, error: 'Failed to create session after signup' };
-      }
-
-      // Wait a moment for JWT metadata to propagate, then refresh the session
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Refresh the session to get updated JWT with metadata
-      const { data: refreshData, error: refreshError } = await this.supabase.auth.refreshSession();
-      if (refreshError || !refreshData.session) {
-        console.warn('Failed to refresh session after signup, using original session');
-      }
-      
-      const finalSession = refreshData?.session || authData.session;
-
-      // Get user data using the refreshed session
-      const userData = await this.fetchUserData(finalSession.access_token);
-      if (!userData) {
-        return { success: false, error: 'Failed to fetch user data after signup' };
-      }
-
-      return {
-        success: true,
-        message: 'Account created successfully!',
-        user: userData,
-        session: this.convertSupabaseSession(finalSession)
-      };
     } catch (error) {
       return {
         success: false,

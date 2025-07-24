@@ -120,8 +120,11 @@ npm install
 # Configure environment (see installation guide for details)
 cp .env.example .env.local
 
-# Set up database and start
+# Set up database
+npx prisma generate
 npx prisma migrate dev
+
+# Start development server
 npm run dev
 ```
 

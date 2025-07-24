@@ -55,11 +55,14 @@ export default function LoginPage() {
       if (result.success) {
         notifications.show({
           title: 'Welcome back!',
-          message: 'You have been successfully logged in.',
+          message: 'You have been successfully logged in. Redirecting...',
           color: 'green',
         });
-        // Note: Redirect is handled by auth context useEffect above
-        // Keep loading state until redirect happens
+        
+        // Explicit redirect after successful login
+        setTimeout(() => {
+          router.replace('/');
+        }, 1000);
       } else {
         notifications.show({
           title: 'Login failed',

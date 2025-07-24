@@ -131,7 +131,7 @@ export function useAuth() {
     }
   }, []);
 
-  // Signup function with proper state coordination
+  // Signup function with auto-login support
   const signup = useCallback(async (credentials: SignupRequest) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     setIsSigningUp(true);
@@ -141,7 +141,7 @@ export function useAuth() {
 
       if (result.success) {
         if (result.user && result.session) {
-          // Auto-login successful - set auth state directly
+          // Auto-login successful - set auth state
           setState({
             user: result.user,
             session: result.session,
@@ -149,7 +149,7 @@ export function useAuth() {
             error: null
           });
         } else {
-          // Email confirmation required - clear loading but don't set user
+          // Account created but auto-login failed - clear loading
           setState(prev => ({ 
             ...prev, 
             loading: false,
@@ -157,6 +157,7 @@ export function useAuth() {
           }));
         }
       } else {
+        // Signup failed
         setState(prev => ({ 
           ...prev, 
           loading: false, 
