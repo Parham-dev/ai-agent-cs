@@ -66,7 +66,8 @@ export default function SignupPage() {
       const result = await signup(values);
       
       if (result.success) {
-        if (result.user && result.session) {
+        // Check if user is now authenticated (auto-login succeeded)
+        if (isAuthenticated) {
           // Auto-login successful - redirect to dashboard
           notifications.show({
             title: 'Welcome!',
@@ -110,7 +111,7 @@ export default function SignupPage() {
         });
         setIsSubmitting(false);
       }
-    } catch (error) {
+    } catch {
       notifications.show({
         title: 'Signup error',
         message: 'An unexpected error occurred. Please try again.',
