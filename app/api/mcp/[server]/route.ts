@@ -1,11 +1,10 @@
-import { createMcpRouteHandler } from '@/lib/mcp/route-factory';
+import { createMcpHandler } from "mcp-handler";
 import { getMcpServerConfig } from '@/lib/mcp/config/registry';
 import { logger } from '@/lib/utils/logger';
 
 /**
- * Dynamic MCP Route Handler
- * Handles all MCP server routes based on the [server] parameter
- * Replaces individual route files for better maintainability
+ * Dynamic MCP Route Handler using standard mcp-handler
+ * Simple implementation following mcp-handler documentation
  */
 
 async function createHandler(
@@ -18,89 +17,13 @@ async function createHandler(
     serverName,
     method: request.method,
     url: request.url,
-    headers: Object.fromEntries(request.headers.entries()),
     timestamp: new Date().toISOString()
   });
   
-  // Handle SSE GET requests specially
-  if (request.method === 'GET' && request.headers.get('accept')?.includes('text/event-stream')) {
-    logger.info('Handling SSE GET request', { serverName });
-    
-    try {
-      // Get server configuration for SSE response
-      const config = await getMcpServerConfig(serverName);
-      
-      if (!config) {
-        return new Response(
-          JSON.stringify({ error: `MCP server '${serverName}' not found` }), 
-          { status: 404, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Create a streaming response for SSE
-      const stream = new ReadableStream({
-        start(controller) {
-          // Send initial SSE event with server info
-          const initialEvent = `data: ${JSON.stringify({
-            jsonrpc: '2.0',
-            method: 'notifications/initialized',
-            params: {
-              protocolVersion: '2025-06-18',
-              capabilities: {
-                tools: {}
-              },
-              serverInfo: {
-                name: config.name,
-                version: config.version
-              }
-            }
-          })}\n\n`;
-          
-          controller.enqueue(new TextEncoder().encode(initialEvent));
-          
-          // Keep connection alive with heartbeat
-          const heartbeat = setInterval(() => {
-            try {
-              controller.enqueue(new TextEncoder().encode(': heartbeat\n\n'));
-            } catch {
-              clearInterval(heartbeat);
-            }
-          }, 30000);
-          
-          // Clean up on close
-          request.signal.addEventListener('abort', () => {
-            clearInterval(heartbeat);
-            controller.close();
-          });
-        }
-      });
-      
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache, no-transform',
-          'Connection': 'keep-alive',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
-      });
-      
-    } catch (error) {
-      logger.error('Failed to handle SSE request', { 
-        serverName,
-        error: error instanceof Error ? error.message : String(error)
-      });
-      
-      return new Response('Internal Server Error', { status: 500 });
-    }
-  }
-  
-  // Handle POST and other requests with original logic
   try {
     // Extract selected tools from request headers or query params
     let selectedTools: string[] | undefined;
     
-    // Try to get selected tools from header (for internal API calls)
     const selectedToolsHeader = request.headers.get('x-mcp-selected-tools');
     if (selectedToolsHeader) {
       try {
@@ -110,7 +33,6 @@ async function createHandler(
       }
     }
     
-    // Fallback to query parameter (for testing)
     if (!selectedTools) {
       const url = new URL(request.url);
       const selectedToolsParam = url.searchParams.get('selectedTools');
@@ -125,7 +47,7 @@ async function createHandler(
       hasSelectedTools: !!selectedTools
     });
     
-    // Get server configuration from registry with tool filtering
+    // Get server configuration
     const config = await getMcpServerConfig(serverName, selectedTools);
     
     if (!config) {
@@ -139,11 +61,91 @@ async function createHandler(
       );
     }
 
-    // Create the handler for this specific server
-    const { debugHandler } = createMcpRouteHandler(config);
+    // Create MCP handler using the standard library approach
+    const handler = createMcpHandler(
+      (server) => {
+        logger.info('MCP Server initializing', { 
+          serverName: config.name,
+          toolCount: config.tools.length
+        });
+
+        // Register all tools
+        for (const tool of config.tools) {
+          server.tool(
+            tool.name,
+            tool.description,
+            tool.inputSchema,
+            async (params, extra) => {
+              try {
+                // Get credentials if available
+                let credentials = null;
+                if (config.getCredentials) {
+                  credentials = await config.getCredentials(request);
+                  
+                  if (!credentials) {
+                    throw new Error(`${config.name} credentials not found. Please configure integration.`);
+                  }
+                }
+
+                logger.info('Executing tool', { 
+                  serverName: config.name,
+                  toolName: tool.name, 
+                  hasCredentials: !!credentials
+                });
+
+                // Execute the tool
+                const result = await tool.handler(params, { 
+                  credentials, 
+                  settings: {},
+                  requestId: String(extra?.requestId) || 'unknown',
+                  timestamp: new Date()
+                });
+
+                return {
+                  content: [
+                    {
+                      type: 'text',
+                      text: JSON.stringify(result, null, 2)
+                    }
+                  ]
+                };
+
+              } catch (error) {
+                logger.error('Tool execution failed', { 
+                  serverName: config.name,
+                  toolName: tool.name, 
+                  error: error instanceof Error ? error.message : String(error)
+                });
+                
+                return {
+                  content: [
+                    {
+                      type: 'text',
+                      text: `Error executing ${tool.name}: ${error instanceof Error ? error.message : String(error)}`
+                    }
+                  ],
+                  isError: true
+                };
+              }
+            }
+          );
+        }
+
+        logger.info('MCP server setup complete', { 
+          serverName: config.name,
+          registeredTools: config.tools.length 
+        });
+      },
+      {
+        serverInfo: {
+          name: config.name,
+          version: config.version
+        }
+      }
+    );
     
-    // Execute the request
-    return await debugHandler(request);
+    // Handle the request with the MCP handler
+    return await handler(request);
     
   } catch (error) {
     logger.error('Failed to handle MCP request', { 
@@ -164,5 +166,5 @@ async function createHandler(
   }
 }
 
-// Export the same handler for all HTTP methods
+// Export the handler for all HTTP methods
 export { createHandler as GET, createHandler as POST, createHandler as DELETE };
