@@ -4,6 +4,7 @@ import {
   HeaderCredentialProvider,
   type CredentialProvider
 } from './provider';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Credential Types

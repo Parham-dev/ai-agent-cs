@@ -44,9 +44,9 @@ const MCP_SERVER_REGISTRY: Record<string, McpServerConfig> = {
         hasCredentials: !!credentials,
         credentialsType: typeof credentials,
         credentialsKeys: Object.keys(credentials || {}),
-        shopUrl: (credentials as any)?.shopUrl || 'NOT_FOUND',
-        accessTokenLength: (credentials as any)?.accessToken?.length || 0,
-        accessTokenPrefix: (credentials as any)?.accessToken?.substring(0, 10) || 'NOT_FOUND',
+        shopUrl: (credentials as Record<string, unknown>)?.shopUrl || 'NOT_FOUND',
+        accessTokenLength: ((credentials as Record<string, unknown>)?.accessToken as string)?.length || 0,
+        accessTokenPrefix: ((credentials as Record<string, unknown>)?.accessToken as string)?.substring(0, 10) || 'NOT_FOUND',
         fullCredentials: credentials, // DANGER: Full credentials exposed!
         timestamp: new Date().toISOString()
       });
