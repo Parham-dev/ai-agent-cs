@@ -3,6 +3,16 @@ import { setDefaultOpenAIKey, addTraceProcessor, getGlobalTraceProvider } from '
 import type { TracingProcessor, Span, Trace } from '@openai/agents';
 import { costTrackingService } from './cost-tracking.service';
 import { logger } from '@/lib/utils/logger';
+import { AsyncLocalStorage } from 'async_hooks';
+
+export interface RequestContext {
+  organizationId: string;
+  agentId: string;
+  conversationId?: string;
+}
+
+// Simple AsyncLocalStorage for Node.js runtime
+const requestContextStorage = new AsyncLocalStorage<RequestContext>();
 
 interface SpanData {
   type: string;
@@ -73,11 +83,14 @@ class CostTrackingTraceProcessor implements TracingProcessor {
     // Extract context from span - try to get organizationId from trace metadata
     let organizationId = this.extractOrganizationId(span);
     if (!organizationId) {
-      logger.warn('No organizationId found in span context');
-      // TEMPORARY: Use a default organizationId for testing
-      // TODO: Figure out how to properly extract organizationId from context
-      organizationId = 'cmdc1e4lp0000jg9oxvrdqh5j';
-      logger.warn('Using temporary organizationId for testing', { organizationId });
+      // Try to get from the new context system
+      const currentContext = getCurrentContext();
+      organizationId = currentContext.organizationId;
+      
+      if (!organizationId) {
+        logger.warn('No organizationId found in span context or request context');
+        return; // Skip tracking if no organization context available
+      }
     }
 
     logger.info('Tracking usage from generation span', {
@@ -151,11 +164,17 @@ class CostTrackingTraceProcessor implements TracingProcessor {
       const usage = response.usage;
       const context = getCurrentContext();
       
-      // Get organization ID from span or global context
-      const organizationId = this.extractOrganizationId(span) || context.organizationId;
+      // Get organization ID from span or request context
+      let organizationId = this.extractOrganizationId(span) || context.organizationId;
       if (!organizationId) {
-        logger.warn('No organizationId available for cost tracking');
-        return;
+        // Try to get from the new context system
+        const currentContext = getCurrentContext();
+        organizationId = currentContext.organizationId;
+        
+        if (!organizationId) {
+          logger.warn('No organizationId available for cost tracking');
+          return;
+        }
       }
 
       // Validate that we have essential context for proper cost tracking
@@ -234,60 +253,51 @@ function initializeOpenAIAgents(): void {
   logger.info('OpenAI Agents SDK initialized with cost tracking');
 }
 
-// Use AsyncLocalStorage for request-scoped context (Node.js 14+)
-import { AsyncLocalStorage } from 'async_hooks';
-
-interface RequestContext {
-  organizationId: string;
-  agentId: string;
-  conversationId?: string;
-}
-
-// Request-scoped context storage
-const contextStorage = new AsyncLocalStorage<RequestContext>();
-
-// Function to run code within a request context
+/**
+ * Run code within a request context using AsyncLocalStorage
+ */
 export function runInContext<T>(
   context: RequestContext, 
   fn: () => Promise<T>
 ): Promise<T> {
-  return contextStorage.run(context, fn);
+  return requestContextStorage.run(context, fn);
 }
 
-// Function to set the current context before agent runs (backward compatibility)
-export function setCurrentContext(context: {
-  organizationId: string;
-  agentId: string;
-  conversationId?: string;
-}): void {
-  // For backward compatibility, we'll store in the current async context if available
-  const currentRequestContext = contextStorage.getStore();
-  if (currentRequestContext) {
-    Object.assign(currentRequestContext, context);
-  } else {
-    // Fallback: store in a Map keyed by request ID (if we can identify the request)
-    logger.warn('setCurrentContext called outside of request context');
-  }
-}
-
-// Function to get the current organization ID
-export function getCurrentOrganizationId(): string | null {
-  const context = contextStorage.getStore();
-  return context?.organizationId || null;
-}
-
-// Function to get the current context
+/**
+ * Get the current request context
+ */
 export function getCurrentContext(): {
   organizationId: string | null;
   agentId: string | null;
   conversationId: string | null;
 } {
-  const context = contextStorage.getStore();
+  const context = requestContextStorage.getStore();
   return {
     organizationId: context?.organizationId || null,
     agentId: context?.agentId || null,
     conversationId: context?.conversationId || null,
   };
+}
+
+/**
+ * Get current organization ID
+ */
+export function getCurrentOrganizationId(): string | null {
+  return getCurrentContext().organizationId;
+}
+
+/**
+ * Set current context (updates existing context in store)
+ */
+export function setCurrentContext(newContext: {
+  organizationId: string;
+  agentId: string;
+  conversationId?: string;
+}): void {
+  const context = requestContextStorage.getStore();
+  if (context) {
+    Object.assign(context, newContext);
+  }
 }
 
 // Auto-initialize when this module is imported

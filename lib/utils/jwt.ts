@@ -4,6 +4,14 @@
 
 import { verify } from 'jsonwebtoken';
 import { createLogger } from './logger';
+// Simple base64url decode function using Node.js Buffer
+function base64urlToString(base64url: string): string {
+  // Convert base64url to standard base64
+  const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+  // Add padding if needed
+  const padded = base64 + '='.repeat((4 - base64.length % 4) % 4);
+  return Buffer.from(padded, 'base64').toString('utf-8');
+}
 import type { JWTMetadata } from '@/lib/types/auth';
 
 const logger = createLogger('jwt');
@@ -76,9 +84,7 @@ export function decodeSupabaseJWTMetadata(token: string): JWTMetadata | null {
     }
 
     // Decode payload (second part)
-    const payload = JSON.parse(
-      Buffer.from(parts[1], 'base64url').toString('utf8')
-    );
+    const payload = JSON.parse(base64urlToString(parts[1]));
 
     // Extract app_metadata containing our custom claims
     const appMetadata = payload.app_metadata;

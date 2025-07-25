@@ -71,7 +71,7 @@ class DatabaseSessionStore {
 
       // Get agent config and recreate runtime objects fresh
       const agentData = await agentsService.getAgentByIdOrThrow(organizationId, conversation.agentId)
-      const { agent, mcpClient } = await createAgent(agentData)
+      const { agent, cleanup } = await createAgent(agentData)
 
       // Create session data
       const sessionData: SessionData = {
@@ -81,7 +81,7 @@ class DatabaseSessionStore {
         conversationId: conversation.id,
         thread,
         agent,
-        mcpClient,
+        cleanup,
         lastActivity: new Date(),
         metadata: (fullConversation.context as Record<string, unknown>) || {}
       }
@@ -169,12 +169,12 @@ class DatabaseSessionStore {
   async delete(sessionId: string): Promise<void> {
     try {
       const session = this.activeSessions.get(sessionId)
-      if (session?.mcpClient) {
+      if (session?.cleanup) {
         try {
-          await session.mcpClient.closeAll()
-          logger.debug('MCP servers cleaned up for session', { sessionId })
+          await session.cleanup()
+          logger.debug('MCP resources cleaned up for session', { sessionId })
         } catch (error) {
-          logger.error('Failed to cleanup MCP servers for session', { sessionId }, error as Error)
+          logger.error('Failed to cleanup MCP resources for session', { sessionId }, error as Error)
         }
       }
 

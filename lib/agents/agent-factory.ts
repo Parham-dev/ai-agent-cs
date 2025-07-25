@@ -1,10 +1,10 @@
 /**
  * Agent factory for creating OpenAI Agent instances
- * Extracted from chat API to be reusable by database session store
+ * Simplified architecture using direct OpenAI SDK integration
  */
 
-import { Agent, type MCPServerStdio, type MCPServerStreamableHttp, hostedMcpTool } from '@openai/agents'
-import { createMCPClient, type MCPClient } from '@/lib/mcp/client'
+import { Agent, MCPServerStreamableHttp, hostedMcpTool } from '@openai/agents'
+import { createMCPIntegration } from './mcp-integration'
 import { getAllTools } from '@/lib/tools'
 import { getInputGuardrails, getOutputGuardrails } from '@/lib/guardrails'
 import { encryptionService } from '@/lib/services'
@@ -14,8 +14,7 @@ import type { IntegrationCredentials, CustomMcpCredentials } from '@/lib/types/i
 
 export interface AgentFactoryResult {
   agent: Agent
-  mcpClient: MCPClient | null
-  mcpServers: (MCPServerStdio | MCPServerStreamableHttp)[]
+  cleanup: () => Promise<void>
 }
 
 /**
@@ -38,16 +37,16 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
     integrationsCount: agentIntegrations.length 
   })
 
-  // Initialize MCP servers for this agent
-  let mcpClient: MCPClient | null = null
-  let mcpServers: (MCPServerStdio | MCPServerStreamableHttp)[] = []
+  // Initialize MCP integration
+  let mcpServers: MCPServerStreamableHttp[] = []
   let hostedTools: ReturnType<typeof hostedMcpTool>[] = []
+  let mcpCleanup: (() => Promise<void>) = async () => {}
   
   if (agentIntegrations.length > 0) {
-    logger.debug('Using MCP servers for integrations')
+    logger.debug('Setting up MCP integration for agent')
     
     try {
-      // Prepare integrations for MCP client
+      // Prepare integrations with decrypted credentials
       const mcpIntegrations = []
       
       for (const agentIntegration of agentIntegrations) {
@@ -58,12 +57,12 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
         const integration = agentIntegration.integration
         
         // Decrypt credentials if they are encrypted
-        let decryptedCredentials: Record<string, unknown> = integration.credentials
+        let decryptedCredentials: IntegrationCredentials | CustomMcpCredentials = integration.credentials as IntegrationCredentials | CustomMcpCredentials
         try {
           if (encryptionService.isEncrypted(integration.credentials)) {
             decryptedCredentials = await encryptionService.decryptCredentials<IntegrationCredentials | CustomMcpCredentials>(
               integration.credentials
-            ) as Record<string, unknown>
+            )
             logger.debug('Decrypted integration credentials', { 
               integrationId: integration.id,
               integrationType: integration.type 
@@ -83,26 +82,25 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
           type: integration.type,
           name: integration.name,
           credentials: decryptedCredentials,
-          config: agentIntegration.config || {},
+          config: (agentIntegration.config as Record<string, unknown>) || {},
           selectedTools: agentIntegration.selectedTools || []
         })
       }
       
       if (mcpIntegrations.length > 0) {
-        const mcpResult = await createMCPClient(mcpIntegrations)
-        mcpClient = mcpResult.client
+        const mcpResult = await createMCPIntegration(mcpIntegrations)
         mcpServers = mcpResult.servers
         hostedTools = mcpResult.hostedTools
+        mcpCleanup = mcpResult.cleanup
         
-        logger.info('MCP servers initialized', { 
+        logger.info('MCP integration initialized', { 
           integrationsCount: mcpIntegrations.length,
           serversCount: mcpServers.length,
           hostedToolsCount: hostedTools.length
         })
       }
     } catch (error) {
-      logger.error('Failed to initialize MCP servers, proceeding without integrations', {}, error as Error)
-      mcpClient = null
+      logger.error('Failed to initialize MCP integration, proceeding without integrations', {}, error as Error)
       mcpServers = []
       hostedTools = []
     }
@@ -192,9 +190,9 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
     hasGuardrails: inputGuardrails.length > 0 || outputGuardrails.length > 0
   })
 
+  // Return agent with cleanup function
   return {
     agent: openaiAgent,
-    mcpClient,
-    mcpServers
+    cleanup: mcpCleanup
   }
 }

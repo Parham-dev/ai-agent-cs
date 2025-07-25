@@ -21,7 +21,32 @@ export class WidgetCodeGenerator {
   private baseUrl: string
 
   constructor(customDomain?: string) {
-    this.baseUrl = customDomain || (typeof window !== 'undefined' ? window.location.origin : 'https://your-domain.com')
+    this.baseUrl = customDomain || this.getDefaultBaseUrl()
+  }
+
+  /**
+   * Get the default base URL for widget deployment
+   */
+  private getDefaultBaseUrl(): string {
+    // Client-side: use current origin
+    if (typeof window !== 'undefined') {
+      return window.location.origin
+    }
+    
+    // Server-side: use environment variables
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`
+    }
+    
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+      const url = process.env.NEXT_PUBLIC_SITE_URL
+      return url.startsWith('http') ? url : `https://${url}`
+    }
+    
+    // Development fallback
+    return process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:3000' 
+      : 'https://your-domain.com'
   }
 
   /**

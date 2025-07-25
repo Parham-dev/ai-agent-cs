@@ -12,6 +12,9 @@ import { getGlobalTraceProvider, runInContext } from '@/lib/services/openai-init
 import { checkOrganizationCredits, estimateMessageTokens } from '@/lib/auth/credit-check';
 import { organizationCreditsService } from '@/lib/database/services/organization-credits.service';
 
+// Use Node.js runtime for full feature support
+export const runtime = 'nodejs';
+
 interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -171,8 +174,8 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
         }
       );
       
-      // Create Agent and MCP using factory
-      const { agent, mcpClient } = await createAgent(agentData);
+      // Create Agent using factory
+      const { agent, cleanup } = await createAgent(agentData);
 
       session = {
         sessionId,
@@ -181,7 +184,7 @@ export const POST = withErrorHandling(async (request: NextRequest): Promise<Next
         conversationId: conversation.id, // Use the created conversation ID
         thread: [],
         agent,
-        mcpClient,
+        cleanup,
         lastActivity: new Date(),
         metadata: {
           widgetAuth,

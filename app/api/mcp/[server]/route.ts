@@ -1,11 +1,28 @@
 import { createMcpHandler } from "mcp-handler";
 import { getMcpServerConfig } from '@/lib/mcp/config/registry';
 import { logger } from '@/lib/utils/logger';
+import { NextResponse } from 'next/server';
+
+// Configure runtime for Node.js
+export const runtime = 'nodejs';
 
 /**
  * Dynamic MCP Route Handler using standard mcp-handler
- * Simple implementation following mcp-handler documentation
+ * Uses Node.js runtime for full feature support
  */
+
+// Handle CORS preflight requests
+export async function OPTIONS(): Promise<Response> {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-mcp-selected-tools',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
+}
 
 async function createHandler(
   request: Request, 
@@ -52,12 +69,9 @@ async function createHandler(
     
     if (!config) {
       logger.error('MCP server not found', { serverName });
-      return new Response(
-        JSON.stringify({ error: `MCP server '${serverName}' not found` }), 
-        { 
-          status: 404, 
-          headers: { 'Content-Type': 'application/json' } 
-        }
+      return NextResponse.json(
+        { error: `MCP server '${serverName}' not found` },
+        { status: 404 }
       );
     }
 
@@ -153,15 +167,9 @@ async function createHandler(
       error: error instanceof Error ? error.message : String(error)
     });
     
-    return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : String(error)
-      }), 
-      { 
-        status: 500, 
-        headers: { 'Content-Type': 'application/json' } 
-      }
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
     );
   }
 }

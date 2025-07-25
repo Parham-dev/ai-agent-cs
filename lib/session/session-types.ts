@@ -1,10 +1,9 @@
 /**
  * Session types for database-backed session store
- * Enhanced from original in-memory version
+ * Simplified for direct OpenAI SDK integration
  */
 
 import { Agent, type AgentInputItem } from '@openai/agents'
-import { MCPClient } from '@/lib/mcp/client'
 
 export interface SessionData {
   sessionId: string
@@ -13,7 +12,7 @@ export interface SessionData {
   conversationId: string        // Required - Links to conversation in database (set during session creation)
   thread: AgentInputItem[]      // Conversation history following OpenAI SDK pattern
   agent: Agent                  // Reusable agent instance  
-  mcpClient: MCPClient | null   // MCP client instance
+  cleanup: () => Promise<void>  // Cleanup function for MCP resources
   lastActivity: Date            // For cleanup/timeout
   metadata?: Record<string, unknown> // Additional session context stored in conversation.context
 }
@@ -26,7 +25,7 @@ export interface PendingSessionData {
   conversationId?: string       // Optional during creation, but must be set before storing
   thread: AgentInputItem[]
   agent: Agent
-  mcpClient: MCPClient | null
+  cleanup: () => Promise<void>
   lastActivity: Date
   metadata?: Record<string, unknown>
 }
