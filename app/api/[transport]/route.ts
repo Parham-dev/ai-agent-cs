@@ -140,7 +140,7 @@ async function wrappedHandler(request: Request) {
     method: request.method,
     url: request.url,
     headers: Object.fromEntries(request.headers.entries()),
-    userAgent: request.headers.get('user-agent')
+    userAgent: request.headers.get('user-agent') ?? undefined
   });
   
   try {
