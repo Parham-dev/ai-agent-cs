@@ -3,19 +3,16 @@ import { getMcpServerConfig } from '@/lib/mcp/config/registry';
 import { logger } from '@/lib/utils/logger';
 
 /**
- * Dynamic MCP Route Handler for Next.js App Router
- * Supports both POST (JSON-RPC) and GET (SSE) requests
+ * Dynamic MCP Route Handler
+ * Handles all MCP server routes based on the [server] parameter
+ * Replaces individual route files for better maintainability
  */
 
-interface RouteContext {
-  params: Promise<{ server: string }>;
-}
-
-async function handleMcpRequest(
+async function createHandler(
   request: Request, 
-  context: RouteContext
-): Promise<Response> {
-  const { server: serverName } = await context.params;
+  { params }: { params: Promise<{ server: string }> }
+) {
+  const { server: serverName } = await params;
   
   logger.info('🔍 MCP ROUTE DEBUG - Request received', {
     serverName,
@@ -25,6 +22,80 @@ async function handleMcpRequest(
     timestamp: new Date().toISOString()
   });
   
+  // Handle SSE GET requests specially
+  if (request.method === 'GET' && request.headers.get('accept')?.includes('text/event-stream')) {
+    logger.info('Handling SSE GET request', { serverName });
+    
+    try {
+      // Get server configuration for SSE response
+      const config = await getMcpServerConfig(serverName);
+      
+      if (!config) {
+        return new Response(
+          JSON.stringify({ error: `MCP server '${serverName}' not found` }), 
+          { status: 404, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Create a streaming response for SSE
+      const stream = new ReadableStream({
+        start(controller) {
+          // Send initial SSE event with server info
+          const initialEvent = `data: ${JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'notifications/initialized',
+            params: {
+              protocolVersion: '2025-06-18',
+              capabilities: {
+                tools: {}
+              },
+              serverInfo: {
+                name: config.name,
+                version: config.version
+              }
+            }
+          })}\n\n`;
+          
+          controller.enqueue(new TextEncoder().encode(initialEvent));
+          
+          // Keep connection alive with heartbeat
+          const heartbeat = setInterval(() => {
+            try {
+              controller.enqueue(new TextEncoder().encode(': heartbeat\n\n'));
+            } catch {
+              clearInterval(heartbeat);
+            }
+          }, 30000);
+          
+          // Clean up on close
+          request.signal.addEventListener('abort', () => {
+            clearInterval(heartbeat);
+            controller.close();
+          });
+        }
+      });
+      
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      });
+      
+    } catch (error) {
+      logger.error('Failed to handle SSE request', { 
+        serverName,
+        error: error instanceof Error ? error.message : String(error)
+      });
+      
+      return new Response('Internal Server Error', { status: 500 });
+    }
+  }
+  
+  // Handle POST and other requests with original logic
   try {
     // Extract selected tools from request headers or query params
     let selectedTools: string[] | undefined;
@@ -69,63 +140,10 @@ async function handleMcpRequest(
     }
 
     // Create the handler for this specific server
-    const { mcpHandler } = createMcpRouteHandler(config);
+    const { debugHandler } = createMcpRouteHandler(config);
     
-    // For GET requests with SSE, we need to handle streaming differently
-    if (request.method === 'GET' && request.headers.get('accept')?.includes('text/event-stream')) {
-      logger.info('Handling SSE GET request', { serverName });
-      
-      // Create a streaming response for SSE
-      const stream = new ReadableStream({
-        start(controller) {
-          // Send initial SSE event
-          const initialEvent = `data: ${JSON.stringify({
-            jsonrpc: '2.0',
-            method: 'notifications/initialized',
-            params: {
-              protocolVersion: '2025-06-18',
-              capabilities: {
-                tools: {}
-              },
-              serverInfo: {
-                name: config.name,
-                version: config.version
-              }
-            }
-          })}\n\n`;
-          
-          controller.enqueue(new TextEncoder().encode(initialEvent));
-          
-          // Keep connection alive with heartbeat
-          const heartbeat = setInterval(() => {
-            try {
-              controller.enqueue(new TextEncoder().encode(': heartbeat\n\n'));
-            } catch {
-              clearInterval(heartbeat);
-            }
-          }, 30000);
-          
-          // Clean up on close
-          request.signal.addEventListener('abort', () => {
-            clearInterval(heartbeat);
-            controller.close();
-          });
-        }
-      });
-      
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache, no-transform',
-          'Connection': 'keep-alive',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
-      });
-    }
-    
-    // For POST requests, delegate to MCP handler
-    return await mcpHandler(request);
+    // Execute the request
+    return await debugHandler(request);
     
   } catch (error) {
     logger.error('Failed to handle MCP request', { 
@@ -146,5 +164,5 @@ async function handleMcpRequest(
   }
 }
 
-// Export for all HTTP methods
-export { handleMcpRequest as GET, handleMcpRequest as POST, handleMcpRequest as DELETE };
+// Export the same handler for all HTTP methods
+export { createHandler as GET, createHandler as POST, createHandler as DELETE };
