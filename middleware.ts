@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
+  // Skip middleware for MCP endpoints - they handle their own auth/CORS
+  if (request.nextUrl.pathname.startsWith('/api/mcp') || 
+      request.nextUrl.pathname.match(/^\/api\/[^\/]+$/)) {
+    return NextResponse.next();
+  }
+
   // Handle CORS for widget API endpoints
   if (request.nextUrl.pathname.startsWith('/api/v2/widget/') || 
       request.nextUrl.pathname.startsWith('/api/v2/agents/chat')) {

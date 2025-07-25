@@ -134,8 +134,26 @@ const handler = createMcpHandler(
 // Wrap the handler to capture the request
 async function wrappedHandler(request: Request) {
   currentRequest = request;
+  
+  // Log request details for debugging
+  logger.info('MCP request received', {
+    method: request.method,
+    url: request.url,
+    headers: Object.fromEntries(request.headers.entries()),
+    userAgent: request.headers.get('user-agent')
+  });
+  
   try {
-    return await handler(request);
+    const response = await handler(request);
+    logger.info('MCP request completed successfully', {
+      status: response.status
+    });
+    return response;
+  } catch (error) {
+    logger.error('MCP request failed', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    throw error;
   } finally {
     currentRequest = null;
   }
@@ -151,8 +169,9 @@ export async function OPTIONS(): Promise<Response> {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-mcp-selected-tools',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-mcp-selected-tools, x-mcp-integration-type, x-mcp-integration-name, mcp-protocol-version',
       'Access-Control-Max-Age': '86400',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
     },
   });
 }
