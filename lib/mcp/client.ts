@@ -192,7 +192,10 @@ export class MCPClient {
       }
 
       // Consistent HTTP-based MCP server for all environments
-      let baseUrl = process.env.VERCEL_URL || process.env.NEXT_PUBLIC_SITE_URL || 'localhost:3000';
+      // Use custom domain in production to avoid self-referencing calls
+      let baseUrl = isProduction 
+        ? 'cs.scrumble.ai'  // Use your custom domain in production
+        : (process.env.NEXT_PUBLIC_SITE_URL || 'localhost:3000');
       
       // Handle URLs that already include protocol
       if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
@@ -233,6 +236,19 @@ export class MCPClient {
       // Setup credentials for HTTP server
       this.setupHttpCredentials(config, serverCredentials);
       
+      logger.info('🔍 MCP CLIENT DEBUG - Server URL construction', {
+        serverName: config.name,
+        baseUrl,
+        fullBaseUrl,
+        endpoint,
+        serverUrl,
+        isProduction,
+        environment: process.env.NODE_ENV,
+        vercelUrl: process.env.VERCEL_URL,
+        siteUrl: process.env.NEXT_PUBLIC_SITE_URL,
+        timestamp: new Date().toISOString()
+      });
+
       logger.info('Created HTTP MCP server', { 
         serverName: config.name,
         url: serverUrl,
