@@ -128,9 +128,10 @@ export class MCPClientV2 {
   private getBaseUrl(): string {
     const isProduction = process.env.NODE_ENV === 'production';
     
-    let baseUrl = process.env.VERCEL_URL || 
-                  process.env.NEXT_PUBLIC_SITE_URL || 
-                  'localhost:3000';
+    // Use custom domain in production to avoid self-referencing calls
+    let baseUrl = isProduction 
+      ? 'cs.scrumble.ai'  // Use your custom domain in production
+      : (process.env.NEXT_PUBLIC_SITE_URL || 'localhost:3000');
     
     // Remove protocol if present
     baseUrl = baseUrl.replace(/^https?:\/\//, '');
