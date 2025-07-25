@@ -4,11 +4,15 @@ import { MCPServerConfig, IntegrationServerMap, MCPClientDefaults } from './type
  * MCP Server Configurations
  * Central registry for all available MCP servers
  */
+/**
+ * Pure HTTP MCP Server Configurations (Best Practice)
+ * All servers use HTTP transport with mcp-handler for consistency
+ */
 export const MCP_SERVERS: MCPServerConfig[] = [
   {
     name: 'Shopify MCP Server',
-    command: 'node_modules/.bin/tsx',
-    args: ['./lib/mcp/servers/shopify/server.ts'],
+    command: 'http',
+    args: ['/api/mcp/shopify'],
     timeout: 30000,
     retries: 3,
     cacheToolsList: true,
@@ -20,8 +24,8 @@ export const MCP_SERVERS: MCPServerConfig[] = [
   },
   {
     name: 'Stripe MCP Server',
-    command: 'node_modules/.bin/tsx',
-    args: ['./lib/mcp/servers/stripe/server.ts'],
+    command: 'http',
+    args: ['/api/mcp/stripe'],
     timeout: 30000,
     retries: 3,
     cacheToolsList: true,
@@ -33,8 +37,8 @@ export const MCP_SERVERS: MCPServerConfig[] = [
   },
   {
     name: 'Custom Tools MCP Server',
-    command: 'node_modules/.bin/tsx',
-    args: ['./lib/mcp/servers/custom/server.ts'],
+    command: 'http',
+    args: ['/api/mcp/custom'],
     timeout: 30000,
     retries: 3,
     cacheToolsList: true,

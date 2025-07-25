@@ -1,4 +1,4 @@
-import { MCPServerStdio, MCPServerStreamableHttp, hostedMcpTool } from '@openai/agents';
+import { MCPServerStreamableHttp, hostedMcpTool } from '@openai/agents';
 import { logger } from '@/lib/utils/logger';
 import { 
   MCPServerConfig, 
@@ -15,7 +15,7 @@ import { createCustomMcpServer, CustomMcpServerResult } from './servers/custom';
 import { CustomMcpCredentials } from '@/lib/types/integrations';
 
 export interface MCPClientResult {
-  servers: (MCPServerStdio | MCPServerStreamableHttp)[];
+  servers: MCPServerStreamableHttp[];
   hostedTools: ReturnType<typeof hostedMcpTool>[];
 }
 
@@ -35,7 +35,7 @@ export class MCPClient {
    * Initialize MCP servers based on agent integrations
    */
   async initializeServers(integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown>; selectedTools?: string[] }>): Promise<MCPClientResult> {
-    const mcpServers: (MCPServerStdio | MCPServerStreamableHttp)[] = [];
+    const mcpServers: MCPServerStreamableHttp[] = [];
     const hostedTools: ReturnType<typeof hostedMcpTool>[] = [];
     
     try {
@@ -69,10 +69,21 @@ export class MCPClient {
         }
       }
       
+      // Validate HTTP-only setup
+      const validation = this.validateHttpSetup();
+      if (!validation.valid) {
+        logger.error('MCP HTTP setup validation failed', {
+          issues: validation.issues
+        });
+        // Log issues but don't throw to avoid breaking the app
+      }
+
       logger.info('MCP servers initialized', { 
         regularServerCount: mcpServers.length,
         hostedToolCount: hostedTools.length,
-        totalIntegrations: integrations.length
+        totalIntegrations: integrations.length,
+        transport: 'http-only',
+        setupValid: validation.valid
       });
       
       return { servers: mcpServers, hostedTools };
@@ -140,7 +151,7 @@ export class MCPClient {
   private async initializeServer(
     config: MCPServerConfig, 
     integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown>; selectedTools?: string[] }>
-  ): Promise<MCPServerStdio | null> {
+  ): Promise<MCPServerStreamableHttp | null> {
     try {
       // Find integrations that use this server
       const relevantIntegrations = integrations.filter(integration => 
@@ -173,14 +184,61 @@ export class MCPClient {
         uniqueSelectedTools
       });
       
-      // Create server command with credentials and selected tools
-      const fullCommand = this.buildServerCommand(config, serverCredentials, uniqueSelectedTools);
+      // Pure HTTP MCP server creation (mcp-handler best practice)
+      const isProduction = process.env.NODE_ENV === 'production';
       
-      // Create MCP server instance
-      const mcpServer = new MCPServerStdio({
+      if (config.command !== 'http') {
+        throw new Error(`Only HTTP transport supported. Server ${config.name} uses: ${config.command}`);
+      }
+
+      // Consistent HTTP-based MCP server for all environments
+      let baseUrl = process.env.VERCEL_URL || process.env.NEXT_PUBLIC_SITE_URL || 'localhost:3000';
+      
+      // Handle URLs that already include protocol
+      if (baseUrl.startsWith('http://') || baseUrl.startsWith('https://')) {
+        baseUrl = baseUrl.replace(/^https?:\/\//, '');
+      }
+      
+      const protocol = isProduction ? 'https' : 'http';
+      const fullBaseUrl = `${protocol}://${baseUrl}`;
+      const endpoint = config.args?.[0] || '';
+      
+      // Create server URL with selected tools
+      const serverUrl = uniqueSelectedTools && uniqueSelectedTools.length > 0
+        ? `${fullBaseUrl}${endpoint}?selectedTools=${uniqueSelectedTools.join(',')}`
+        : `${fullBaseUrl}${endpoint}`;
+      
+      // Create custom request init to include selected tools header
+      const requestInit: RequestInit = uniqueSelectedTools && uniqueSelectedTools.length > 0 ? {
+        headers: {
+          'x-mcp-selected-tools': JSON.stringify(uniqueSelectedTools)
+        }
+      } : {};
+      
+      const mcpServer = new MCPServerStreamableHttp({
         name: config.name,
-        fullCommand,
-        cacheToolsList: config.cacheToolsList ?? this.defaults.cacheToolsList
+        url: serverUrl,
+        requestInit,
+        cacheToolsList: config.cacheToolsList ?? this.defaults.cacheToolsList,
+        // Enhanced configuration for production
+        ...(isProduction && {
+          reconnectionOptions: {
+            maxAttempts: 5,
+            initialDelay: 1000,
+            maxDelay: 10000
+          }
+        })
+      });
+      
+      // Setup credentials for HTTP server
+      this.setupHttpCredentials(config, serverCredentials);
+      
+      logger.info('Created HTTP MCP server', { 
+        serverName: config.name,
+        url: serverUrl,
+        environment: process.env.NODE_ENV,
+        transport: 'streamable-http',
+        hasCredentials: serverCredentials.length > 0
       });
       
       // Connect to server
@@ -202,13 +260,26 @@ export class MCPClient {
       return mcpServer;
       
     } catch (error) {
-      logger.error('Failed to initialize server', { serverName: config.name }, error as Error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isProduction = process.env.NODE_ENV === 'production';
       
-      // Store error state
+      // Enhanced error logging with production context
+      logger.error('Failed to initialize MCP server', { 
+        serverName: config.name,
+        environment: isProduction ? 'production' : 'development',
+        serverType: config.command === 'http' ? 'HTTP' : 'stdio',
+        error: errorMessage
+      }, error as Error);
+      
+      // Store error state with enhanced information
       this.servers.set(config.name, {
         config,
         connected: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: errorMessage,
+        ...(isProduction && {
+          productionError: true,
+          suggestion: config.command !== 'http' ? 'Use HTTP transport in production' : 'Check server endpoint and credentials'
+        })
       });
       
       return null;
@@ -246,7 +317,7 @@ export class MCPClient {
       
       serverCredentials.push({
         type: integration.type,
-        credentials: integration.credentials,
+        credentials: integration.credentials
         // settings removed in V2 - using dynamic tool discovery instead
       });
     }
@@ -254,34 +325,78 @@ export class MCPClient {
     return serverCredentials;
   }
 
+
   /**
-   * Build server command with credentials
+   * Setup credentials for HTTP-based MCP servers
+   * In production, credentials are handled by environment variables and request context
    */
-  private buildServerCommand(config: MCPServerConfig, credentials: ServerCredentials[], selectedTools?: string[]): string {
-    const args = [...(config.args || [])];
+  private setupHttpCredentials(config: MCPServerConfig, credentials: ServerCredentials[]): void {
+    const isProduction = process.env.NODE_ENV === 'production';
     
-    // Add credentials as base64 encoded argument
-    const credentialsJson = JSON.stringify(credentials);
-    const credentialsBase64 = Buffer.from(credentialsJson).toString('base64');
-    args.push('--credentials', credentialsBase64);
-    
-    // Add timeout
-    const timeout = config.timeout || this.defaults.timeout;
-    args.push('--timeout', timeout.toString());
-    
-    // Add retries
-    const retries = config.retries || this.defaults.retries;
-    args.push('--retries', retries.toString());
-    
-    // Add selected tools if provided
-    if (selectedTools && selectedTools.length > 0) {
-      const selectedToolsJson = JSON.stringify(selectedTools);
-      const selectedToolsBase64 = Buffer.from(selectedToolsJson).toString('base64');
-      args.push('--selected-tools', selectedToolsBase64);
+    if (isProduction) {
+      // In production, credentials are managed by the mcp-handler servers
+      // They get credentials from environment variables or database lookups
+      logger.info('HTTP MCP server will use production credential management', {
+        serverName: config.name,
+        credentialTypes: credentials.map(c => c.type)
+      });
+      return;
     }
+
+    // In development, we can set environment variables for testing
+    for (const credential of credentials) {
+      if (credential.type === 'shopify') {
+        const shopifyCredentials = credential.credentials as { shopUrl: string; accessToken: string };
+        if (shopifyCredentials.shopUrl && shopifyCredentials.accessToken) {
+          // Set test environment variables for development
+          process.env.TEST_SHOPIFY_SHOP_URL = shopifyCredentials.shopUrl;
+          process.env.TEST_SHOPIFY_ACCESS_TOKEN = shopifyCredentials.accessToken;
+          
+          logger.info('Set Shopify test credentials for development', {
+            shopUrl: shopifyCredentials.shopUrl.substring(0, 20) + '...'
+          });
+        }
+      } else if (credential.type === 'stripe') {
+        const stripeCredentials = credential.credentials as { secretKey: string };
+        if (stripeCredentials.secretKey) {
+          process.env.STRIPE_SECRET_KEY = stripeCredentials.secretKey;
+          logger.info('Set Stripe credentials for development');
+        }
+      }
+    }
+  }
+
+  /**
+   * Validate HTTP-only MCP setup
+   */
+  validateHttpSetup(): { valid: boolean; issues: string[] } {
+    const issues: string[] = [];
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // Check that all servers use HTTP transport
+    for (const [serverName, instance] of this.servers.entries()) {
+      if (instance.config.command !== 'http') {
+        issues.push(`Server "${serverName}" uses unsupported transport: ${instance.config.command}. Only HTTP is supported.`);
+      }
+    }
+
+    // Check required environment variables for URL construction
+    const requiredEnvVars = ['VERCEL_URL', 'NEXT_PUBLIC_SITE_URL'];
+    const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
     
-    // Build full command
-    return `${config.command} ${args.join(' ')}`;
+    if (missingEnvVars.length === requiredEnvVars.length) {
+      issues.push('Missing environment variables for server URL. Set either VERCEL_URL or NEXT_PUBLIC_SITE_URL.');
+    }
+
+    // Production-specific checks
+    if (isProduction && !process.env.VERCEL_URL) {
+      issues.push('VERCEL_URL environment variable should be set in production');
+    }
+
+    return {
+      valid: issues.length === 0,
+      issues
+    };
   }
 
   /**
@@ -393,7 +508,7 @@ export class MCPClient {
  */
 export async function createMCPClient(
   integrations: Array<{ type: string; credentials: Record<string, unknown>; settings?: Record<string, unknown>; selectedTools?: string[] }>
-): Promise<{ client: MCPClient; servers: (MCPServerStdio | MCPServerStreamableHttp)[]; hostedTools: ReturnType<typeof hostedMcpTool>[] }> {
+): Promise<{ client: MCPClient; servers: MCPServerStreamableHttp[]; hostedTools: ReturnType<typeof hostedMcpTool>[] }> {
   const client = new MCPClient();
   const result = await client.initializeServers(integrations);
   

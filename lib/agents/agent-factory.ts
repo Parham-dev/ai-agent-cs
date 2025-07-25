@@ -7,8 +7,10 @@ import { Agent, type MCPServerStdio, type MCPServerStreamableHttp, hostedMcpTool
 import { createMCPClient, type MCPClient } from '@/lib/mcp/client'
 import { getAllTools } from '@/lib/tools'
 import { getInputGuardrails, getOutputGuardrails } from '@/lib/guardrails'
+import { encryptionService } from '@/lib/services'
 import { logger } from '@/lib/utils/logger'
 import type { AgentWithRelations } from '@/lib/types/database'
+import type { IntegrationCredentials, CustomMcpCredentials } from '@/lib/types/integrations'
 
 export interface AgentFactoryResult {
   agent: Agent
@@ -54,10 +56,33 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
         }
         
         const integration = agentIntegration.integration
+        
+        // Decrypt credentials if they are encrypted
+        let decryptedCredentials: Record<string, unknown> = integration.credentials
+        try {
+          if (encryptionService.isEncrypted(integration.credentials)) {
+            decryptedCredentials = await encryptionService.decryptCredentials<IntegrationCredentials | CustomMcpCredentials>(
+              integration.credentials
+            ) as Record<string, unknown>
+            logger.debug('Decrypted integration credentials', { 
+              integrationId: integration.id,
+              integrationType: integration.type 
+            })
+          }
+        } catch (error) {
+          logger.error('Failed to decrypt integration credentials', { 
+            integrationId: integration.id,
+            integrationType: integration.type,
+            error: error instanceof Error ? error.message : String(error)
+          }, error as Error)
+          // Skip this integration if credentials can't be decrypted
+          continue
+        }
+        
         mcpIntegrations.push({
           type: integration.type,
           name: integration.name,
-          credentials: integration.credentials,
+          credentials: decryptedCredentials,
           config: agentIntegration.config || {},
           selectedTools: agentIntegration.selectedTools || []
         })
