@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/database/database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
 import { encryptionService } from '@/lib/services'
+import { logger } from '@/lib/utils/logger'
 import { IntegrationCredentials, CustomMcpCredentials } from '@/lib/types/integrations'
 import type {
   Integration,
