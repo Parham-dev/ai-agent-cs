@@ -63,6 +63,12 @@ export class EncryptionService {
 
       if (!fetchError && existingSecret) {
         // Secret exists, use it
+        logger.info('✅ ENCRYPTION DEBUG - Retrieved key from Vault successfully', {
+          secretName: this.secretName,
+          keyLength: existingSecret.length,
+          environment: process.env.NODE_ENV,
+          timestamp: new Date().toISOString()
+        });
         this.cachedKey = Buffer.from(existingSecret, 'base64')
         this.keyExpiresAt = Date.now() + 3600000 // Cache for 1 hour
         return this.cachedKey
@@ -95,13 +101,24 @@ export class EncryptionService {
       this.keyExpiresAt = Date.now() + 3600000 // Cache for 1 hour
       return newKey
     } catch (error) {
-      logger.error('Failed to get encryption key from Vault', { error })
+      logger.error('❌ ENCRYPTION DEBUG - Failed to get encryption key from Vault', { 
+        error: error instanceof Error ? error.message : String(error),
+        secretName: this.secretName,
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString()
+      })
       
       // Fallback: Use a derived key from environment (for development)
       const fallbackSeed = process.env.SUPABASE_SERVICE_ROLE_KEY || 'fallback-key-seed'
       const fallbackKey = crypto.createHash('sha256').update(fallbackSeed + this.secretName).digest()
       
-      logger.warn('Using fallback encryption key due to Vault error')
+      logger.warn('🔄 ENCRYPTION DEBUG - Using fallback encryption key due to Vault error', {
+        fallbackSeedLength: fallbackSeed.length,
+        secretName: this.secretName,
+        fallbackKeyGenerated: !!fallbackKey,
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString()
+      })
       this.cachedKey = fallbackKey
       this.keyExpiresAt = Date.now() + 3600000 // Cache for 1 hour
       return fallbackKey
@@ -153,10 +170,33 @@ export class EncryptionService {
     encryptedData: unknown
   ): Promise<T> {
     try {
+      logger.info('🔍 ENCRYPTION DEBUG - Starting decryption', {
+        hasEncryptedData: !!encryptedData,
+        encryptedDataType: typeof encryptedData,
+        encryptedDataStructure: encryptedData,
+        secretName: this.secretName,
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString()
+      });
+
       // Validate encrypted data structure
       if (!isEncryptedData(encryptedData)) {
+        logger.error('❌ ENCRYPTION DEBUG - Invalid encrypted data format', {
+          encryptedData,
+          encryptedDataType: typeof encryptedData,
+          timestamp: new Date().toISOString()
+        });
         throw new Error('Invalid encrypted data format')
       }
+
+      logger.info('✅ ENCRYPTION DEBUG - Encrypted data validation passed', {
+        algorithm: encryptedData.algorithm,
+        keyVersion: encryptedData.keyVersion,
+        hasEncrypted: !!encryptedData.encrypted,
+        hasIv: !!encryptedData.iv,
+        hasTag: !!encryptedData.tag,
+        timestamp: new Date().toISOString()
+      });
 
       const key = await this.getEncryptionKey()
       
