@@ -203,7 +203,7 @@ export function createMcpRouteHandler(config: McpServerConfig) {
       streamableHttpEndpoint: config.endpoint,
       maxDuration: config.maxDuration || 300,
       verboseLogs: config.verboseLogs ?? (process.env.NODE_ENV === 'development'),
-      disableSse: true,
+      disableSse: false, // Enable SSE for proper MCP protocol support
       onEvent: (event) => {
         if (event.type === 'ERROR') {
           logger.error('MCP Server Event', { serverName: config.name, event });
