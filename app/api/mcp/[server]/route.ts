@@ -3,16 +3,19 @@ import { getMcpServerConfig } from '@/lib/mcp/config/registry';
 import { logger } from '@/lib/utils/logger';
 
 /**
- * Dynamic MCP Route Handler
- * Handles all MCP server routes based on the [server] parameter
- * Replaces individual route files for better maintainability
+ * Dynamic MCP Route Handler for Next.js App Router
+ * Supports both POST (JSON-RPC) and GET (SSE) requests
  */
 
-async function createHandler(
+interface RouteContext {
+  params: Promise<{ server: string }>;
+}
+
+async function handleMcpRequest(
   request: Request, 
-  { params }: { params: Promise<{ server: string }> }
-) {
-  const { server: serverName } = await params;
+  context: RouteContext
+): Promise<Response> {
+  const { server: serverName } = await context.params;
   
   logger.info('🔍 MCP ROUTE DEBUG - Request received', {
     serverName,
@@ -66,10 +69,63 @@ async function createHandler(
     }
 
     // Create the handler for this specific server
-    const { debugHandler } = createMcpRouteHandler(config);
+    const { mcpHandler } = createMcpRouteHandler(config);
     
-    // Execute the request
-    return await debugHandler(request);
+    // For GET requests with SSE, we need to handle streaming differently
+    if (request.method === 'GET' && request.headers.get('accept')?.includes('text/event-stream')) {
+      logger.info('Handling SSE GET request', { serverName });
+      
+      // Create a streaming response for SSE
+      const stream = new ReadableStream({
+        start(controller) {
+          // Send initial SSE event
+          const initialEvent = `data: ${JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'notifications/initialized',
+            params: {
+              protocolVersion: '2025-06-18',
+              capabilities: {
+                tools: {}
+              },
+              serverInfo: {
+                name: config.name,
+                version: config.version
+              }
+            }
+          })}\n\n`;
+          
+          controller.enqueue(new TextEncoder().encode(initialEvent));
+          
+          // Keep connection alive with heartbeat
+          const heartbeat = setInterval(() => {
+            try {
+              controller.enqueue(new TextEncoder().encode(': heartbeat\n\n'));
+            } catch {
+              clearInterval(heartbeat);
+            }
+          }, 30000);
+          
+          // Clean up on close
+          request.signal.addEventListener('abort', () => {
+            clearInterval(heartbeat);
+            controller.close();
+          });
+        }
+      });
+      
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        }
+      });
+    }
+    
+    // For POST requests, delegate to MCP handler
+    return await mcpHandler(request);
     
   } catch (error) {
     logger.error('Failed to handle MCP request', { 
@@ -90,5 +146,5 @@ async function createHandler(
   }
 }
 
-// Export the same handler for all HTTP methods
-export { createHandler as GET, createHandler as POST, createHandler as DELETE };
+// Export for all HTTP methods
+export { handleMcpRequest as GET, handleMcpRequest as POST, handleMcpRequest as DELETE };
