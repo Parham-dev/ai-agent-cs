@@ -47,6 +47,7 @@
     "sonner": "^2.0.6",
     "swr": "^2.3.4",
     "tailwind-merge": "^3.3.1",
+    "tsx": "^4.20.3",
     "zod": "^3.25.67"
   },
   "devDependencies": {
@@ -63,7 +64,6 @@
     "prisma": "^6.11.0",
     "prisma-json-types-generator": "^3.5.1",
     "tailwindcss": "^4",
-    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }
