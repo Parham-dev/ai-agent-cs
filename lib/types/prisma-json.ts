@@ -23,6 +23,15 @@ declare global {
 
     // Use centralized IntegrationCredentials from @/lib/types/integrations
 
+    // Encrypted credentials structure
+    interface EncryptedCredentials {
+      encrypted: string      // Base64 encoded encrypted data
+      iv: string            // Initialization vector
+      tag: string           // Authentication tag
+      algorithm: string     // Encryption algorithm used
+      keyVersion?: number   // For key rotation support
+    }
+
     // Integration settings - non-sensitive configuration
     interface IntegrationSettings {
       // Sync settings

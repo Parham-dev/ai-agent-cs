@@ -5,3 +5,4 @@
 
 export { authService } from './auth.service';
 export * from './vector.server';
+export { encryptionService } from './encryption.service';

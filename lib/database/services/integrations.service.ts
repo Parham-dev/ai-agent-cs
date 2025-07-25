@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/database/database'
 import { DatabaseError, NotFoundError, ValidationError } from '@/lib/utils/errors'
+import { encryptionService } from '@/lib/services'
+import { IntegrationCredentials, CustomMcpCredentials } from '@/lib/types/integrations'
 import type {
   Integration,
   IntegrationWithRelations,
@@ -49,7 +51,29 @@ class IntegrationsService {
         skip: offset
       })
 
-      return integrations as IntegrationWithRelations[]
+      // Decrypt credentials for each integration
+      const decryptedIntegrations = await Promise.all(
+        integrations.map(async (integration) => {
+          try {
+            const decryptedCredentials = await encryptionService.decryptCredentials<IntegrationCredentials | CustomMcpCredentials>(
+              integration.credentials
+            )
+            return {
+              ...integration,
+              credentials: decryptedCredentials
+            }
+          } catch (error) {
+            // Log error but return integration with empty credentials to not break the flow
+            console.error(`Failed to decrypt credentials for integration ${integration.id}:`, error)
+            return {
+              ...integration,
+              credentials: {}
+            }
+          }
+        })
+      )
+
+      return decryptedIntegrations as IntegrationWithRelations[]
     } catch (error) {
       throw new DatabaseError('Failed to fetch integrations (V2)', error as Error)
     }
@@ -74,7 +98,26 @@ class IntegrationsService {
         }
       })
 
-      return integration as IntegrationWithRelations | null
+      if (!integration) {
+        return null
+      }
+
+      // Decrypt credentials
+      try {
+        const decryptedCredentials = await encryptionService.decryptCredentials<IntegrationCredentials | CustomMcpCredentials>(
+          integration.credentials
+        )
+        return {
+          ...integration,
+          credentials: decryptedCredentials
+        } as IntegrationWithRelations
+      } catch (error) {
+        console.error(`Failed to decrypt credentials for integration ${integration.id}:`, error)
+        return {
+          ...integration,
+          credentials: {}
+        } as IntegrationWithRelations
+      }
     } catch (error) {
       throw new DatabaseError(`Failed to fetch integration ${id} (V2)`, error as Error)
     }
@@ -105,7 +148,26 @@ class IntegrationsService {
         }
       })
 
-      return integration as Integration | null
+      if (!integration) {
+        return null
+      }
+
+      // Decrypt credentials
+      try {
+        const decryptedCredentials = await encryptionService.decryptCredentials<IntegrationCredentials | CustomMcpCredentials>(
+          integration.credentials
+        )
+        return {
+          ...integration,
+          credentials: decryptedCredentials
+        } as Integration
+      } catch (error) {
+        console.error(`Failed to decrypt credentials for integration ${integration.id}:`, error)
+        return {
+          ...integration,
+          credentials: {}
+        } as Integration
+      }
     } catch (error) {
       throw new DatabaseError(`Failed to fetch integration ${type} for organization ${organizationId} (V2)`, error as Error)
     }
@@ -161,18 +223,27 @@ class IntegrationsService {
         }
       }
 
+      // Encrypt credentials before storing
+      const encryptedCredentials = await encryptionService.encryptCredentials(
+        data.credentials as IntegrationCredentials | CustomMcpCredentials
+      )
+
       const integration = await prisma.integration.create({
         data: {
           organizationId: organizationId,
           name: data.name.trim(),
           type: data.type.trim(),
           description: data.description?.trim() || null,
-          credentials: data.credentials,
+          credentials: encryptedCredentials as unknown as Record<string, unknown>,
           isActive: data.isActive ?? true
         }
       })
 
-      return integration as Integration
+      // Return with decrypted credentials
+      return {
+        ...integration,
+        credentials: data.credentials
+      } as Integration
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error
@@ -192,7 +263,13 @@ class IntegrationsService {
       
       if (data.name !== undefined) updateData.name = data.name.trim()
       if (data.description !== undefined) updateData.description = data.description?.trim() || null
-      if (data.credentials !== undefined) updateData.credentials = data.credentials
+      if (data.credentials !== undefined) {
+        // Encrypt new credentials
+        const encryptedCredentials = await encryptionService.encryptCredentials(
+          data.credentials as IntegrationCredentials | CustomMcpCredentials
+        )
+        updateData.credentials = encryptedCredentials as unknown as Record<string, unknown>
+      }
       if (typeof data.isActive === 'boolean') updateData.isActive = data.isActive
 
       const integration = await prisma.integration.update({
@@ -203,7 +280,30 @@ class IntegrationsService {
         data: updateData
       })
 
-      return integration as Integration
+      // Return with decrypted credentials if they were updated
+      if (data.credentials !== undefined) {
+        return {
+          ...integration,
+          credentials: data.credentials
+        } as Integration
+      }
+
+      // Otherwise decrypt the stored credentials
+      try {
+        const decryptedCredentials = await encryptionService.decryptCredentials<IntegrationCredentials | CustomMcpCredentials>(
+          integration.credentials
+        )
+        return {
+          ...integration,
+          credentials: decryptedCredentials
+        } as Integration
+      } catch (error) {
+        console.error(`Failed to decrypt credentials for integration ${integration.id}:`, error)
+        return {
+          ...integration,
+          credentials: {}
+        } as Integration
+      }
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error
