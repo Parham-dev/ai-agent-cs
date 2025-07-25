@@ -60,12 +60,49 @@ export async function getIntegrationCredentials<T = Record<string, unknown>>(
   integrationType: string,
   context?: unknown
 ): Promise<T | null> {
+  logger.info('🔍 CREDENTIAL PROVIDER DEBUG - Starting', {
+    integrationType,
+    hasContext: !!context,
+    contextType: typeof context,
+    timestamp: new Date().toISOString()
+  });
+  
   const provider = getCredentialProvider(integrationType);
   if (!provider) {
+    logger.error('❌ CREDENTIAL PROVIDER DEBUG - No provider found', {
+      integrationType,
+      availableProviders: Object.keys(credentialProviders),
+      timestamp: new Date().toISOString()
+    });
     return null;
   }
   
-  return await provider.getCredentials(context) as T | null;
+  logger.info('✅ CREDENTIAL PROVIDER DEBUG - Provider found', {
+    integrationType,
+    providerType: provider.type,
+    timestamp: new Date().toISOString()
+  });
+  
+  try {
+    const credentials = await provider.getCredentials(context);
+    
+    logger.info('🔍 CREDENTIAL PROVIDER DEBUG - Provider result', {
+      integrationType,
+      hasCredentials: !!credentials,
+      credentialKeys: credentials ? Object.keys(credentials) : [],
+      credentialValues: credentials, // DANGER: Full credentials exposed!
+      timestamp: new Date().toISOString()
+    });
+    
+    return credentials as T | null;
+  } catch (error) {
+    logger.error('❌ CREDENTIAL PROVIDER DEBUG - Provider error', {
+      integrationType,
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString()
+    });
+    return null;
+  }
 }
 
 // Re-export types and classes
