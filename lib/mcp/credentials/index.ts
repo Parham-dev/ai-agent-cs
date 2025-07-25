@@ -20,36 +20,36 @@ export interface StripeCredentials {
 /**
  * Pre-configured credential providers for each integration
  */
-export const credentialProviders: Record<string, CredentialProvider> = {
-  shopify: new CompositeCredentialProvider<ShopifyCredentials>('shopify', [
+export const credentialProviders: Record<string, CredentialProvider<Record<string, unknown>>> = {
+  shopify: new CompositeCredentialProvider<Record<string, unknown>>('shopify', [
     // Try request headers first (for authenticated requests)
-    new HeaderCredentialProvider('shopify-headers', {
+    new HeaderCredentialProvider<Record<string, unknown>>('shopify-headers', {
       shopUrl: 'x-shopify-shop-url',
       accessToken: 'x-shopify-access-token'
     }),
     // Fall back to environment variables (for development/testing)
-    new EnvCredentialProvider('shopify-env', {
+    new EnvCredentialProvider<Record<string, unknown>>('shopify-env', {
       shopUrl: 'TEST_SHOPIFY_SHOP_URL',
       accessToken: 'TEST_SHOPIFY_ACCESS_TOKEN'
     })
   ]),
 
-  stripe: new CompositeCredentialProvider<StripeCredentials>('stripe', [
-    new HeaderCredentialProvider('stripe-headers', {
+  stripe: new CompositeCredentialProvider<Record<string, unknown>>('stripe', [
+    new HeaderCredentialProvider<Record<string, unknown>>('stripe-headers', {
       secretKey: 'x-stripe-secret-key'
     }),
-    new EnvCredentialProvider('stripe-env', {
+    new EnvCredentialProvider<Record<string, unknown>>('stripe-env', {
       secretKey: 'STRIPE_SECRET_KEY'
     })
   ]),
 
-  custom: new EnvCredentialProvider<Record<string, never>>('custom', {})
+  custom: new EnvCredentialProvider<Record<string, unknown>>('custom', {})
 };
 
 /**
  * Get credential provider for a specific integration type
  */
-export function getCredentialProvider(integrationType: string): CredentialProvider | null {
+export function getCredentialProvider(integrationType: string): CredentialProvider<Record<string, unknown>> | null {
   return credentialProviders[integrationType] || null;
 }
 

@@ -13,7 +13,17 @@ export const shopifyToolRegistry = new ToolRegistry({
 });
 
 // Register all Shopify tools
-shopifyToolRegistry.registerMany(ALL_TOOLS);
+shopifyToolRegistry.registerMany(ALL_TOOLS as Array<{
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+  handler: (params: unknown, context: unknown) => Promise<unknown>;
+  metadata?: {
+    category?: string;
+    complexity?: string;
+    requiresAuth?: boolean;
+  };
+}>);
 
 // Export convenience functions
 export function getShopifyTool(name: string) {

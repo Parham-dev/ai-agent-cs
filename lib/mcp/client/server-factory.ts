@@ -86,7 +86,7 @@ export async function createMcpServersFromIntegrations(
   integrations: Array<{
     type: string;
     selectedTools?: string[];
-    [key: string]: any;
+    [key: string]: unknown;
   }>,
   serverConfigs: Array<{
     integrationType: string;

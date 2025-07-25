@@ -40,12 +40,12 @@ export class EnvCredentialProvider<T = Record<string, unknown>> extends BaseCred
     let hasAllKeys = true;
 
     for (const [key, envVar] of Object.entries(this.envMapping)) {
-      const value = process.env[envVar];
+      const value = process.env[envVar as string];
       if (!value) {
         logger.warn(`Missing environment variable: ${envVar}`);
         hasAllKeys = false;
       } else {
-        (credentials as any)[key] = value;
+        (credentials as Record<string, unknown>)[key] = value;
       }
     }
 
@@ -56,7 +56,7 @@ export class EnvCredentialProvider<T = Record<string, unknown>> extends BaseCred
     if (!super.validateCredentials(credentials)) return false;
     
     for (const key of Object.keys(this.envMapping)) {
-      if (!(key in credentials)) return false;
+      if (!(key in (credentials as Record<string, unknown>))) return false;
     }
     
     return true;
@@ -84,11 +84,11 @@ export class HeaderCredentialProvider<T = Record<string, unknown>> extends BaseC
     let hasAllKeys = true;
 
     for (const [key, headerName] of Object.entries(this.headerMapping)) {
-      const value = request.headers.get(headerName);
+      const value = request.headers.get(headerName as string);
       if (!value) {
         hasAllKeys = false;
       } else {
-        (credentials as any)[key] = value;
+        (credentials as Record<string, unknown>)[key] = value;
       }
     }
 

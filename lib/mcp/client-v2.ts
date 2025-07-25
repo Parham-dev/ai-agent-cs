@@ -174,9 +174,9 @@ export class MCPClientV2 {
  * Factory function to create MCP client with integrations
  */
 export async function createMCPClientV2(
-  integrations: Array<{ type: string; [key: string]: any }>,
+  integrations: Array<{ type: string; [key: string]: unknown }>,
   config?: MCPClientConfig
-): Promise<{ client: MCPClientV2; servers: MCPServerStreamableHttp[]; hostedTools: any[] }> {
+): Promise<{ client: MCPClientV2; servers: MCPServerStreamableHttp[]; hostedTools: ReturnType<typeof hostedMcpTool>[] }> {
   const client = new MCPClientV2(config);
   const integrationTypes = integrations.map(i => i.type);
   const result = await client.initializeServers(integrationTypes);

@@ -10,7 +10,12 @@ export interface McpServerConfig {
   name: string;
   version: string;
   endpoint: string;
-  tools: any[];
+  tools: Array<{
+    name: string;
+    description: string;
+    inputSchema: Record<string, unknown>;
+    handler: (params: unknown, context: unknown) => Promise<unknown>;
+  }>;
   getCredentials?: () => Promise<Record<string, unknown> | null>;
   maxDuration?: number;
   verboseLogs?: boolean;
@@ -120,7 +125,7 @@ export function createMcpRouteHandler(config: McpServerConfig) {
                   });
 
                   // Execute the tool with proper context
-                  const result = await tool.handler(params as never, { 
+                  const result = await tool.handler(params, { 
                     credentials, 
                     settings: {},
                     requestId: String(extra?.requestId) || 'unknown',

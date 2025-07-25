@@ -8,8 +8,11 @@ import { logger } from '@/lib/utils/logger';
  * Replaces individual route files for better maintainability
  */
 
-async function createHandler(request: Request, { params }: { params: { server: string } }) {
-  const serverName = params.server;
+async function createHandler(
+  request: Request, 
+  { params }: { params: Promise<{ server: string }> }
+) {
+  const { server: serverName } = await params;
   
   try {
     // Extract selected tools from request headers or query params

@@ -16,7 +16,12 @@ const MCP_SERVER_REGISTRY: Record<string, McpServerConfig> = {
     name: 'shopify-mcp-server',
     version: '2.0.0',
     endpoint: '/api/mcp/shopify',
-    tools: ALL_TOOLS,
+    tools: ALL_TOOLS as Array<{
+      name: string;
+      description: string;
+      inputSchema: Record<string, unknown>;
+      handler: (params: unknown, context: unknown) => Promise<unknown>;
+    }>,
     getCredentials: async () => {
       const credentials = await getIntegrationCredentials('shopify');
       if (!credentials) {
@@ -66,8 +71,8 @@ const MCP_SERVER_REGISTRY: Record<string, McpServerConfig> = {
           },
           required: []
         },
-        handler: async (params: { includeMetrics?: boolean }) => {
-          const { includeMetrics = false } = params;
+        handler: async (params: unknown) => {
+          const { includeMetrics = false } = params as { includeMetrics?: boolean };
 
           const result = {
             system: {
@@ -112,8 +117,8 @@ const MCP_SERVER_REGISTRY: Record<string, McpServerConfig> = {
           },
           required: ['message']
         },
-        handler: async (params: { message: string; uppercase?: boolean; prefix?: string }) => {
-          const { message, uppercase = false, prefix = '' } = params;
+        handler: async (params: unknown) => {
+          const { message, uppercase = false, prefix = '' } = params as { message: string; uppercase?: boolean; prefix?: string };
 
           let result = prefix ? `${prefix} ${message}` : message;
           if (uppercase) {

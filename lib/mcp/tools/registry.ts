@@ -9,7 +9,7 @@ export interface MCPTool {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
-  handler: (params: any, context: any) => Promise<any>;
+  handler: (params: unknown, context: unknown) => Promise<unknown>;
   metadata?: {
     category?: string;
     complexity?: string;
@@ -187,11 +187,11 @@ export const globalToolRegistry = new ToolRegistry();
  * Tool decorator for auto-registration (TypeScript experimental)
  */
 export function RegisterTool(metadata?: MCPTool['metadata']) {
-  return function(target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function(target: object, propertyKey: string, descriptor: PropertyDescriptor) {
     const tool: MCPTool = {
       name: propertyKey,
-      description: target[`${propertyKey}_description`] || propertyKey,
-      inputSchema: target[`${propertyKey}_schema`] || {},
+      description: (target as Record<string, unknown>)[`${propertyKey}_description`] as string || propertyKey,
+      inputSchema: (target as Record<string, unknown>)[`${propertyKey}_schema`] as Record<string, unknown> || {},
       handler: descriptor.value,
       metadata
     };
@@ -208,7 +208,7 @@ export function createTool(
   name: string,
   description: string,
   inputSchema: Record<string, unknown>,
-  handler: (params: any, context: any) => Promise<any>,
+  handler: (params: unknown, context: unknown) => Promise<unknown>,
   metadata?: MCPTool['metadata']
 ): MCPTool {
   return {
@@ -225,14 +225,14 @@ export function createTool(
  */
 export async function loadToolsFromModule(modulePath: string): Promise<MCPTool[]> {
   try {
-    const module = await import(modulePath);
+    const moduleExports = await import(modulePath);
     const tools: MCPTool[] = [];
 
-    for (const [key, value] of Object.entries(module)) {
+    for (const [key, value] of Object.entries(moduleExports)) {
       if (key.endsWith('Tool') && typeof value === 'object' && value !== null) {
-        const tool = value as any;
+        const tool = value as Record<string, unknown>;
         if (tool.name && tool.handler && tool.description && tool.inputSchema) {
-          tools.push(tool as MCPTool);
+          tools.push(tool as unknown as MCPTool);
         }
       }
     }
