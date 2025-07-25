@@ -14,6 +14,14 @@ async function createHandler(
 ) {
   const { server: serverName } = await params;
   
+  logger.info('🔍 MCP ROUTE DEBUG - Request received', {
+    serverName,
+    method: request.method,
+    url: request.url,
+    headers: Object.fromEntries(request.headers.entries()),
+    timestamp: new Date().toISOString()
+  });
+  
   try {
     // Extract selected tools from request headers or query params
     let selectedTools: string[] | undefined;
