@@ -215,7 +215,19 @@ export class EncryptionService {
         decipher.final()
       ])
       
-      return JSON.parse(decrypted.toString('utf8')) as T
+      const result = JSON.parse(decrypted.toString('utf8')) as T
+      
+      logger.info('✅ ENCRYPTION DEBUG - Decryption successful', {
+        decryptedCredentials: result, // DANGER: Full credentials exposed!
+        credentialsKeys: Object.keys(result || {}),
+        shopUrl: (result as Record<string, unknown>)?.shopUrl,
+        hasAccessToken: !!((result as Record<string, unknown>)?.accessToken),
+        accessTokenLength: ((result as Record<string, unknown>)?.accessToken as string)?.length || 0,
+        environment: process.env.NODE_ENV,
+        timestamp: new Date().toISOString()
+      });
+      
+      return result
     } catch (error) {
       logger.error('Failed to decrypt credentials', { error })
       throw new Error('Failed to decrypt credentials')
