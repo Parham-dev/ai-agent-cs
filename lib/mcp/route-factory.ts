@@ -16,7 +16,7 @@ export interface McpServerConfig {
     inputSchema: Record<string, unknown>;
     handler: (params: unknown, context: unknown) => Promise<unknown>;
   }>;
-  getCredentials?: () => Promise<Record<string, unknown> | null>;
+  getCredentials?: (request?: Request) => Promise<Record<string, unknown> | null>;
   maxDuration?: number;
   verboseLogs?: boolean;
 }
@@ -25,8 +25,13 @@ export interface McpServerConfig {
  * Create a standardized MCP route handler
  */
 export function createMcpRouteHandler(config: McpServerConfig) {
+  // Store request in closure for access by tools
+  let currentRequest: Request | null = null;
+  
   // Debug wrapper to log all requests consistently
   async function debugHandler(request: Request): Promise<Response> {
+    // Store the current request for tool access
+    currentRequest = request;
     const method = request.method;
     const url = request.url;
     const headers = Object.fromEntries(request.headers.entries());
@@ -111,7 +116,8 @@ export function createMcpRouteHandler(config: McpServerConfig) {
                   // Get credentials if credential function is provided
                   let credentials = null;
                   if (config.getCredentials) {
-                    credentials = await config.getCredentials();
+                    // Pass the current request context to credentials function
+                    credentials = await config.getCredentials(currentRequest || undefined);
                     
                     if (!credentials) {
                       throw new Error(`${config.name} credentials not found. Please configure integration.`);

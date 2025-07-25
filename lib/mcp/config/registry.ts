@@ -22,18 +22,23 @@ const MCP_SERVER_REGISTRY: Record<string, McpServerConfig> = {
       inputSchema: Record<string, unknown>;
       handler: (params: unknown, context: unknown) => Promise<unknown>;
     }>,
-    getCredentials: async () => {
+    getCredentials: async (context?: unknown) => {
       logger.info('🔍 SHOPIFY CREDENTIALS DEBUG - Starting credential retrieval', {
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV
+        environment: process.env.NODE_ENV,
+        hasContext: !!context,
+        contextType: typeof context
       });
       
-      const credentials = await getIntegrationCredentials('shopify');
+      // Pass the context (request) to credential providers  
+      const credentials = await getIntegrationCredentials('shopify', context);
       
       if (!credentials) {
         logger.error('❌ SHOPIFY CREDENTIALS DEBUG - No credentials found', {
           credentialsType: typeof credentials,
           credentialsValue: credentials,
+          hasContext: !!context,
+          environment: process.env.NODE_ENV,
           timestamp: new Date().toISOString()
         });
         return null;
