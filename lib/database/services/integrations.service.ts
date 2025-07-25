@@ -113,6 +113,12 @@ class IntegrationsService {
         } as IntegrationWithRelations
       } catch (error) {
         console.error(`Failed to decrypt credentials for integration ${integration.id}:`, error)
+        logger.error('Credential decryption failed', { 
+          integrationId: integration.id, 
+          integrationType: integration.type,
+          credentialsStructure: typeof integration.credentials,
+          error: error instanceof Error ? error.message : String(error)
+        }, error as Error)
         return {
           ...integration,
           credentials: {}

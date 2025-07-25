@@ -7,8 +7,8 @@ import { MCPServerConfig, IntegrationServerMap, MCPClientDefaults } from './type
 export const MCP_SERVERS: MCPServerConfig[] = [
   {
     name: 'Shopify MCP Server',
-    command: 'npx',
-    args: ['tsx', './lib/mcp/servers/shopify/server.ts'],
+    command: 'node_modules/.bin/tsx',
+    args: ['./lib/mcp/servers/shopify/server.ts'],
     timeout: 30000,
     retries: 3,
     cacheToolsList: true,
@@ -20,8 +20,8 @@ export const MCP_SERVERS: MCPServerConfig[] = [
   },
   {
     name: 'Stripe MCP Server',
-    command: 'npx',
-    args: ['tsx', './lib/mcp/servers/stripe/server.ts'],
+    command: 'node_modules/.bin/tsx',
+    args: ['./lib/mcp/servers/stripe/server.ts'],
     timeout: 30000,
     retries: 3,
     cacheToolsList: true,
@@ -33,8 +33,8 @@ export const MCP_SERVERS: MCPServerConfig[] = [
   },
   {
     name: 'Custom Tools MCP Server',
-    command: 'npx',
-    args: ['tsx', './lib/mcp/servers/custom/server.ts'],
+    command: 'node_modules/.bin/tsx',
+    args: ['./lib/mcp/servers/custom/server.ts'],
     timeout: 30000,
     retries: 3,
     cacheToolsList: true,
