@@ -23,37 +23,22 @@ const MCP_SERVER_REGISTRY: Record<string, McpServerConfig> = {
       handler: (params: unknown, context: unknown) => Promise<unknown>;
     }>,
     getCredentials: async (context?: unknown) => {
-      logger.info('🔍 SHOPIFY CREDENTIALS DEBUG - Starting credential retrieval', {
-        timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
+      logger.debug('Getting Shopify credentials', {
         hasContext: !!context,
-        contextType: typeof context
+        environment: process.env.NODE_ENV
       });
       
       // Pass the context (request) to credential providers  
       const credentials = await getIntegrationCredentials('shopify', context);
       
       if (!credentials) {
-        logger.error('❌ SHOPIFY CREDENTIALS DEBUG - No credentials found', {
-          credentialsType: typeof credentials,
-          credentialsValue: credentials,
-          hasContext: !!context,
-          environment: process.env.NODE_ENV,
-          timestamp: new Date().toISOString()
-        });
+        logger.warn('Shopify credentials not found');
         return null;
       }
       
-      // Log decrypted credentials (REMOVE THIS IN PRODUCTION!)
-      logger.info('✅ SHOPIFY CREDENTIALS DEBUG - Retrieved credentials', {
+      logger.debug('Retrieved Shopify credentials successfully', {
         hasCredentials: !!credentials,
-        credentialsType: typeof credentials,
-        credentialsKeys: Object.keys(credentials || {}),
-        shopUrl: (credentials as Record<string, unknown>)?.shopUrl || 'NOT_FOUND',
-        accessTokenLength: ((credentials as Record<string, unknown>)?.accessToken as string)?.length || 0,
-        accessTokenPrefix: ((credentials as Record<string, unknown>)?.accessToken as string)?.substring(0, 10) || 'NOT_FOUND',
-        fullCredentials: credentials, // DANGER: Full credentials exposed!
-        timestamp: new Date().toISOString()
+        shopUrl: (credentials as Record<string, unknown>)?.shopUrl
       });
       
       return credentials;

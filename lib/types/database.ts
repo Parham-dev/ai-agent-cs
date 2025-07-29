@@ -67,7 +67,7 @@ export interface OrganizationWithRelations extends Organization {
 export interface AgentWithRelations extends Agent {
   organization?: Pick<Organization, 'name' | 'slug'>
   agentIntegrations?: (AgentIntegration & {
-    integration: Pick<Integration, 'id' | 'name' | 'type' | 'isActive' | 'credentials'>
+    integration: Pick<Integration, 'id' | 'name' | 'type' | 'isActive' | 'credentials' | 'organizationId'>
   })[]
 }
 

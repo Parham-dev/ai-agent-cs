@@ -82,7 +82,10 @@ export async function createAgent(agentData: AgentWithRelations): Promise<AgentF
           type: integration.type,
           name: integration.name,
           credentials: decryptedCredentials,
-          config: (agentIntegration.config as Record<string, unknown>) || {},
+          config: {
+            ...(agentIntegration.config as Record<string, unknown>) || {},
+            organizationId: integration.organizationId
+          },
           selectedTools: agentIntegration.selectedTools || []
         })
       }

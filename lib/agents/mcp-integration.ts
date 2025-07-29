@@ -5,6 +5,7 @@
 
 import { MCPServerStreamableHttp, hostedMcpTool } from '@openai/agents'
 import { logger } from '@/lib/utils/logger'
+import { createMCPToken } from '@/lib/mcp/auth/jwt-credentials'
 // Create basic auth header using standard Node.js Buffer
 function createBasicAuthHeader(username: string, password: string): string {
   const credentials = Buffer.from(`${username}:${password}`).toString('base64');
@@ -222,16 +223,50 @@ function createBuiltinIntegration(
   integration: MCPIntegrationConfig
 ): {
   server?: MCPServerStreamableHttp
+  hostedTool?: ReturnType<typeof hostedMcpTool>
 } {
   // Get the base URL for our API
   const baseUrl = getServerBaseUrl()
-  const serverUrl = `${baseUrl}/api/mcp`
+  const serverUrl = `${baseUrl}/api/mcp/${integration.type}`
 
-  // Create headers for selected tools and integration type
+  // For production, prefer hosted MCP tools with JWT authentication
+  if (process.env.NODE_ENV === 'production') {
+    // Create JWT token with organization context and credentials
+    const token = createMCPToken(
+      integration.config.organizationId as string,
+      integration.type,
+      integration.credentials
+    )
+
+    const hostedTool = hostedMcpTool({
+      serverLabel: `${integration.type}-integration`,
+      serverUrl: serverUrl,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...(integration.selectedTools.length > 0 && {
+          'x-mcp-selected-tools': JSON.stringify(integration.selectedTools)
+        })
+      }
+    })
+
+    logger.info('Created hosted MCP tool for production', {
+      type: integration.type,
+      name: integration.name,
+      url: serverUrl,
+      selectedToolsCount: integration.selectedTools.length,
+      hasToken: !!token
+    })
+
+    return { hostedTool }
+  }
+
+  // For development, use StreamableHttp
   const requestInit: RequestInit = {
     headers: {
       'x-mcp-integration-type': integration.type,
       'x-mcp-integration-name': integration.name,
+      'x-organization-id': integration.config.organizationId as string,
       ...(integration.selectedTools.length > 0 && {
         'x-mcp-selected-tools': JSON.stringify(integration.selectedTools)
       })
@@ -243,17 +278,14 @@ function createBuiltinIntegration(
     url: serverUrl,
     cacheToolsList: true,
     requestInit,
-    // Add reconnection options for production
-    ...(process.env.NODE_ENV === 'production' && {
-      reconnectionOptions: {
-        maxAttempts: 5,
-        initialDelay: 1000,
-        maxDelay: 10000
-      }
-    })
+    reconnectionOptions: {
+      maxAttempts: 3,
+      initialDelay: 1000,
+      maxDelay: 5000
+    }
   })
 
-  logger.info('Created built-in integration server', {
+  logger.info('Created StreamableHttp MCP server for development', {
     type: integration.type,
     name: integration.name,
     url: serverUrl,

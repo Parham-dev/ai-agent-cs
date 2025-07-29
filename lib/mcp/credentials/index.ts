@@ -4,6 +4,8 @@ import {
   HeaderCredentialProvider,
   type CredentialProvider
 } from './provider';
+import { DatabaseCredentialProvider } from './database-provider';
+import { JWTCredentialProvider } from './jwt-provider';
 import { logger } from '@/lib/utils/logger';
 
 /**
@@ -23,7 +25,11 @@ export interface StripeCredentials {
  */
 export const credentialProviders: Record<string, CredentialProvider<Record<string, unknown>>> = {
   shopify: new CompositeCredentialProvider<Record<string, unknown>>('shopify', [
-    // Try request headers first (for authenticated requests)
+    // Try JWT token first (for production with hosted MCP tools)
+    new JWTCredentialProvider<Record<string, unknown>>('shopify-jwt', 'shopify'),
+    // Try database (for production)
+    new DatabaseCredentialProvider<Record<string, unknown>>('shopify'),
+    // Try request headers (for authenticated requests)
     new HeaderCredentialProvider<Record<string, unknown>>('shopify-headers', {
       shopUrl: 'x-shopify-shop-url',
       accessToken: 'x-shopify-access-token'
@@ -61,46 +67,31 @@ export async function getIntegrationCredentials<T = Record<string, unknown>>(
   integrationType: string,
   context?: unknown
 ): Promise<T | null> {
-  logger.info('🔍 CREDENTIAL PROVIDER DEBUG - Starting', {
-    integrationType,
-    hasContext: !!context,
-    contextType: typeof context,
-    timestamp: new Date().toISOString()
-  });
+  logger.debug('Getting credentials', { integrationType });
   
   const provider = getCredentialProvider(integrationType);
   if (!provider) {
-    logger.error('❌ CREDENTIAL PROVIDER DEBUG - No provider found', {
+    logger.warn('No credential provider found', {
       integrationType,
-      availableProviders: Object.keys(credentialProviders),
-      timestamp: new Date().toISOString()
+      availableProviders: Object.keys(credentialProviders)
     });
     return null;
   }
   
-  logger.info('✅ CREDENTIAL PROVIDER DEBUG - Provider found', {
-    integrationType,
-    providerType: provider.type,
-    timestamp: new Date().toISOString()
-  });
-  
   try {
     const credentials = await provider.getCredentials(context);
     
-    logger.info('🔍 CREDENTIAL PROVIDER DEBUG - Provider result', {
+    logger.debug('Credential provider result', {
       integrationType,
       hasCredentials: !!credentials,
-      credentialKeys: credentials ? Object.keys(credentials) : [],
-      credentialValues: credentials, // DANGER: Full credentials exposed!
-      timestamp: new Date().toISOString()
+      providerType: provider.type
     });
     
     return credentials as T | null;
   } catch (error) {
-    logger.error('❌ CREDENTIAL PROVIDER DEBUG - Provider error', {
+    logger.error('Credential provider error', {
       integrationType,
-      error: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString()
+      error: error instanceof Error ? error.message : String(error)
     });
     return null;
   }
@@ -108,3 +99,5 @@ export async function getIntegrationCredentials<T = Record<string, unknown>>(
 
 // Re-export types and classes
 export * from './provider';
+export { DatabaseCredentialProvider } from './database-provider';
+export { JWTCredentialProvider } from './jwt-provider';
